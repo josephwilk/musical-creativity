@@ -64,11 +64,11 @@
 
 (defn make-events [list-of-pitches & [time]]
   (if (nil? list-of-pitches) []
-      (cons (list (or time 0)
-                  (first list-of-pitches)
-                  250
-                  1
-                  127)
+      (cons [(or time 0)
+             (first list-of-pitches)
+             250
+             1
+             127]
             (make-events (rest list-of-pitches) (+ time 250)))))
 
 (defn choose-one [list]
