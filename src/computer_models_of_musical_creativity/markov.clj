@@ -58,13 +58,13 @@
 
 (defn compose-m [start length]
   (if (= length 0) []
-      (let ((test (choose-one (second (assoc start @state-transition-matrix)))))
+      (let [test (choose-one (second (assoc start @state-transition-matrix)))]
         (cons test
               (compose-m test (- length 1))))))
 
-(defn make-events [list-of-pitches &optional (time 0)]
+(defn make-events [list-of-pitches & [time]]
   (if (nil? list-of-pitches) []
-      (cons (list time
+      (cons (list (or time 0)
                   (first list-of-pitches)
                   250
                   1
