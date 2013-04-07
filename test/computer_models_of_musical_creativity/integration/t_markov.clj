@@ -5,4 +5,7 @@
     
 (fact "it should collect probabilites for pitches"
   (markov/compose-new-music-based-on-markovian-probabilities 60 5 markov/events) => {})
+
+
+;(play (compose-new-music-based-on-markovian-probabilities 60 100 events))
   
