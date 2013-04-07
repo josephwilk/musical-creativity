@@ -55,7 +55,7 @@
   (let [pitch-pairs (partition 2 1 pitches)]
     (reduce probabilities-for {} pitch-pairs)))
 
-(defn compose-new-music-based-on-markovian-probabilities [start length events]
+(defn compose [start length events]
   (let [stm empty-state-transition-matrix
         pitches (get-pitches events)
         stm (state-transition-matrix-probabilities pitches)]
