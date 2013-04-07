@@ -5,4 +5,4 @@
     
 (facts "put-probabilities"
   (fact "it should collect probablites"
-    (markov/put-probabilities [60 61] {60 []}) => {60 [61]}))
+    (markov/probabilities-for [60 61] {60 []}) => {60 [61]}))

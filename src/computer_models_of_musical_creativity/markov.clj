@@ -23,22 +23,19 @@
    71 []
    72 []})
 
-(def state-transition-matrix (atom empty-state-transition-matrix))
-
-(defn- clear-matrix! []
-  (reset! state-transition-matrix empty-state-transition-matrix))
-
-(defn- compose-m [start length]
+(defn- compose-m [start length stm]
   (if (= length 0) []
-      (let [test (rand-nth (@state-transition-matrix start))]
-        (cons test
-              (compose-m test (- length 1))))))
+      (let [candidates (stm start)
+            picked (rand-nth candidates)]
+        (cons picked
+              (compose-m picked (- length 1) stm)))))
 
 (defn- make-events [list-of-pitches & [time]]
-  (if (empty? list-of-pitches) []
-      (cons [{:time (or time 0)
-              :pitch (first list-of-pitches)}]
-            (make-events (rest list-of-pitches) (+ time 250)))))
+  (let [time (or time 0)]
+    (if (empty? list-of-pitches) []
+        (cons [{:time (or time 0)
+                :pitch (first list-of-pitches)}]
+              (make-events (rest list-of-pitches) (+ time 250))))))
 
 (defn- firstn [number list]
   (take number list))
@@ -46,21 +43,20 @@
 (defn- get-pitches [events]
   (map #(:pitch %) events))
 
-(defn- compose-markov [start length]
-  (make-events (compose-m start length)))
+(defn- compose-markov [start length stm]
+  (make-events (compose-m start length stm)))
 
-(defn put-probabilities [[first-pitch second-pitch] stm]
+(defn probabilities-for [stm [first-pitch second-pitch]]
   (let [stm-key first-pitch
         stm-row (stm stm-key)]
     (assoc stm stm-key (conj stm-row second-pitch))))
 
-(defn- put-probabilities-into-state-transition-matrix [pitches stm]
-  (if (empty? (rest pitches)) stm
-     (do
-       (reset! state-transition-matrix (put-probabilities (firstn 2 pitches) stm))
-       (put-probabilities-into-state-transition-matrix (rest pitches) stm))))
+(defn- state-transition-matrix-probabilities [pitches]
+  (let [pitch-pairs (partition 2 1 pitches)]
+    (reduce probabilities-for {} pitch-pairs)))
 
 (defn compose-new-music-based-on-markovian-probabilities [start length events]
-  (clear-matrix!)
-  (reset! state-transition-matrix (put-probabilities-into-state-transition-matrix (get-pitches events) @state-transition-matrix))
-  (compose-markov start length))
+  (let [stm empty-state-transition-matrix
+        pitches (get-pitches events)
+        stm (state-transition-matrix-probabilities pitches)]
+    (compose-markov start length stm)))
