@@ -28,12 +28,9 @@
 (defn- clear-matrix! []
   (reset! state-transition-matrix empty-state-transition-matrix))
 
-(defn- choose-one [l]
-  (nth (rand-int (count l)) l))
-
 (defn- compose-m [start length]
   (if (= length 0) []
-      (let [test (choose-one (@state-transition-matrix start))]
+      (let [test (rand-nth (@state-transition-matrix start))]
         (cons test
               (compose-m test (- length 1))))))
 
