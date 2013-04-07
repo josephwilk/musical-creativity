@@ -38,7 +38,7 @@
               (compose-m test (- length 1))))))
 
 (defn- make-events [list-of-pitches & [time]]
-  (if (nil? list-of-pitches) []
+  (if (empty? list-of-pitches) []
       (cons [{:time (or time 0)
               :pitch (first list-of-pitches)}]
             (make-events (rest list-of-pitches) (+ time 250)))))
