@@ -9,13 +9,13 @@
         time (* timing 250)]
     {:time time :pitch pitch}))
 
-(defn matching-rules-result [group rules]
+(defn matching-rule-result [group rules]
   (some (fn [rule]
           (when (= (vec group) (first rule))
             (second rule))) rules))
 
 (defn apply-the-rule [group rules position timing]
-  (let [rule-result (matching-rules-result group rules)]
+  (let [rule-result (matching-rule-result group rules)]
     (do
       (when (= rule-result *)
         (swap! events conj (create-event position timing)))
