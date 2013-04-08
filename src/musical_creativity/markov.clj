@@ -1,4 +1,4 @@
-(ns computer-models-of-musical-creativity.markov)
+(ns musical-creativity.markov)
 
 (def events
   [{:pitch 60 :time 0}

@@ -1,4 +1,4 @@
-(ns computer-models-of-musical-creativity.play
+(ns musical-creativity.play
   (:require
     [overtone.live :refer :all]
     [overtone.music.pitch :as pitch]))
