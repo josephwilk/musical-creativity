@@ -52,3 +52,6 @@
         (let [duration (if random (+ 250 (rand-int 1750)) 1000)]
           (conj (list (make-event ontime (first pitch-groupings) (if random (+ 1 (rand-int 16)) 1)))
                   (make-events (rest pitch-groupings) random (+ ontime duration)))))))
+
+(defn compose []
+  (make-events (sonify cassiopeia-a)))

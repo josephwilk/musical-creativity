@@ -2,3 +2,8 @@
   (:require
     [midje.sweet :refer :all]
     [musical-creativity.sonify :as sonify]))
+
+(facts "it should generate events"
+  (let [events (sonify/compose)
+        all-keys (reduce concat [] (map keys events))]
+     (distinct all-keys) => [:time :pitch]))
