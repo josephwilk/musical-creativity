@@ -14,9 +14,8 @@
    [[0 0 0] 0]])
 
 (def start
-  [[0 0 0 0 0 0 0 0 0 0 0 0 * 0 0 0 0 0 0 0 0 0 0 0 0]])
+  [0 0 0 0 0 0 0 0 0 0 0 0 * 0 0 0 0 0 0 0 0 0 0 0 0])
 
-
-(fact "it should collect probabilites for pitches"
-  (let [events (cellular-automata/create-lists 20 start rules)]
-    events => (contains {:pitch 60, :time 0})))
+(fact "it should generate events"
+  (let [events (cellular-automata/compose 20 start rules)]
+    events => (contains {:pitch 41N, :time 4750})))
