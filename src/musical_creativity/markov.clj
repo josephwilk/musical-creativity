@@ -13,15 +13,7 @@
    {:pitch 72 :time 8000}
    {:pitch 60 :time 9000}])
 
-(def empty-state-transition-matrix
-  {60 []
-   62 []
-   64 []
-   65 []
-   67 []
-   69 []
-   71 []
-   72 []})
+(def empty-state-transition-matrix {})
 
 (defn- compose-m [start length stm]
   (if (= length 0) []
@@ -48,7 +40,7 @@
 
 (defn probabilities-for [stm [first-pitch second-pitch]]
   (let [stm-key first-pitch
-        stm-row (stm stm-key)]
+        stm-row (or (stm stm-key) [])]
     (assoc stm stm-key (conj stm-row second-pitch))))
 
 (defn- state-transition-matrix-probabilities [pitches]
