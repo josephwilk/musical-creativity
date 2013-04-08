@@ -1,9 +1,11 @@
-(ns -musical-creativity.integration.t-markov
+(ns musical-creativity.integration.t-markov
   (:require
     [midje.sweet :refer :all]
     [musical-creativity.markov :as markov]))
 
 (fact "it should collect probabilites for pitches"
-  (markov/compose 60 5 markov/events) => {})
+  (let [events (markov/compose 60 5 markov/events)]
+    events => (contains {:pitch 60, :time 0})
+    (count events) => 5))
 
 ;(play (markov/compose 60 100 events))
