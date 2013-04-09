@@ -1,7 +1,7 @@
 (ns musical-creativity.integration.t-cosine
   (:require
     [midje.sweet :refer :all]
-    [musical-creativity.cosine :as cosine]))
+    [musical-creativity.composers.cosine :as cosine]))
 
 (fact "it should generate events"
   (let [events (cosine/compose)

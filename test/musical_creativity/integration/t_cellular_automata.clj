@@ -1,7 +1,7 @@
 (ns musical-creativity.integration.t-cellular-automata
   (:require
     [midje.sweet :refer :all]
-    [musical-creativity.cellular-automata :as cellular-automata]))
+    [musical-creativity.composers.cellular-automata :as cellular-automata]))
 
 (def rules
   [[[* * *] 0]

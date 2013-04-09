@@ -1,4 +1,4 @@
-(ns musical-creativity.muscican
+(ns musical-creativity.musician
   (:require
     [overtone.live :refer :all]
     [overtone.music.pitch :as pitch]))

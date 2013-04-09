@@ -1,7 +1,7 @@
-(ns musical-creativity.unit.t-markov
+(ns musical-creativity.unit.composers.t-markov
   (:require
     [midje.sweet :refer :all]
-    [musical-creativity.markov :as markov]))
+    [musical-creativity.composers.markov :as markov]))
 
 (facts "put-probabilities"
   (fact "it should collect probablites"
