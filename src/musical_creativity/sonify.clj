@@ -7,9 +7,7 @@
   (math/round (+ (* (/ (- number low1)(- high1 low1))(- high2 low2)) low2)))
 
 (defn normalize-numbers [numbers min max low high]
-  (if (empty? numbers)[]
-      (cons (normalize min max (first numbers) low high)
-            (normalize-numbers (rest numbers) min max low high))))
+  (map #(normalize min max % low high) numbers))
 
 (defn sonify [data]
   (let [max (apply #'max data)
