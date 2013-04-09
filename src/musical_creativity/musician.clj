@@ -1,4 +1,4 @@
-(ns musical-creativity.play
+(ns musical-creativity.muscican
   (:require
     [overtone.live :refer :all]
     [overtone.music.pitch :as pitch]))
@@ -8,16 +8,16 @@
      (saw freq)
      vol))
 
-(defn saw2 [music-note]
+(defn- saw2 [music-note]
   (saw-wave (midi->hz (note music-note))))
 
-(defn note->hz [music-note]
+(defn- note->hz [music-note]
   (midi->hz (note music-note)))
 
-(defn play-chord [a-chord]
+(defn- play-chord [a-chord]
   (doseq [note a-chord] (saw2 note)))
 
-(defn play-event [event start-time]
+(defn- play-event [event start-time]
   (let [pitch (:pitch event)
         note-time (+ start-time (:time event))
         note-name (find-note-name pitch)]

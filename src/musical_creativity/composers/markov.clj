@@ -1,4 +1,4 @@
-(ns musical-creativity.markov)
+(ns musical-creativity.composers.markov)
 
 (def events
   [{:pitch 60 :time 0}

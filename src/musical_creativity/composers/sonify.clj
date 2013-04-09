@@ -1,4 +1,4 @@
-(ns musical-creativity.sonify
+(ns musical-creativity.composers.sonify
   (:require [clojure.math.numeric-tower :as math]))
 
 (defn normalize

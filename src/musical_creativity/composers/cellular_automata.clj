@@ -1,4 +1,4 @@
-(ns musical-creativity.cellular-automata
+(ns musical-creativity.composers.cellular-automata
   (:require [clojure.math.numeric-tower :as math]))
 
 (def events (atom []))

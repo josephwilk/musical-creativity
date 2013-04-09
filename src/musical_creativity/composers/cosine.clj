@@ -1,4 +1,4 @@
-(ns musical-creativity.cosine
+(ns musical-creativity.composers.cosine
   (:require [clojure.math.numeric-tower :as math]))
 
 (defn run-cosine-fn [number x]
