@@ -5,4 +5,8 @@
 
 Models for computers generating music.
 
-Based on exercises from: Computer Models of Musical Creativity http://mitpress.mit.edu/books/computer-models-musical-creativity
+Based on exercises from:
+
+![Computer Models of Musical Creativity](http://mitpress.mit.edu/covers/9780262033381.jpg)
+
+Computer Models of Musical Creativity http://mitpress.mit.edu/books/computer-models-musical-creativity
