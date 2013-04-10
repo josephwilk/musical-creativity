@@ -1,6 +1,6 @@
 (ns musical-creativity.composers.markov)
 
-(def events
+(def default-events
   [{:pitch 60 :time 0}
    {:pitch 60 :time 0}
    {:pitch 62 :time 1000}
@@ -47,8 +47,12 @@
   (let [pitch-pairs (partition 2 1 pitches)]
     (reduce probabilities-for {} pitch-pairs)))
 
-(defn compose [start length events]
-  (let [stm empty-state-transition-matrix
+(defn compose [& [options]]
+  (let [options (or options {})
+        start (or (:start options) 60)
+        length (or (:length options) 50)
+        events (or (:events options) default-events)
+        stm empty-state-transition-matrix
         pitches (get-pitches events)
         stm (state-transition-matrix-probabilities pitches)]
     (compose-markov start length stm)))

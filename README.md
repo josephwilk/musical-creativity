@@ -2,8 +2,18 @@
 
 [![Build Status](https://travis-ci.org/josephwilk/musical-creativity.png?branch=master)](https://travis-ci.org/josephwilk/musical-creativity)
 
-
 Models for computers generating music.
+
+##Example
+
+```clojure
+(require '[musical-creativity.musician :as musician])
+(require '[musical-creativity.composers.markov :as markov])
+
+(musician/play (markov/compose))
+```
+
+##Book
 
 Based on exercises from:
 
