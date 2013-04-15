@@ -10,7 +10,12 @@ Models for computers generating music.
 (require '[musical-creativity.musician :as musician])
 (require '[musical-creativity.composers.markov :as markov])
 
-(musician/play (markov/compose))
+(musician/play (markov/compose) play-piano)
+(musician/play (markov/compose) play-ping)
+
+(require '[musical-creativity.composers.sonify :as sonify])
+
+(musician/play (sonify/compose) play-piano)
 ```
 
 ##Book
