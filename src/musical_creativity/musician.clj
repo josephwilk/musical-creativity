@@ -23,10 +23,9 @@
   (doseq [note a-chord] (saw2 note)))
 
 (defn play-event [event start-time player-fn]
-  (let [pitch (:pitch event)
+  (let [pitch-to-play (:pitch event)
         note-time (+ start-time (:time event))]
-    (at note-time (player-fn pitch))))
-
+    (at note-time (player-fn pitch-to-play))))
 
 (defn play-saw [event start-time]
   (let [pitch (:pitch event)

@@ -23,6 +23,6 @@
   (let [ontime (or ontime 0)]
     (if (empty? pitch-groupings) 
       []
-      (let [duration 1000]
+      (let [duration 200]
         (concat [(make-event ontime (first pitch-groupings))]
                  (make (rest pitch-groupings) (+ ontime duration)))))))
