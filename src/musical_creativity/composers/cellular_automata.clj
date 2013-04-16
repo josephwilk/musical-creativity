@@ -1,6 +1,7 @@
 (ns musical-creativity.composers.cellular-automata
   (:require
     [clojure.math.numeric-tower :as math]
+    [clojure.pprint :refer :all]
     [musical-creativity.events :as events]))
 
 (def default-rules
@@ -13,6 +14,21 @@
      [["0" "0" "*"] "0"]
      [["0" "0" "0"] "0"]])
 
+(def rule-22
+   [[["*" "*" "*"] "0"] [["*" "*" "0"] "0"] [["*" "0" "*"] "0"] [["*" "0" "0"] "*"] [["0" "*" "*"] "0"] [["0" "*" "0"] "*"] [["0" "0" "*"] "*"] [["0" "0" "0"] "0"]])
+
+(def rule-57
+  [[["*" "*" "*"] "0"][["*" "*" "0"] "0"][["*" "0" "*"] "*"][["*" "0" "0"] "*"] [["0" "*" "*"] "*"][["0" "*" "0"] "0"][["0" "0" "*"] "0"][["0" "0" "0"] "*"]])
+
+(def rule-73
+  [[["*" "*" "*"] "0"][["*" "*" "0"] "*"][["*" "0" "*"] "0"][["*" "0" "0"] "0"] [["0" "*" "*"] "*"][["0" "*" "0"] "0"][["0" "0" "*"] "0"][["0" "0" "0"] "*"]])
+
+(def rule-75
+  [[["*" "*" "*"] "0"][["*" "*" "0"] "*"][["*" "0" "*"] "0"][["*" "0" "0"] "0"] [["0" "*" "*"] "*"][["0" "*" "0"] "0"][["0" "0" "*"] "*"][["0" "0" "0"] "*"]])
+
+(def rule-121
+  [[["*" "*" "*"] "0"][["*" "*" "0"] "*"][["*" "0" "*"] "*"][["*" "0" "0"] "*"] [["0" "*" "*"] "*"][["0" "*" "0"] "0"][["0" "0" "*"] "0"][["0" "0" "0"] "*"]])
+
 (def default-start
   ["0" "0" "0" "0" "0" "0" "0" "0" "0" "0" "0" "0" "*" "0" "0" "0" "0" "0" "0" "0" "0" "0" "0" "0" "0"])
 
@@ -20,10 +36,13 @@
 (def store-rules (atom []))
 
 (defn- pitch-from-position [position]
-  (math/round (+ (* position (/ 60 261)) 56)))
+  (math/round (+ (* position (/ 60 261)) 46)))
 
 (defn create-event [position timing]
-  (events/make-event (* timing 250) (pitch-from-position position)))
+  (let [pitch (pitch-from-position position)
+        entry-time (* timing 300)]
+    (when (not-any? #(and (= pitch (:pitch %)) (= entry-time (:time %))) @events)
+      (events/make-event entry-time pitch))))
 
 (defn matching-rule-result [group rules]
   (some (fn [rule]
@@ -48,13 +67,17 @@
   (let [up-number (or up-number 1)]
     (if (= number up-number)
       (reverse @store-rules)
-      (do
+      (let [new-row (create-the-row start rules up-number)]
         (swap! store-rules conj start)
         (create-rows number
-                 (cons "0" (butlast (create-the-row start rules up-number)))
+                 (cons "0" (butlast new-row))
                  rules
                  (+ 1 up-number))
         (reverse @events)))))
 
-(defn compose []
-  (create-rows 20 default-start default-rules))
+(defn compose [& [rules]]
+  (reset! store-rules [])
+  (reset! events [])
+  (let [rules (or rules default-rules)
+        events (create-rows 20 default-start rules)]
+        (remove nil? events)))
