@@ -1,5 +1,6 @@
 (ns musical-creativity.instruments
   (:require
+    [overtone.live :refer :all]
     [overtone.music.pitch :as pitch]
     [overtone.inst.sampled-piano :as piano]
     [overtone.inst.synth :as synth]
