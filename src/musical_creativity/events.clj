@@ -8,7 +8,7 @@
 
 (defn make-event [ontime pitch & [channel]]
   {:time ontime
-   :pitch pitch
+   :pitch (:pitch pitch)
    :channel (or channel 1)})
 
 (defn random-make [pitch-groupings & [ontime]]
