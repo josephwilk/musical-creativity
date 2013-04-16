@@ -30,6 +30,7 @@ Experiments with models for computers generating music.
 ;Cellular automata
 (require '[musical-creativity.composers.cellular-automata :as ca])
 (musician/play (ca/compose) piano)
+(musician/play (ca/compose ca/rule-22) piano)
 
 ```
 

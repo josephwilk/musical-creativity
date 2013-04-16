@@ -30,17 +30,20 @@
   [[["*" "*" "*"] "0"][["*" "*" "0"] "*"][["*" "0" "*"] "*"][["*" "0" "0"] "*"] [["0" "*" "*"] "*"][["0" "*" "0"] "0"][["0" "0" "*"] "0"][["0" "0" "0"] "*"]])
 
 (def default-start
-  ["0" "0" "0" "0" "0" "0" "0" "0" "0" "0" "0" "0" "*" "0" "0" "0" "0" "0" "0" "0" "0" "0" "0" "0" "0"])
+  ["0" "0" "0" "0" "0" "0" "0" "0" "0" "0" "0" "0" "*" "0" "0" "0" "0" "0" "0" "0" "0" "0" "0" "0" "0" "0"])
 
 (def events (atom []))
 (def store-rules (atom []))
 
+(defn log-event [position timing]
+  (swap! events conj (create-event position timing)))
+
 (defn- pitch-from-position [position]
-  (math/round (+ (* position (/ 60 261)) 46)))
+  (math/round (+ (* position (/ 60 200)) 49)))
 
 (defn create-event [position timing]
   (let [pitch (pitch-from-position position)
-        entry-time (* timing 300)]
+        entry-time (* timing 500)]
     (when (not-any? #(and (= pitch (:pitch %)) (= entry-time (:time %))) @events)
       (events/make-event entry-time pitch))))
 
@@ -49,10 +52,9 @@
           (when (= (vec group) (first rule))
             (second rule))) rules))
 
-(defn apply-the-rule [group rules position timing]
+(defn apply-rule [group rules position timing]
   (let [rule-result (matching-rule-result group rules)]
-    (when (= rule-result "*")
-      (swap! events conj (create-event position timing)))
+    (when (= rule-result "*") (log-event position timing))
     (if rule-result
       rule-result
       "0")))
@@ -60,24 +62,21 @@
 (defn create-the-row [old-row rules timing & [position]]
   (let [position (or position 1)]
     (if (empty? old-row) []
-        (cons (apply-the-rule (take 3 old-row) rules position timing)
-              (create-the-row (rest old-row) rules timing (+ 1 position))))))
+        (cons (apply-rule (take 3 old-row) rules position timing)
+              (create-the-row (rest old-row) rules (+ 10 timing) (+ 1 position))))))
 
 (defn create-rows [number start rules & [up-number]]
+  (println start)
   (let [up-number (or up-number 1)]
-    (if (= number up-number)
-      (reverse @store-rules)
-      (let [new-row (create-the-row start rules up-number)]
-        (swap! store-rules conj start)
-        (create-rows number
-                 (cons "0" (butlast new-row))
-                 rules
-                 (+ 1 up-number))
-        (reverse @events)))))
+    (when-not (= number up-number)
+      (let [row (create-the-row start rules up-number)
+            new-row (cons "0" (butlast row))]
+        (create-rows number new-row rules (+ 1 up-number))
+        @events))))
 
 (defn compose [& [rules]]
   (reset! store-rules [])
   (reset! events [])
   (let [rules (or rules default-rules)
-        events (create-rows 20 default-start rules)]
+        events (create-rows 25 default-start rules)]
         (remove nil? events)))
