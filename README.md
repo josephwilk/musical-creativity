@@ -2,20 +2,23 @@
 
 [![Build Status](https://travis-ci.org/josephwilk/musical-creativity.png?branch=master)](https://travis-ci.org/josephwilk/musical-creativity)
 
-Models for computers generating music.
+Experiments with models for computers generating music.
 
 ##Example
 
 ```clojure
 (require '[musical-creativity.musician :as musician])
+(require '[musical-creativity.events :as events])
 (require '[musical-creativity.composers.markov :as markov])
 
 (musician/play (markov/compose) play-piano)
 (musician/play (markov/compose) play-ping)
 
-(require '[musical-creativity.composers.sonify :as sonify])
+(require '[musical-creativity.composers.sonify-data :as sonify-data])
+(musician/play (sonify-data/compose) play-piano)
 
-(musician/play (sonify/compose) play-piano)
+(require '[musical-creativity.composers.sonify-words :as sonify-words])
+(musician/play (sonify-words/compose "potato potato potata potatd potate potatk") musician/play-piano)
 ```
 
 ##Book
