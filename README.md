@@ -11,11 +11,11 @@ Experiments with models for computers generating music.
 (require '[musical-creativity.events :as events])
 (require '[musical-creativity.composers.markov :as markov])
 
-(musician/play (markov/compose) play-piano)
-(musician/play (markov/compose) play-ping)
+(musician/play (markov/compose) musician/play-piano)
+(musician/play (markov/compose) musician/play-ping)
 
 (require '[musical-creativity.composers.sonify-data :as sonify-data])
-(musician/play (sonify-data/compose) play-piano)
+(musician/play (sonify-data/compose) musician/play-piano)
 
 (require '[musical-creativity.composers.sonify-words :as sonify-words])
 (musician/play (sonify-words/compose "potato potato potata potatd potate potatk") musician/play-piano)
