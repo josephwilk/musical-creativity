@@ -10,15 +10,27 @@ Experiments with models for computers generating music.
 (require '[musical-creativity.musician :as musician])
 (use '[musical-creativity.instruments])
 
+;Markov chains
 (require '[musical-creativity.composers.markov :as markov])
 (musician/play (markov/compose) piano)
 (musician/play (markov/compose) ping)
 
+;Sonify data
 (require '[musical-creativity.composers.sonify-data :as sonify-data])
 (musician/play (sonify-data/compose) piano)
 
+;Sonify text
 (require '[musical-creativity.composers.sonify-words :as sonify-words])
 (musician/play (sonify-words/compose "potato potato potata potatd potate potatk") piano)
+
+;Cosine
+(require '[musical-creativity.composers.cosine :as cosine])
+(musician/play (cosine/compose) piano)
+
+;Cellular automata
+(require '[musical-creativity.composers.cellular-automata :as ca])
+(musician/play (ca/compose) piano)
+
 ```
 
 ##Book
