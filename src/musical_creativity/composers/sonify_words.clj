@@ -29,10 +29,11 @@
 (defn sonify-character [character]
   (let [character-code (int character)
         pitch (find-pitch character-code)]
-    {:pitch pitch}))
+    {:pitch pitch
+     :out character}))
 
 (defn sonify [string]
   (map sonify-character string))
 
 (defn compose [words]
-  (events/make (sonify words)))
+  (events/make (sonify words) 0 280))

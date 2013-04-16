@@ -11,9 +11,10 @@
     (:pitch pitch)
     pitch))
 
-(defn make-event [ontime pitch & [channel]]
+(defn make-event [ontime data & [channel]]
   {:time ontime
-   :pitch (int (extract-pitch pitch))
+   :log (:out data)
+   :pitch (int (extract-pitch data))
    :channel (or channel 1)})
 
 (defn random-make [pitch-groupings & [ontime]]
