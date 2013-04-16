@@ -1,4 +1,4 @@
-(ns musical-creativity.composers.sonify
+(ns musical-creativity.composers.sonify-data
   (:require [clojure.math.numeric-tower :as math]
             [musical-creativity.events :as events]))
 
