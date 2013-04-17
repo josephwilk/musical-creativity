@@ -19,7 +19,7 @@
   (nth (nth minuet-table number) measure))
 
 (defn compose-minuet []
-  (map #(minet-pitch % (rand-int 11)) (range 0 15)))
+  (map #(minuet-pitch % (rand-int 11)) (range 0 15)))
 
-(def compose []
+(defn compose []
   (events/make (compose-minuet)))
