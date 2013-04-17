@@ -36,7 +36,7 @@
 (def store-rules (atom []))
 
 (defn log-event [position timing]
-  (swap! events conj (create-event position timing)))
+  (swap! events conj (events/create-event position timing)))
 
 (defn- pitch-from-position [position]
   (math/round (+ (* position (/ 60 200)) 49)))
