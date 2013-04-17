@@ -45,7 +45,7 @@
   (let [pitch (pitch-from-position position)
         entry-time (* timing 500)]
     (when (not-any? #(and (= pitch (:pitch %)) (= entry-time (:time %))) @events)
-      (events/make-event entry-time pitch))))
+      (log-event entry-time pitch))))
 
 (defn matching-rule-result [group rules]
   (some (fn [rule]
