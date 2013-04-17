@@ -35,6 +35,10 @@ Experiments with models for computers generating music.
 ;Minuet
 (require '[musical-creativity.composers.minuet :as minuet])
 (musician/play (minuet/compose) piano)
+
+;Fuzzy
+(require '[musical-creativity.composers.fuzzy :as fuzzy])
+(musician/play (fuzzy/compose) piano)
 ```
 
 ##Book
