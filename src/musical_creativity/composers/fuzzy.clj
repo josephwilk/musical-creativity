@@ -66,13 +66,15 @@
       nil
       (if (nil? (sumup the-list)) ; empty list
         nil
-        (let (alist)
+        (let [alist nil]
           (setf alist (copy-list the-list))  ;   copy input list
           (sort
            (cons
-            (let ( ( i 0) (k 0) (hsf 0)) ;  hsf is highest so far
+            (let [i 0
+                  k 0
+                  hsf 0] ;  hsf is highest so far
               (dolist (x alist)
-                      (if (> x hsf)
+                      (when (> x hsf)
                         (setf hsf x k i))
                       (setf i (+ i 1)))
               (setf (elt alist k) 0)
