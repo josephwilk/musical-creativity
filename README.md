@@ -32,6 +32,9 @@ Experiments with models for computers generating music.
 (musician/play (ca/compose) piano)
 (musician/play (ca/compose ca/rule-22) piano)
 
+;Minuet
+(require '[musical-creativity.composers.minuet :as minuet])
+(musician/play (minuet/compose) piano)
 ```
 
 ##Book
