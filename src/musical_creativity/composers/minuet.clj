@@ -21,5 +21,6 @@
 (defn compose-minuet []
   (map #(minuet-pitch % (rand-int 11)) (range 0 15)))
 
-(defn compose []
-  (events/make (compose-minuet)))
+(defn compose [& [number-of-minuets]]
+  (let [number-of-minuets (or number-of-minuets 1)]
+    (flatten (repeatedly number-of-minuets #(events/make (compose-minuet))))))
