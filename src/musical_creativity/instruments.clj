@@ -29,7 +29,7 @@
         log (:log event)
         note-time (+ start-time (:time event))]
     (at note-time (player-fn pitch-to-play))
-    (overtone.at-at/at (- note-time 10) #(do (print log) (flush)) my-pool)))
+    (overtone.at-at/at (- note-time 10) #(when log (do (print log) (flush))) my-pool)))
 
 (defn play-saw [event start-time]
   (let [pitch (:pitch event)
