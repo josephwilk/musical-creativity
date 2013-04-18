@@ -35,7 +35,7 @@
 (def events (atom []))
 (def store-rules (atom []))
 
-(defn log-event [entry-time pitch]
+(defn log-a-event [entry-time pitch]
   (swap! events conj (events/make-event entry-time {:pitch pitch})))
 
 (defn- pitch-from-position [position]
@@ -43,9 +43,9 @@
 
 (defn create-event [position timing]
   (let [pitch (pitch-from-position position)
-        entry-time (* timing 500)]
+        entry-time (* timing 100)]
     (when (not-any? #(and (= pitch (:pitch %)) (= entry-time (:time %))) @events)
-      (log-event entry-time pitch))))
+      (log-a-event entry-time pitch))))
 
 (defn matching-rule-result [group rules]
   (some (fn [rule]
@@ -54,7 +54,7 @@
 
 (defn apply-rule [group rules position timing]
   (let [rule-result (matching-rule-result group rules)]
-    (when (= rule-result "*") (log-event position timing))
+    (when (= rule-result "*") (create-event position timing))
     (if rule-result
       rule-result
       "0")))
@@ -63,7 +63,7 @@
   (let [position (or position 1)]
     (if (empty? old-row) []
         (cons (apply-rule (take 3 old-row) rules position timing)
-              (create-the-row (rest old-row) rules (+ 10 timing) (+ 1 position))))))
+              (create-the-row (rest old-row) rules (+ 30 timing) (+ 1 position))))))
 
 (defn create-rows [number start rules & [up-number]]
   (println start)
@@ -75,8 +75,9 @@
         @events))))
 
 (defn compose [& [rules]]
-  (reset! store-rules [])
   (reset! events [])
   (let [rules (or rules default-rules)
-        events (create-rows 25 default-start rules)]
-        (remove nil? events)))
+        the-events (create-rows 25 default-start rules 0)
+        the-events (map #(:pitch %)  the-events)
+        the-events (events/make the-events)]
+        (remove nil? the-events)))
