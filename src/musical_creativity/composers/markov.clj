@@ -1,5 +1,7 @@
 (ns musical-creativity.composers.markov)
 
+(load-file "data/bach.clj")
+
 (def default-events
   [{:pitch 60 :time 0}
    {:pitch 60 :time 0}

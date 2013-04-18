@@ -15,6 +15,8 @@ Experiments with models for computers generating music.
 (musician/play (markov/compose) piano)
 (musician/play (markov/compose) ping)
 
+(musician/play (markov/compose {:events markov/bach}) piano)
+
 ;Sonify data
 (require '[musical-creativity.composers.sonify-data :as sonify-data])
 (musician/play (sonify-data/compose) piano)
