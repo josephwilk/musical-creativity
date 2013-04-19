@@ -1,4 +1,6 @@
-(ns musical-creativity.composers.markov)
+(ns musical-creativity.composers.markov
+  (:require
+   [musical-creativity.events :as events]))
 
 (load-file "data/bach.clj")
 
@@ -15,32 +17,17 @@
    {:pitch 72 :time 8000}
    {:pitch 60 :time 9000}])
 
-(def empty-state-transition-matrix {})
-
-(defn- compose-m [start length stm]
+(defn- compose-pitches [start length stm]
   (if (= length 0) []
       (let [candidates (stm start)
             picked (rand-nth candidates)]
         (cons picked
-              (compose-m picked (- length 1) stm)))))
-
-(defn- make-events [list-of-pitches & [time]]
-  (let [time (or time 0)]
-    (if (empty? list-of-pitches) []
-        (cons {:time (or time 0)
-                :pitch (first list-of-pitches)}
-              (make-events (rest list-of-pitches) (+ time 250))))))
-
-(defn- firstn [number list]
-  (take number list))
+              (compose-pitches picked (- length 1) stm)))))
 
 (defn- get-pitches [events]
   (map #(:pitch %) events))
 
-(defn- compose-markov [start length stm]
-  (make-events (compose-m start length stm)))
-
-(defn probabilities-for [stm [first-pitch second-pitch]]
+(defn- probabilities-for [stm [first-pitch second-pitch]]
   (let [stm-key first-pitch
         stm-row (or (stm stm-key) [])]
     (assoc stm stm-key (conj stm-row second-pitch))))
@@ -49,12 +36,14 @@
   (let [pitch-pairs (partition 2 1 pitches)]
     (reduce probabilities-for {} pitch-pairs)))
 
+(defn- compose-markov [start-pitch length stm]
+  (events/make (compose-pitches start-pitch length stm)))
+
 (defn compose [& [options]]
   (let [options (or options {})
-        start (or (:start options) 60)
+        start-pitch (or (:start options) 60)
         length (or (:length options) 50)
         events (or (:events options) default-events)
-        stm empty-state-transition-matrix
         pitches (get-pitches events)
         stm (state-transition-matrix-probabilities pitches)]
-    (compose-markov start length stm)))
+    (compose-markov start-pitch length stm)))
