@@ -31,7 +31,7 @@
 (def *fz-6b* [0 0 0.9 1 0 0 0 0 0 0 0 0])
 (def *fz-7b* [0 0.9 1 0 0 0 0 0 0 0 0 0])
 
-(def *sol-set* [0 0 0])
+(def *sol-set* (atom [0 0 0]))
 (def *last-sol* [0 0 0])
 (def *old-chord-set* [0 0 0 0 0 0 0 0 0 0 0 0])
 (def *as-root-set* (atom [0 0 0 0 0 0 0 0 0 0 0 0]))
@@ -81,7 +81,7 @@
 (defn common-tones-test
   "Applies common tone rules."
   []
-  (common-tone-rules *as-root-set* *as-third-set* *as-fifth-set* *old-chord-set*))
+  (common-tone-rules  @*as-root-set* @*as-third-set* @*as-fifth-set* *old-chord-set*))
 
 (defn sumup
   "Adds the members of a list."
@@ -107,27 +107,25 @@
 (defn top-n-positions
   "Returns positions of highest n values in list, or nil if all 0."
   [the-list howmany]
-    (if (= 0 howmany)  ; finished
+  (when-not (= 0 howmany)  ; finished
+    (if (nil? (sumup the-list)) ; empty list
       nil
-      (if (nil? (sumup the-list)) ; empty list
-        nil
-        (let [alist the-list]
-;          (dosync (alter  alist (copy-list the-list)))  ;   copy input list
-          (sort
-           (cons
-            (let [i (ref 0)
-                  k (ref 0)
-                  hsf (ref 0)] ;  hsf is highest so far
-              (doseq [x alist]
-                (when (> x hsf)
-                  (dosync (alter hsf x))
-                  (dosync (alter k i)))
-                (dosync (alter i inc)))
+      (let [alist the-list]
+        (sort
+         (cons
+          (let [i (ref 0)
+                k (ref 0)
+                hsf (ref 0)] ;  hsf is highest so far
+            (doseq [x alist]
+              (when (> x hsf)
+                (dosync (alter hsf x))
+                (dosync (alter k i)))
+              (dosync (alter i inc)))
 
-              (dosync (alter alist (assoc alist k 0)))
-              k) ; k is consed
-            (top-n-positions alist (- howmany 1)))
-           #'<)))))
+            (dosync (alter alist (assoc alist k 0)))
+            k) ; k is consed
+          (top-n-positions alist (- howmany 1)))
+         #'<)))))
 
 (defn ltop
   "Returns the topmost position of the list."
@@ -224,7 +222,7 @@
 (defn as-root
   "Returns pitch-class chord with arg as root."
   [thenote]
-  (list thenote (third-above thenote) (fifth-above thenote)))
+  [ thenote (third-above thenote) (fifth-above thenote)])
 
 (defn add-lists [list1 list2]
    "Add two lists, member by member"
@@ -248,16 +246,22 @@
 (defn pick-chord-w-more-rules
     "Returns pitch-classes of a chord."
     [thenote]
-    (let [the-pc (rem thenote 12)
-          solSet [0 0 0]]
+
+    (let [the-pc (rem thenote 12)]
+      (reset! *sol-set* [0 0 0])
+
       (reset! *as-root-set* (make-set (as-root the-pc)))
+
+      (println "HERE?")
+
       (reset! *as-third-set* (make-set (as-third the-pc)))
       (reset! *as-fifth-set* (make-set (as-fifth the-pc)))
-      (reset! solSet (add-lists solSet (common-tones-test)))
-      (reset! solSet (add-lists solSet (last-sol-test)))
-      (reset! solSet (add-lists solSet (favor-root-for-tonic the-pc)))
-      (reset! solSet (add-lists solSet (dither)))
-      (case (ltop (reset! *last-sol* solSet))
+      (reset! *sol-set* (add-lists @*sol-set* (common-tones-test)))
+      (reset! *sol-set* (add-lists @*sol-set* (last-sol-test)))
+      (reset! *sol-set* (add-lists @*sol-set* (favor-root-for-tonic the-pc)))
+      (reset! *sol-set* (add-lists @*sol-set* (dither)))
+
+      (case (ltop (reset! *last-sol* @*sol-set*))
         (2 (as-fifth the-pc))
         (1 (as-third the-pc))
         :else
