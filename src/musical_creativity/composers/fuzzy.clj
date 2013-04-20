@@ -1,4 +1,6 @@
-(ns musical-creativity.composers.fuzzy)
+(ns musical-creativity.composers.fuzzy
+  (:require
+   [musical-creativity.events :as events]))
 
 ; idevault values
 (def default-duration 1000)
@@ -32,7 +34,7 @@
 (def fz-7b [0 0.9 1 0 0 0 0 0 0 0 0 0])
 
 (def sol-set (atom [0 0 0]))
-(def last-sol [0 0 0])
+(def last-sol (atom [0 0 0]))
 (def old-chord-set [0 0 0 0 0 0 0 0 0 0 0 0])
 (def as-root-set (atom [0 0 0 0 0 0 0 0 0 0 0 0]))
 (def as-third-set (atom [0 0 0 0 0 0 0 0 0 0 0 0]))
@@ -179,7 +181,7 @@
 (defn last-sol-test
   "Based on last-sol."
   []
-  (let [test (first (top-n-positions last-sol 1))]
+  (let [test (first (top-n-positions @last-sol 1))]
     (cond
      (= 0 test) '(0 1 1)
      (= 1 test) '(1 1 0)
@@ -255,14 +257,17 @@
       (reset! as-fifth-set (make-set (as-fifth the-pc)))
 
       (reset! sol-set (add-lists @sol-set (common-tones-test)))
+
       (reset! sol-set (add-lists @sol-set (last-sol-test)))
       (reset! sol-set (add-lists @sol-set (favor-root-for-tonic the-pc)))
       (reset! sol-set (add-lists @sol-set (dither)))
 
-      (case (ltop (reset! last-sol @sol-set))
-        (2 (as-fifth the-pc))
-        (1 (as-third the-pc))
-        :else
+      (reset! last-sol @sol-set)
+
+      (case (ltop @last-sol)
+        2 (as-fifth the-pc)
+        1 (as-third the-pc)
+
         (as-root the-pc))))
 
 (defn add-oct
@@ -277,7 +282,11 @@
   ([pitch-list] (make-chord-event pitch-list 0))
   ([pitch-list time]
       (if (empty? pitch-list) []
-          (cons (list time (first pitch-list) default-duration default-channel default-velocity)
+          (cons {:time time
+                 :pitch (first pitch-list)
+                 :duration default-duration
+                 :channel default-channel
+                 :velocity default-velocity}
                 (make-chord-event (rest pitch-list) time)))))
 
 (defn pick-and-play-more-rules-chord [thenote time]
@@ -294,4 +303,4 @@
                  (fuzzy (rest pcs) (+ time 1000))))))
 
 (defn compose []
-  (fuzzy [0 4 7 5 7 11 0]))
+  (events/make (fuzzy [0 4 7 5 7 11 0])))
