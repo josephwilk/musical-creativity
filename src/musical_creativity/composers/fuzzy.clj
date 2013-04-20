@@ -35,8 +35,8 @@
 (def *last-sol* [0 0 0])
 (def *old-chord-set* [0 0 0 0 0 0 0 0 0 0 0 0])
 (def *as-root-set* (atom [0 0 0 0 0 0 0 0 0 0 0 0]))
-(def *as-third-set* [0 0 0 0 0 0 0 0 0 0 0 0])
-(def *as-fifth-set* [0 0 0 0 0 0 0 0 0 0 0 0])
+(def *as-third-set* (atom [0 0 0 0 0 0 0 0 0 0 0 0]))
+(def *as-fifth-set* (atom [0 0 0 0 0 0 0 0 0 0 0 0]))
 
 ; pitch classes
 (def PC-C 0)
