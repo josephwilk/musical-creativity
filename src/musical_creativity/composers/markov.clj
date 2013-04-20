@@ -28,7 +28,7 @@
   (nth (iterate (pick-pitches-fn stm) [start]) length))
 
 (defn- get-pitches [events]
-  (map #(:pitch %) events))
+  (map :pitch events))
 
 (defn- probabilities-for [stm [first-pitch second-pitch]]
   (let [stm-key first-pitch
