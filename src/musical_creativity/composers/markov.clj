@@ -17,6 +17,11 @@
    {:pitch 72 :time 8000}
    {:pitch 60 :time 9000}])
 
+(def defaults
+  {:start 60
+   :events default-events
+   :length 50})
+
 (defn pick-pitches-fn [stm]
   (fn [pitches]
     (let [last-pitch (last pitches)
@@ -26,9 +31,6 @@
 
 (defn- compose-pitches [start length stm]
   (nth (iterate (pick-pitches-fn stm) [start]) length))
-
-(defn- get-pitches [events]
-  (map :pitch events))
 
 (defn- probabilities-for [stm [first-pitch second-pitch]]
   (let [stm-key first-pitch
@@ -40,13 +42,11 @@
     (reduce probabilities-for {} pitch-pairs)))
 
 (defn- compose-markov [start-pitch length stm]
-  (events/make (compose-pitches start-pitch length stm)))
+  (events/make (compose-pitches start-pitch length stm) 0 350))
 
-(defn compose [& [options]]
-  (let [options (or options {})
-        start-pitch (or (:start options) 60)
-        length (or (:length options) 50)
-        events (or (:events options) default-events)
-        pitches (get-pitches events)
-        stm (state-transition-matrix-probabilities pitches)]
-    (compose-markov start-pitch length stm)))
+(defn compose
+  ([] (compose (:events defaults) (:start defaults) (:length defaults)))
+  ([events start-pitch length]
+     (let [pitches (map :pitch events)
+           stm (state-transition-matrix-probabilities pitches)]
+       (compose-markov start-pitch length stm))))
