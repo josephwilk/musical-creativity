@@ -7,39 +7,39 @@ Experiments with models for computers generating music.
 ##Example
 
 ```clojure
-(require '[musical-creativity.musician :as musician])
+(require '[musical-creativity.musician :as musician] :reload)
 (use '[musical-creativity.instruments])
 
 ;Cosine
-(require '[musical-creativity.composers.cosine :as cosine])
+(require '[musical-creativity.composers.cosine :as cosine] :reload)
 (musician/play (cosine/compose) piano)
 
 ;Cellular automata
-(require '[musical-creativity.composers.cellular-automata :as ca])
+(require '[musical-creativity.composers.cellular-automata :as ca] :reload)
 (musician/play (ca/compose) piano)
 (musician/play (ca/compose ca/rule-22) piano)
 
 ;Sonify data
-(require '[musical-creativity.composers.sonify-data :as sonify-data])
+(require '[musical-creativity.composers.sonify-data :as sonify-data] :reload)
 (musician/play (sonify-data/compose) piano)
 
 ;Sonify text
-(require '[musical-creativity.composers.sonify-words :as sonify-words])
+(require '[musical-creativity.composers.sonify-words :as sonify-words] :reload)
 (musician/play (sonify-words/compose "potato potato potata potatd potate potatk") piano)
 
 ;Markov chains
-(require '[musical-creativity.composers.markov :as markov])
+(require '[musical-creativity.composers.markov :as markov] :reload)
 (musician/play (markov/compose) piano)
 (musician/play (markov/compose) ping)
 
-(musician/play (markov/compose {:events data.bach/bach1}) piano)
+(musician/play (markov/compose data.bach/bach1 61 50) piano)
 
 ;Minuet
-(require '[musical-creativity.composers.minuet :as minuet])
+(require '[musical-creativity.composers.minuet :as minuet] :reload)
 (musician/play (minuet/compose) piano)
 
 ;Fuzzy
-(require '[musical-creativity.composers.fuzzy :as fuzzy])
+(require '[musical-creativity.composers.fuzzy :as fuzzy] :reload)
 (musician/play (fuzzy/compose) piano)
 ```
 
