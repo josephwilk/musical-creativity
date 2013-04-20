@@ -1,42 +1,42 @@
 (ns musical-creativity.composers.fuzzy)
 
 ; idevault values
-(def *default-dur* 1000)
-(def *default-ch* 1)
-(def *default-vel* 127)
+(def default-duration 1000)
+(def default-channel 1)
+(def default-velocity 127)
 
 ; standard scales, chords, and notes
-(def *maj-scale* [1 0 1 0 1 1 0 1 0 1 0 1])
-(def *nmin-scale* [1 0 1 1 0 1 0 1 1 0 1 0])
-(def *hmin-scale* [1 0 1 1 0 1 0 1 1 0 0 1])
-(def *chord-template* [1 0 0 1 1 0 0 1 0 0 0 0])
-(def *fz-triad* [1 0 0 1 1 0 0.5 1 0 0 0 0])
-(def *fz-key* [1 0 1 0 1 1 0 1 0 1 0 1])
-(def *fz-note* [1 0 0 0 0 0 0 0 0 0 0 0])
-(def *current-scale* *maj-scale*)
+(def maj-scale [1 0 1 0 1 1 0 1 0 1 0 1])
+(def nmin-scale [1 0 1 1 0 1 0 1 1 0 1 0])
+(def hmin-scale [1 0 1 1 0 1 0 1 1 0 0 1])
+(def chord-template [1 0 0 1 1 0 0 1 0 0 0 0])
+(def fz-triad [1 0 0 1 1 0 0.5 1 0 0 0 0])
+(def fz-key [1 0 1 0 1 1 0 1 0 1 0 1])
+(def fz-note [1 0 0 0 0 0 0 0 0 0 0 0])
+(def current-scale maj-scale)
 
 ; intervals up
-(def *fz-2* [0 0.9 1 0 0 0 0 0 0 0 0 0])
-(def *fz-3* [0 0 0 1 0.9 0 0 0 0 0 0 0])
-(def *fz-4* [0 0 0 0 0 1 0.5 0 0 0 0 0])
-(def *fz-5* [0 0 0 0 0 0 0.9 1 0.5 0 0 0])
-(def *fz-6* [0 0 0 0 0 0 0 0 1 0.9 0 0])
-(def *fz-7* [0 0 0 0 0 0 0 0 0 0 0.9 1])
+(def fz-2 [0 0.9 1 0 0 0 0 0 0 0 0 0])
+(def fz-3 [0 0 0 1 0.9 0 0 0 0 0 0 0])
+(def fz-4 [0 0 0 0 0 1 0.5 0 0 0 0 0])
+(def fz-5 [0 0 0 0 0 0 0.9 1 0.5 0 0 0])
+(def fz-6 [0 0 0 0 0 0 0 0 1 0.9 0 0])
+(def fz-7 [0 0 0 0 0 0 0 0 0 0 0.9 1])
 
 ;intervals down
-(def *fz-2b* [0 0 0 0 0 0 0 0 0 0 1 0.9])
-(def *fz-3b* [0 0 0 0 0 0 0 0 0.9 1 0 0])
-(def *fz-4b* [0 0 0 0 0 0 0.5 1 0 0 0 0])
-(def *fz-5b* [0 0 0 0 0.5 1 0.9 0 0 0 0 0])
-(def *fz-6b* [0 0 0.9 1 0 0 0 0 0 0 0 0])
-(def *fz-7b* [0 0.9 1 0 0 0 0 0 0 0 0 0])
+(def fz-2b [0 0 0 0 0 0 0 0 0 0 1 0.9])
+(def fz-3b [0 0 0 0 0 0 0 0 0.9 1 0 0])
+(def fz-4b [0 0 0 0 0 0 0.5 1 0 0 0 0])
+(def fz-5b [0 0 0 0 0.5 1 0.9 0 0 0 0 0])
+(def fz-6b [0 0 0.9 1 0 0 0 0 0 0 0 0])
+(def fz-7b [0 0.9 1 0 0 0 0 0 0 0 0 0])
 
-(def *sol-set* (atom [0 0 0]))
-(def *last-sol* [0 0 0])
-(def *old-chord-set* [0 0 0 0 0 0 0 0 0 0 0 0])
-(def *as-root-set* (atom [0 0 0 0 0 0 0 0 0 0 0 0]))
-(def *as-third-set* (atom [0 0 0 0 0 0 0 0 0 0 0 0]))
-(def *as-fifth-set* (atom [0 0 0 0 0 0 0 0 0 0 0 0]))
+(def sol-set (atom [0 0 0]))
+(def last-sol [0 0 0])
+(def old-chord-set [0 0 0 0 0 0 0 0 0 0 0 0])
+(def as-root-set (atom [0 0 0 0 0 0 0 0 0 0 0 0]))
+(def as-third-set (atom [0 0 0 0 0 0 0 0 0 0 0 0]))
+(def as-fifth-set (atom [0 0 0 0 0 0 0 0 0 0 0 0]))
 
 ; pitch classes
 (def PC-C 0)
@@ -52,7 +52,8 @@
 (def PC-BFLAT 10)
 (def PC-B 11)
 
-(declare common-tone-rules fz-un)
+(declare common-tone-rules fz-un third-above fifth-above)
+
 (defn fz-complement
   "Returns fuzzy complement (1 - membership) of a list."
   ([alist] (fz-complement alist 1.0))
@@ -81,7 +82,7 @@
 (defn common-tones-test
   "Applies common tone rules."
   []
-  (common-tone-rules  @*as-root-set* @*as-third-set* @*as-fifth-set* *old-chord-set*))
+  (common-tone-rules  @as-root-set @as-third-set @as-fifth-set old-chord-set))
 
 (defn sumup
   "Adds the members of a list."
@@ -110,22 +111,22 @@
   (when-not (= 0 howmany)  ; finished
     (if (nil? (sumup the-list)) ; empty list
       nil
-      (let [alist the-list]
+      (let [alist (ref the-list)]
         (sort
+         <
          (cons
           (let [i (ref 0)
                 k (ref 0)
                 hsf (ref 0)] ;  hsf is highest so far
-            (doseq [x alist]
-              (when (> x hsf)
-                (dosync (alter hsf x))
-                (dosync (alter k i)))
+            (doseq [x @alist]
+              (when (> x @hsf)
+                (dosync (ref-set hsf x)
+                        (ref-set k @i)))
               (dosync (alter i inc)))
-
-            (dosync (alter alist (assoc alist k 0)))
-            k) ; k is consed
-          (top-n-positions alist (- howmany 1)))
-         #'<)))))
+            (dosync
+             (ref-set alist (assoc (vec @alist) @k 0)))
+            @k) ; k is consed
+          (top-n-positions @alist (- howmany 1))))))))
 
 (defn ltop
   "Returns the topmost position of the list."
@@ -141,22 +142,22 @@
 (defn third-above
   "Returns a third above the note."
   [thenote]
-  (first (top-n-positions (fz-intersect *current-scale* (ror-n *fz-3* thenote)) 1)))
+  (first (top-n-positions (fz-intersect current-scale (ror-n fz-3 thenote)) 1)))
 
 (defn fifth-above
   "Returns a fifth above the note."
   [thenote]
-  (first (top-n-positions (fz-intersect *current-scale* (ror-n *fz-5* thenote)) 1)))
+  (first (top-n-positions (fz-intersect current-scale (ror-n fz-5 thenote)) 1)))
 
 (defn third-below
   "Returns a third below the note."
   [thenote]
-  (first (top-n-positions (fz-intersect *current-scale* (ror-n *fz-3b* thenote)) 1)))
+  (first (top-n-positions (fz-intersect current-scale (ror-n fz-3b thenote)) 1)))
 
 (defn fifth-below
   "Returns a fifth below the note."
   [thenote]
-  (first (top-n-positions (fz-intersect *current-scale* (ror-n *fz-5b* thenote)) 1)))
+  (first (top-n-positions (fz-intersect current-scale (ror-n fz-5b thenote)) 1)))
 
 (defn as-third
   "Returns pitch-class chord with arg as third."
@@ -176,9 +177,9 @@
             thelist)))
 
 (defn last-sol-test
-  "Based on *last-sol*."
+  "Based on last-sol."
   []
-  (let [test (first (top-n-positions *last-sol* 1))]
+  (let [test (first (top-n-positions last-sol 1))]
     (cond
      (= 0 test) '(0 1 1)
      (= 1 test) '(1 1 0)
@@ -201,31 +202,30 @@
 
 (defn fz-union
   "Returns fuzzy union (maximums) of any number of lists"
-  [&rest the-lists]
-     (fz-u the-lists))
+  [& the-lists]
+  (fz-u the-lists))
 
 (defn fz-un
   "Returns fuzzy union (maximums) of two lists."
-  [lst1 lst2]
-  (if (empty? lst1)
-    nil
-    (cons (maximum (first lst1) (first lst2))
-          (fz-union (rest lst1) (rest lst2)))))
+  [list1 list2]
+  (when-not (empty? list1)
+    (cons (maximum (first list1) (first list2))
+          (fz-union (rest list1) (rest list2)))))
 
 (defn make-set [pitch-list]
-  (if (empty? pitch-list) [0 0 0 0 0 0 0 0 0 0 0 0]
-      (fz-union (ror-n *fz-note* (first pitch-list))
-                (make-set (rest pitch-list)))))
-
-(declare third-above fifth-above)
+  (if (empty? pitch-list)
+    [0 0 0 0 0 0 0 0 0 0 0 0]
+    (fz-union (ror-n fz-note (first pitch-list))
+              (make-set (rest pitch-list)))))
 
 (defn as-root
   "Returns pitch-class chord with arg as root."
   [thenote]
-  [ thenote (third-above thenote) (fifth-above thenote)])
+  [thenote (third-above thenote) (fifth-above thenote)])
 
-(defn add-lists [list1 list2]
-   "Add two lists, member by member"
+(defn add-lists
+  "Add two lists, member by member"
+   [list1 list2]
      (map + list1 list2))
 
 (defn favor-root-for-tonic
@@ -248,20 +248,18 @@
     [thenote]
 
     (let [the-pc (rem thenote 12)]
-      (reset! *sol-set* [0 0 0])
+      (reset! sol-set [0 0 0])
 
-      (reset! *as-root-set* (make-set (as-root the-pc)))
+      (reset! as-root-set (make-set (as-root the-pc)))
+      (reset! as-third-set (make-set (as-third the-pc)))
+      (reset! as-fifth-set (make-set (as-fifth the-pc)))
 
-      (println "HERE?")
+      (reset! sol-set (add-lists @sol-set (common-tones-test)))
+      (reset! sol-set (add-lists @sol-set (last-sol-test)))
+      (reset! sol-set (add-lists @sol-set (favor-root-for-tonic the-pc)))
+      (reset! sol-set (add-lists @sol-set (dither)))
 
-      (reset! *as-third-set* (make-set (as-third the-pc)))
-      (reset! *as-fifth-set* (make-set (as-fifth the-pc)))
-      (reset! *sol-set* (add-lists @*sol-set* (common-tones-test)))
-      (reset! *sol-set* (add-lists @*sol-set* (last-sol-test)))
-      (reset! *sol-set* (add-lists @*sol-set* (favor-root-for-tonic the-pc)))
-      (reset! *sol-set* (add-lists @*sol-set* (dither)))
-
-      (case (ltop (reset! *last-sol* @*sol-set*))
+      (case (ltop (reset! last-sol @sol-set))
         (2 (as-fifth the-pc))
         (1 (as-third the-pc))
         :else
@@ -279,7 +277,7 @@
   ([pitch-list] (make-chord-event pitch-list 0))
   ([pitch-list time]
       (if (empty? pitch-list) []
-          (cons (list time (first pitch-list) *default-dur* *default-ch* *default-vel*)
+          (cons (list time (first pitch-list) default-duration default-channel default-velocity)
                 (make-chord-event (rest pitch-list) time)))))
 
 (defn pick-and-play-more-rules-chord [thenote time]
