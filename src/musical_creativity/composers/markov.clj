@@ -18,14 +18,14 @@
    {:pitch 60 :time 9000}])
 
 (defn pick-pitches-fn [stm]
-  (fn [pitches _]
+  (fn [pitches]
     (let [last-pitch (last pitches)
           candidates (stm last-pitch)
           picked (rand-nth candidates)]
       (conj pitches picked))))
 
 (defn- compose-pitches [start length stm]
-  (reduce (pick-pitches-fn stm) [start] (range 0 length)))
+  (nth (iterate (pick-pitches-fn stm) [start]) length))
 
 (defn- get-pitches [events]
   (map #(:pitch %) events))
