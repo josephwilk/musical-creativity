@@ -114,22 +114,21 @@
   (when-not (= 0 howmany)  ; finished
     (if (nil? (sumup the-list)) ; empty list
       nil
-      (let [alist (ref the-list)]
-        (sort
-         <
-         (cons
-          (let [i (ref 0)
-                k (ref 0)
-                hsf (ref 0)] ;  hsf is highest so far
-            (doseq [x @alist]
-              (when (> x @hsf)
-                (dosync (ref-set hsf x)
-                        (ref-set k @i)))
-              (dosync (alter i inc)))
-            (dosync
-             (ref-set alist (assoc (vec @alist) @k 0)))
-            @k) ; k is consed
-          (top-n-positions @alist (- howmany 1))))))))
+      (let [alist (ref the-list)
+            new-k (let [index (ref 0)
+                        k (ref 0)
+                        highest-so-far (ref 0)]
+                    (doseq [candidate @alist]
+                      (when (> candidate @highest-so-far)
+                        (dosync (ref-set highest-so-far candidate)
+                                (ref-set k @index)))
+                      (dosync (alter index inc)))
+                    (dosync
+                     (ref-set alist (assoc (vec @alist) @k 0)))
+                    @k)]
+        (sort <
+              (cons new-k
+                    (top-n-positions @alist (- howmany 1))))))))
 
 (defn ltop
   "Returns the topmost position of the list."
