@@ -87,17 +87,10 @@
   []
   (common-tone-rules  @as-root-set @as-third-set @as-fifth-set old-chord-set))
 
-(defn sumup
-  "Adds the members of a list."
-  [the-list]
-  (if (empty? the-list)
-    0
-    (+ (first the-list) (sumup (rest the-list)))))
-
 (defn common-tones
   "Sums the set intersections."
   [set1 set4]
-  (sumup (fz-intersect set1 set4)))
+  (apply + (fz-intersect set1 set4)))
 
 (defn common-tone-rules
   "Returns set according to common tone rules."
