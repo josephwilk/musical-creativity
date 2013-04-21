@@ -8,35 +8,36 @@
 (def default-velocity 127)
 
 ; standard scales, chords, and notes
-(def maj-scale [1 0 1 0 1 1 0 1 0 1 0 1])
-(def nmin-scale [1 0 1 1 0 1 0 1 1 0 1 0])
-(def hmin-scale [1 0 1 1 0 1 0 1 1 0 0 1])
+(def major-scale    [1 0 1 0 1 1 0 1 0 1 0 1])
+(def nmin-scale     [1 0 1 1 0 1 0 1 1 0 1 0])
+(def hmin-scale     [1 0 1 1 0 1 0 1 1 0 0 1])
 (def chord-template [1 0 0 1 1 0 0 1 0 0 0 0])
-(def fz-triad [1 0 0 1 1 0 0.5 1 0 0 0 0])
-(def fz-key [1 0 1 0 1 1 0 1 0 1 0 1])
-(def fz-note [1 0 0 0 0 0 0 0 0 0 0 0])
-(def current-scale maj-scale)
+(def fz-triad       [1 0 0 1 1 0 0.5 1 0 0 0 0])
+(def fz-key         [1 0 1 0 1 1 0 1 0 1 0 1])
+(def fz-note        [1 0 0 0 0 0 0 0 0 0 0 0])
+(def current-scale major-scale)
 
 ; intervals up
-(def fz-2 [0 0.9 1 0 0 0 0 0 0 0 0 0])
-(def fz-3 [0 0 0 1 0.9 0 0 0 0 0 0 0])
-(def fz-4 [0 0 0 0 0 1 0.5 0 0 0 0 0])
-(def fz-5 [0 0 0 0 0 0 0.9 1 0.5 0 0 0])
-(def fz-6 [0 0 0 0 0 0 0 0 1 0.9 0 0])
-(def fz-7 [0 0 0 0 0 0 0 0 0 0 0.9 1])
+(def fz-up-2 [0 0.9 1 0 0 0 0 0 0 0 0 0])
+(def fz-up-3 [0 0 0 1 0.9 0 0 0 0 0 0 0])
+(def fz-up-4 [0 0 0 0 0 1 0.5 0 0 0 0 0])
+(def fz-up-5 [0 0 0 0 0 0 0.9 1 0.5 0 0 0])
+(def fz-up-6 [0 0 0 0 0 0 0 0 1 0.9 0 0])
+(def fz-up-7 [0 0 0 0 0 0 0 0 0 0 0.9 1])
 
 ;intervals down
-(def fz-2b [0 0 0 0 0 0 0 0 0 0 1 0.9])
-(def fz-3b [0 0 0 0 0 0 0 0 0.9 1 0 0])
-(def fz-4b [0 0 0 0 0 0 0.5 1 0 0 0 0])
-(def fz-5b [0 0 0 0 0.5 1 0.9 0 0 0 0 0])
-(def fz-6b [0 0 0.9 1 0 0 0 0 0 0 0 0])
-(def fz-7b [0 0.9 1 0 0 0 0 0 0 0 0 0])
+(def fz-down-2b [0 0 0 0 0 0 0 0 0 0 1 0.9])
+(def fz-down-3b [0 0 0 0 0 0 0 0 0.9 1 0 0])
+(def fz-down-4b [0 0 0 0 0 0 0.5 1 0 0 0 0])
+(def fz-down-5b [0 0 0 0 0.5 1 0.9 0 0 0 0 0])
+(def fz-down-6b [0 0 0.9 1 0 0 0 0 0 0 0 0])
+(def fz-down-7b [0 0.9 1 0 0 0 0 0 0 0 0 0])
 
-(def sol-set (atom [0 0 0]))
-(def last-sol (atom [0 0 0]))
 (def old-chord-set [0 0 0 0 0 0 0 0 0 0 0 0])
-(def as-root-set (atom [0 0 0 0 0 0 0 0 0 0 0 0]))
+
+(def sol-set  (atom [0 0 0]))
+(def last-sol (atom [0 0 0]))
+(def as-root-set  (atom [0 0 0 0 0 0 0 0 0 0 0 0]))
 (def as-third-set (atom [0 0 0 0 0 0 0 0 0 0 0 0]))
 (def as-fifth-set (atom [0 0 0 0 0 0 0 0 0 0 0 0]))
 
@@ -144,22 +145,22 @@
 (defn third-above
   "Returns a third above the note."
   [thenote]
-  (first (top-n-positions (fz-intersect current-scale (ror-n fz-3 thenote)) 1)))
+  (first (top-n-positions (fz-intersect current-scale (ror-n fz-up-3 thenote)) 1)))
 
 (defn fifth-above
   "Returns a fifth above the note."
   [thenote]
-  (first (top-n-positions (fz-intersect current-scale (ror-n fz-5 thenote)) 1)))
+  (first (top-n-positions (fz-intersect current-scale (ror-n fz-up-5 thenote)) 1)))
 
 (defn third-below
   "Returns a third below the note."
   [thenote]
-  (first (top-n-positions (fz-intersect current-scale (ror-n fz-3b thenote)) 1)))
+  (first (top-n-positions (fz-intersect current-scale (ror-n fz-down-3b thenote)) 1)))
 
 (defn fifth-below
   "Returns a fifth below the note."
   [thenote]
-  (first (top-n-positions (fz-intersect current-scale (ror-n fz-5b thenote)) 1)))
+  (first (top-n-positions (fz-intersect current-scale (ror-n fz-down-5b thenote)) 1)))
 
 (defn as-third
   "Returns pitch-class chord with arg as third."
