@@ -102,13 +102,12 @@
     result))
 
 (defn top-n-positions
-  "Returns positions of highest n values in list, or nil if all 0."
+  "Returns positions of highest n values in list"
   [values howmany]
-  (when (and (not (= 0 howmany))
-             (apply + values))
-    (let [max-position (first (apply max-key second (map-indexed vector values)))
-          next-list (assoc (vec values) max-position 0)]
-      (sort < (cons max-position (top-n-positions next-list (- howmany 1)))))))
+  (let [values-indexed (map-indexed vector values)
+        sorted-list (sort (fn [[_ x] [_ y]] (> x y)) values-indexed)
+        positions (map first sorted-list)]
+    (reverse (take howmany positions))))
 
 (defn ltop
   "Returns the topmost position of the list."
