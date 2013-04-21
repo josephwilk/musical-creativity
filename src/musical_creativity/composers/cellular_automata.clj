@@ -96,9 +96,7 @@
 (defn apply-rule [group rules position timing]
   (let [rule-result (matching-rule-result group rules)]
     (when (= rule-result "*") (create-event position timing))
-    (if rule-result
-      rule-result
-      "0")))
+    (or rule-result "0")))
 
 (defn create-the-row [old-row rules timing & [position]]
   (let [position (or position 1)]
