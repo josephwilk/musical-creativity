@@ -105,23 +105,11 @@
   "Returns positions of highest n values in list, or nil if all 0."
   [the-list howmany]
   (when-not (= 0 howmany)  ; finished
-    (if (nil? (sumup the-list)) ; empty list
-      nil
-      (let [alist (ref the-list)
-            new-k (let [index (ref 0)
-                        k (ref 0)
-                        highest-so-far (ref 0)]
-                    (doseq [candidate @alist]
-                      (when (> candidate @highest-so-far)
-                        (dosync (ref-set highest-so-far candidate)
-                                (ref-set k @index)))
-                      (dosync (alter index inc)))
-                    (dosync
-                     (ref-set alist (assoc (vec @alist) @k 0)))
-                    @k)]
-        (sort <
-              (cons new-k
-                    (top-n-positions @alist (- howmany 1))))))))
+    (when (apply + the-list)
+      (let [alist the-list
+            new-k (first (apply max-key second (map-indexed vector the-list)))
+            alist (assoc (vec alist) new-k 0)]
+        (sort < (cons new-k (top-n-positions alist (- howmany 1))))))))
 
 (defn ltop
   "Returns the topmost position of the list."
