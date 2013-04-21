@@ -28,19 +28,19 @@
 (def *beats* 4)
 (def bach-form [?])
 
-(load-file "src/musical_creativity/composers/chorale/jsb1.clj")
-(load-file "src/musical_creativity/composers/chorale/jsb2.clj")
-(load-file "src/musical_creativity/composers/chorale/jsb3.clj")
-(load-file "src/musical_creativity/composers/chorale/jsb4.clj")
-(load-file "src/musical_creativity/composers/chorale/jsb5.clj")
-(load-file "src/musical_creativity/composers/chorale/jsb6.clj")
-(load-file "src/musical_creativity/composers/chorale/jsb7.clj")
-(load-file "src/musical_creativity/composers/chorale/jsb8.clj")
-(load-file "src/musical_creativity/composers/chorale/jsb9.clj")
-(load-file "src/musical_creativity/composers/chorale/jsb10.clj")
-(load-file "src/musical_creativity/composers/chorale/jsb11.clj")
-(load-file "src/musical_creativity/composers/chorale/jsb12.clj")
-(load-file "src/musical_creativity/composers/chorale/jsb13.clj")
+(load-file "data/chorale/jsb1.clj")
+(load-file "data/chorale/jsb2.clj")
+(load-file "data/chorale/jsb3.clj")
+(load-file "data/chorale/jsb4.clj")
+(load-file "data/chorale/jsb5.clj")
+(load-file "data/chorale/jsb6.clj")
+(load-file "data/chorale/jsb7.clj")
+(load-file "data/chorale/jsb8.clj")
+(load-file "data/chorale/jsb9.clj")
+(load-file "data/chorale/jsb10.clj")
+(load-file "data/chorale/jsb11.clj")
+(load-file "data/chorale/jsb12.clj")
+(load-file "data/chorale/jsb13.clj")
 
 (defn create-complete-database [db-names &optional (counter 1)]
   "Loads and makes proper objects out of the db-names arg."
@@ -261,26 +261,6 @@
   (if (null pitches) ()
       (cons (mod (first pitches) 12)
             (create-pc-set (rest pitches)))))
-
-;;;;;;;
-;objects
-;;;;;;;
-
-;(defClass BEAT-IT ()
-;  ((events :initarg :events :initform () :accessor events)
-;   (start-notes :initarg :start-notes :initform () :accessor start-notes)
-;   (start-note :initarg :start-note :initform () :accessor start-note)
-;   (start-set :initarg :start-set :initform () :accessor start-set)
-;   (destination-notes :initarg :destination-notes :initform () :accessor destination-notes)
-;   (voice-leading :initarg :voice-leading :initform () :accessor voice-leading)
-;   (pre-destination-notes :initarg :pre-destination-notes :initform () :accessor pre-destination-notes)
-;   (texture :initarg :texture :initform () :accessor texture)
-;   (speac :initarg :speac :initform () :accessor speac)
-;   (beat :initarg :beat :initform () :accessor beat)
-;   (length-to-cadence :initarg :length-to-cadence :initform () :accessor length-to-cadence)))
-;
-;(defClass LEXICON ()
-;  ((beats :initarg :beats :initform () :accessor beats)))
 
 (defn my-push [stuff place-name]
   "A simple synonym for push."
