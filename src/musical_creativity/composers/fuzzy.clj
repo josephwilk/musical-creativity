@@ -35,8 +35,9 @@
 
 (def old-chord-set [0 0 0 0 0 0 0 0 0 0 0 0])
 
-(def sol-set  (atom [0 0 0]))
-(def last-sol (atom [0 0 0]))
+(def solution-set  (atom [0 0 0]))
+(def last-solution (atom [0 0 0]))
+
 (def as-root-set  (atom [0 0 0 0 0 0 0 0 0 0 0 0]))
 (def as-third-set (atom [0 0 0 0 0 0 0 0 0 0 0 0]))
 (def as-fifth-set (atom [0 0 0 0 0 0 0 0 0 0 0 0]))
@@ -107,7 +108,7 @@
   (let [values-indexed (map-indexed vector values)
         sorted-list (sort (fn [[_ x] [_ y]] (> x y)) values-indexed)
         positions (map first sorted-list)]
-    (reverse (take howmany positions))))
+    (take howmany positions)))
 
 (defn ltop
   "Returns the topmost position of the list."
@@ -157,10 +158,10 @@
     (map (fn [x] (if (< x root) (+ x 12) x))
             thelist)))
 
-(defn last-sol-test
-  "Based on last-sol."
+(defn last-solution-test
+  "Based on last-solution."
   []
-  (let [test (first (top-n-positions @last-sol 1))]
+  (let [test (first (top-n-positions @last-solution 1))]
     (cond
      (= 0 test) '(0 1 1)
      (= 1 test) '(1 1 0)
@@ -229,21 +230,21 @@
     [thenote]
 
     (let [the-pc (rem thenote 12)]
-      (reset! sol-set [0 0 0])
+      (reset! solution-set [0 0 0])
 
       (reset! as-root-set (make-set (as-root the-pc)))
       (reset! as-third-set (make-set (as-third the-pc)))
       (reset! as-fifth-set (make-set (as-fifth the-pc)))
 
-      (reset! sol-set (add-lists @sol-set (common-tones-test)))
+      (reset! solution-set (add-lists @solution-set (common-tones-test)))
 
-      (reset! sol-set (add-lists @sol-set (last-sol-test)))
-      (reset! sol-set (add-lists @sol-set (favor-root-for-tonic the-pc)))
-      (reset! sol-set (add-lists @sol-set (dither)))
+      (reset! solution-set (add-lists @solution-set (last-solution-test)))
+      (reset! solution-set (add-lists @solution-set (favor-root-for-tonic the-pc)))
+      (reset! solution-set (add-lists @solution-set (dither)))
 
-      (reset! last-sol @sol-set)
+      (reset! last-solution @solution-set)
 
-      (case (ltop @last-sol)
+      (case (ltop @last-solution)
         2 (as-fifth the-pc)
         1 (as-third the-pc)
 
