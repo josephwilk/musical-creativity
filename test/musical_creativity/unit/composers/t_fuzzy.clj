@@ -11,3 +11,6 @@
 
 (fact "fz-union"
   (fuzzy/fz-union '(1 0 0 0 0 0 0 0 0 0 0 0) '(0 0 0 0 0 0 0 0 0 0 0 0)) => [1 0 0 0 0 0 0 0 0 0 0 0])
+
+(fact "top-n-positions"
+  (fuzzy/top-n-positions [1 2 3 4 5 6] 3) => [5 4 3])
