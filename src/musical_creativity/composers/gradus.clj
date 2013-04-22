@@ -16,7 +16,7 @@
 (def seed-note 60)
 (def seed-notes '(64 62 59 57 55 60) )
 (def backtrack () )
-(def cantus-firmus '(69 71 72 76 74 72 74 72 71 69))
+(def *cantus-firmus* '(69 71 72 76 74 72 74 72 71 69))
 (def new-line () )
 (def rs (make-random-state t) )
 (def save-rules () )
@@ -25,13 +25,13 @@
 (def saved-templates () )
 
 (def c1 36)
-(def d1 38) 
-(def e1 40) 
-(def f1 41) 
-(def g1 43) 
-(def a1 45) 
-(def b1 47) 
-(def c2 48) 
+(def d1 38)
+(def e1 40)
+(def f1 41)
+(def g1 43)
+(def a1 45)
+(def b1 47)
+(def c2 48)
 (def d2 50)
 (def e2 52)
 (def f2 53)
@@ -59,149 +59,157 @@
 (def g5 91)
 (def a5 93)
 (def b5 95)
-(def c5 96))
- 
+(def c5 96)
+
 (def list-of-notes '(c1 d1 e1 f1 g1 a1 b1 c2 d2 e2 f2 g2 a2 b2 c3 d3 e3 f3 g3 a3 b3 c4 d4 e4 f4 g4 a4 b4 c5 d5
- e5 f5 g5 a5 b5 c5) )
+                        e5 f5 g5 a5 b5 c5) )
 (def look-ahead ())
 (def temporary-rules ())
 (def last-cantus-firmus ())
 (def past-model-length ())
-(def models '
-(((72 71 74 72 71 69 67 69) (64 67 65 64 62 65 64 60))
- ((72 71 74 72 71 69 67 69) (57 55 53 57 55 53 55 53))
- ((72 71 74 72 71 69 67 69) (57 55 53 52 50 53 52 48))
- ((72 71 74 72 71 69 67 69) (64 67 65 64 67 65 64 60))
- ((69 71 72 69 71 72 74 77 76 74 72) (57 55 52 53 55 57 55 57 55 59 57))
- ((69 71 72 69 71 72 74 77 76 74 72) (57 55 52 53 55 57 55 53 55 53 52))
- ((69 71 72 69 71 72 74 77 76 74 72) (57 55 52 53 55 57 55 53 55 59 57))
- ((69 71 72 69 71 72 74 77 76 74 72) (57 55 52 53 55 57 55 57 60 59 60))
- ((69 71 72 69 71 72 74 77 76 74 72) (57 55 52 53 55 57 55 57 60 59 57))
- ((72 71 69 67 69 72 71 72) (64 62 60 64 62 60 62 64))
- ((72 71 69 67 69 72 71 72) (64 62 65 64 65 64 67 65))
- ((72 71 69 67 69 72 71 72) (57 59 60 64 62 60 62 64))
- ((72 71 69 67 69 72 71 72) (57 55 53 55 53 52 50 48))
- ((72 71 69 67 69 72 71 72) (64 62 65 64 65 64 62 64))
- ((72 71 69 67 69 72 71 72) (64 67 65 64 62 60 62 64))
- ((72 71 69 67 69 72 71 72) (57 59 60 64 62 64 67 65))
- ((72 71 69 67 69 72 71 72) (57 55 53 55 53 52 55 53))
- ((72 71 69 67 69 72 71 72) (64 62 65 64 62 60 62 60))
- ((72 71 69 67 69 72 71 72) (64 62 60 64 62 64 67 65))
- ((72 71 69 67 69 72 71 72) (64 67 65 64 62 64 67 65))
- ((72 71 69 67 69 72 71 72) (57 55 53 55 53 52 50 52))
- ((72 71 69 67 69 72 71 72) (64 67 65 64 62 64 62 60))
- ((72 71 69 67 69 72 71 72) (64 67 65 64 62 60 62 60))
- ((72 71 69 67 69 72 71 72) (64 62 60 64 62 64 62 60))
- ((69 71 72 76 74 72 71 72 74 72) (57 55 57 55 53 57 55 57 55 57))
- ((69 71 72 76 74 72 71 72 74 72) (57 55 57 55 53 57 55 52 53 57))
- ((69 71 72 76 74 72 71 72 74 72) (57 55 57 55 53 57 55 53 50 52))
- ((69 71 72 76 74 72 71 72 74 72) (57 55 57 55 59 57 59 57 59 57))
- ((69 71 72 76 74 72 71 72 74 72) (57 55 57 55 59 57 59 57 55 52))
- ((69 71 72 76 74 72 71 72 74 72) (57 55 53 52 53 52 50 48 47 45))
- ((69 71 72 76 74 72 71 72 74 72) (57 55 57 55 53 52 55 53 50 52))
- ((69 71 69 72 71 74 72 71 69) (57 55 53 52 55 53 57 55 57))
- ((69 71 69 72 71 74 72 71 69) (57 55 53 52 55 53 57 55 53))
- ((69 71 69 72 71 74 72 71 69) (57 55 53 52 55 53 52 50 53))
- ((69 71 72 76 74 72 74 72 71 69) (57 55 53 55 53 57 55 57 59 60))
- ((69 71 72 76 74 72 74 72 71 69) (57 55 57 55 53 52 50 52 50 53))
- ((69 71 72 76 74 72 74 72 71 69) (57 55 53 55 53 57 55 57 59 62))
- ((69 71 72 76 74 72 74 72 71 69) (57 55 53 52 53 52 53 57 55 57))
- ((69 71 72 76 74 72 74 72 71 69) (57 55 53 55 59 57 55 57 59 62))
- ((69 71 72 76 74 72 74 72 71 69) (57 55 53 52 53 52 50 52 55 53))
- ((69 71 72 76 74 72 74 72 71 69) (57 55 57 55 53 52 50 52 55 53))
- ((69 71 72 76 74 72 74 72 71 69) (57 55 53 52 53 57 55 57 55 57))
- ((69 71 72 76 74 72 74 72 71 69) (57 55 53 55 53 57 55 57 55 53))
- ((69 71 72 76 74 72 74 72 71 69) (57 55 53 55 59 57 55 57 55 53))
- ((69 71 72 76 74 72 74 72 71 69) (57 55 57 55 59 57 59 60 62 65))
- ((69 71 72 76 74 72 74 72 71 69) (57 55 57 55 59 57 59 60 62 60))
- ((69 71 69 72 71 74 72 71 69) (57 55 53 52 55 53 52 55 53))
- ((69 71 72 76 74 72 71 72 74 72) (57 55 57 55 59 57 55 53 50 52))
- ((69 71 72 74 71 72 74 72) (57 55 57 53 55 53 50 52))
- ((69 71 72 69 71 72 74 77 76 74 72) (57 55 52 53 55 57 55 53 55 53 57))))
+(def models
+  '(((72 71 74 72 71 69 67 69) (64 67 65 64 62 65 64 60))
+    ((72 71 74 72 71 69 67 69) (57 55 53 57 55 53 55 53))
+    ((72 71 74 72 71 69 67 69) (57 55 53 52 50 53 52 48))
+    ((72 71 74 72 71 69 67 69) (64 67 65 64 67 65 64 60))
+    ((69 71 72 69 71 72 74 77 76 74 72) (57 55 52 53 55 57 55 57 55 59 57))
+    ((69 71 72 69 71 72 74 77 76 74 72) (57 55 52 53 55 57 55 53 55 53 52))
+    ((69 71 72 69 71 72 74 77 76 74 72) (57 55 52 53 55 57 55 53 55 59 57))
+    ((69 71 72 69 71 72 74 77 76 74 72) (57 55 52 53 55 57 55 57 60 59 60))
+    ((69 71 72 69 71 72 74 77 76 74 72) (57 55 52 53 55 57 55 57 60 59 57))
+    ((72 71 69 67 69 72 71 72) (64 62 60 64 62 60 62 64))
+    ((72 71 69 67 69 72 71 72) (64 62 65 64 65 64 67 65))
+    ((72 71 69 67 69 72 71 72) (57 59 60 64 62 60 62 64))
+    ((72 71 69 67 69 72 71 72) (57 55 53 55 53 52 50 48))
+    ((72 71 69 67 69 72 71 72) (64 62 65 64 65 64 62 64))
+    ((72 71 69 67 69 72 71 72) (64 67 65 64 62 60 62 64))
+    ((72 71 69 67 69 72 71 72) (57 59 60 64 62 64 67 65))
+    ((72 71 69 67 69 72 71 72) (57 55 53 55 53 52 55 53))
+    ((72 71 69 67 69 72 71 72) (64 62 65 64 62 60 62 60))
+    ((72 71 69 67 69 72 71 72) (64 62 60 64 62 64 67 65))
+    ((72 71 69 67 69 72 71 72) (64 67 65 64 62 64 67 65))
+    ((72 71 69 67 69 72 71 72) (57 55 53 55 53 52 50 52))
+    ((72 71 69 67 69 72 71 72) (64 67 65 64 62 64 62 60))
+    ((72 71 69 67 69 72 71 72) (64 67 65 64 62 60 62 60))
+    ((72 71 69 67 69 72 71 72) (64 62 60 64 62 64 62 60))
+    ((69 71 72 76 74 72 71 72 74 72) (57 55 57 55 53 57 55 57 55 57))
+    ((69 71 72 76 74 72 71 72 74 72) (57 55 57 55 53 57 55 52 53 57))
+    ((69 71 72 76 74 72 71 72 74 72) (57 55 57 55 53 57 55 53 50 52))
+    ((69 71 72 76 74 72 71 72 74 72) (57 55 57 55 59 57 59 57 59 57))
+    ((69 71 72 76 74 72 71 72 74 72) (57 55 57 55 59 57 59 57 55 52))
+    ((69 71 72 76 74 72 71 72 74 72) (57 55 53 52 53 52 50 48 47 45))
+    ((69 71 72 76 74 72 71 72 74 72) (57 55 57 55 53 52 55 53 50 52))
+    ((69 71 69 72 71 74 72 71 69) (57 55 53 52 55 53 57 55 57))
+    ((69 71 69 72 71 74 72 71 69) (57 55 53 52 55 53 57 55 53))
+    ((69 71 69 72 71 74 72 71 69) (57 55 53 52 55 53 52 50 53))
+    ((69 71 72 76 74 72 74 72 71 69) (57 55 53 55 53 57 55 57 59 60))
+    ((69 71 72 76 74 72 74 72 71 69) (57 55 57 55 53 52 50 52 50 53))
+    ((69 71 72 76 74 72 74 72 71 69) (57 55 53 55 53 57 55 57 59 62))
+    ((69 71 72 76 74 72 74 72 71 69) (57 55 53 52 53 52 53 57 55 57))
+    ((69 71 72 76 74 72 74 72 71 69) (57 55 53 55 59 57 55 57 59 62))
+    ((69 71 72 76 74 72 74 72 71 69) (57 55 53 52 53 52 50 52 55 53))
+    ((69 71 72 76 74 72 74 72 71 69) (57 55 57 55 53 52 50 52 55 53))
+    ((69 71 72 76 74 72 74 72 71 69) (57 55 53 52 53 57 55 57 55 57))
+    ((69 71 72 76 74 72 74 72 71 69) (57 55 53 55 53 57 55 57 55 53))
+    ((69 71 72 76 74 72 74 72 71 69) (57 55 53 55 59 57 55 57 55 53))
+    ((69 71 72 76 74 72 74 72 71 69) (57 55 57 55 59 57 59 60 62 65))
+    ((69 71 72 76 74 72 74 72 71 69) (57 55 57 55 59 57 59 60 62 60))
+    ((69 71 69 72 71 74 72 71 69) (57 55 53 52 55 53 52 55 53))
+    ((69 71 72 76 74 72 71 72 74 72) (57 55 57 55 59 57 55 53 50 52))
+    ((69 71 72 74 71 72 74 72) (57 55 57 53 55 53 50 52))
+    ((69 71 72 69 71 72 74 77 76 74 72) (57 55 52 53 55 57 55 53 55 53 57))))
 
-
-(defn gradus (&key [auto-goals auto-goals)
+(defn gradus
+  "top-level function of the counterpoint program."
+  [&key [auto-goals auto-goals]
                      (print-state print-state)
                      (seed-note nil)
-                     (cantus-firmus cantus-firmus))
-  "top-level function of the counterpoint program."
+   (cantus-firmus cantus-firmus)]
   (unless (equal last-cantus-firmus* *cantus-firmus)
-    (progn
-      (setq temporary-rules* ())(setq *last-cantus-firmus* *cantus-firmus)))
-   (if seed-note (setq seed-note seed-note)
-       (let ((test (select-new-seed-note cantus-firmus* *major-scale* *saved-templates)))
-         (if test (setq seed-note test))))
-   (setq auto-goals auto-goals)
-   (setq print-state print-state)
-   (setq cantus-firmus cantus-firmus)
-   (if (null auto-goals)(set-default-goals))
-   (if auto-goals* (progn (set-goals *models*)(setq *auto-goals* ())(setq *past-model-length* (length *models))))
-   (if (not (equal (length models*) *past-model-length*)) (set-goals *models))
-   (setq past-model-length* (length *models))
-   (setq new-line ())
-   (setq solution
-         (create-new-line
-          cantus-firmus
-          major-scale
-          (mix (create-choices major-scale* *seed-note)) nil))
-   (setq save-voices* (list (firstn (length *solution*) *cantus-firmus)
-                             solution))
-   (setq save-voices* (mapcar #'translate-into-pitchnames *save-voices))
-   (setq counterpoint* (make-events (pair *save-voices)))
-   (if (equal (length cantus-firmus*)(length (second *save-voices)))
-     (push (analyze-for-template seed-note *cantus-firmus* *major-scale)
-           saved-templates))
-   counterpoint)
+          (do
+            (setq temporary-rules* ())
+            (setq *last-cantus-firmus* *cantus-firmus)))
 
-(defn create-new-line [cantus-firmus scale choices last-notes &optional (length [length cantus-firmus))]
+  (if seed-note (setq seed-note seed-note)
+      (let ((test (select-new-seed-note *cantus-firmus* *major-scale* *saved-templates)))
+        (if test (setq seed-note test))))
+  (setq auto-goals auto-goals)
+  (setq print-state print-state)
+  (setq cantus-firmus cantus-firmus)
+  (if (nil? auto-goals)(set-default-goals))
+  (if auto-goals (do (set-goals *models*)(setq auto-goals ())(setq *past-model-length* (length *models))))
+  (if (not (equal (length models*) *past-model-length*)) (set-goals *models))
+  (setq past-model-length* (length *models))
+  (setq new-line ())
+  (setq solution
+        (create-new-line
+         cantus-firmus
+         major-scale
+         (mix (create-choices major-scale* *seed-note)) nil))
+  (setq save-voices* (list (firstn (length *solution*) *cantus-firmus)
+                           solution))
+  (setq save-voices* (mapcar #'translate-into-pitchnames *save-voices))
+  (setq counterpoint* (make-events (pair *save-voices)))
+  (if (equal (length cantus-firmus*)(length (second *save-voices)))
+    (push (analyze-for-template seed-note *cantus-firmus* *major-scale)
+          saved-templates))
+  counterpoint)
+
+(defn create-new-line
   "creates a new line with the cantus firmus."
-  (if (stop-if-all-possibilities-are-nil seed-note *cantus-firmus* *rules)
+  ([cantus-firmus scale choices last-notes] (create-new-line cantus-firmus scale choices last-notes (length cantus-firmus)))
+  ([cantus-firmus scale choices last-notes length)]
+
+  (if (stop-if-all-possibilities-are-nil seed-note *cantus-firmus* rules)
     (format t "~a~&" "i can find no solution for this cantus firmus.")
     (if (<= length 0) new-line
         (let ((test (evaluate-choices cantus-firmus choices last-notes)))
-          (if (null test)
-            (progn
-              (if (null look-ahead)
-                (pushnew (create-rule cantus-firmus (append last-notes (list (first choices)))) rules :test #'equal)
-                (pushnew (create-rule cantus-firmus (append last-notes (list (first choices)))) temporary-rules :test #'equal))
-              (progn (setq save-rules* *rules)
-                     (if (not (< (length rules*)(length *save-rules)))
-                       (print-backtracking)))
-              (let ((new-last-notes (get-new-starting-point last-notes)))
-                (setf new-line* (butlast *new-line (- (length last-notes)(length new-last-notes))))
-                (create-new-line cantus-firmus
-                                 scale
-                             (remove (my-last last-notes)
-                                 (mix (create-choices
-                                       major-scale
-                                       (if (null new-last-notes) seed-note (my-last new-last-notes)))))
-                                 new-last-notes
-                                 (+ length (- (length last-notes)(length new-last-notes))))))
-            (progn (setf new-line* (append *new-line (list test)))
+          (if (nil? test)
+            (do
+             (if (nil? look-ahead)
+               (pushnew (create-rule cantus-firmus (append last-notes (list (first choices)))) rules :test #'equal)
+               (pushnew (create-rule cantus-firmus (append last-notes (list (first choices)))) temporary-rules :test #'equal))
+             (do (setq save-rules* *rules)
+                    (if (not (< (length rules*)(length *save-rules)))
+                      (print-backtracking)))
+             (let ((new-last-notes (get-new-starting-point last-notes)))
+               (setf new-line* (butlast *new-line (- (length last-notes)(length new-last-notes))))
+               (create-new-line cantus-firmus
+                                scale
+                                (remove (my-last last-notes)
+                                        (mix (create-choices
+                                              major-scale
+                                              (if (nil? new-last-notes) seed-note (my-last new-last-notes)))))
+                                new-last-notes
+                                (+ length (- (length last-notes)(length new-last-notes))))))
+            (do (setf new-line* (append *new-line (list test)))
                    (if print-state* (print-working cantus-firmus *new-line))
                    (create-new-line cantus-firmus
                                     scale
                                     (mix (create-choices major-scale test))
                                     (append last-notes (list test))
-                                    (1- length))))))))
+                                    (1- length)))))))))
 
-(defn get-new-starting-point [last-notes]
+(defn get-new-starting-point
   "for backtracking - starts 2 earlier or nil"
+  [last-notes]
   (cond ((<= (length last-notes) 1) ())
         (t (butlast last-notes 1))))
 
-(defn evaluate-choices [cantus-firmus choices last-notes]
+(defn evaluate-choices
   "runs the evaluate and look-ahead functions through the various choices."
+  [cantus-firmus choices last-notes]
   (let ((correct-choices (evaluate cantus-firmus choices last-notes)))
     (if correct-choices (setq look-ahead* t)(setq *look-ahead ()))
     (if (> (length correct-choices) 0)
       (look-ahead-for-best-choice cantus-firmus last-notes correct-choices)
       (first correct-choices))))
 
-(defn evaluate [cantus-firmus choices last-notes]
+(defn evaluate
   "evaluates the various choices for a next note based on the goals and current rules"
+  [cantus-firmus choices last-notes]
   (let ((choice (first choices)))
-    (cond ((null choices)())
+    (cond ((nil? choices)())
           ((and (not (consult-rules (create-rule cantus-firmus (append last-notes (list choice)))))
                 (not (test-for-vertical-dissonance (nth (length last-notes) cantus-firmus) choice))
                 (not (test-for-parallel-octaves-and-fifths (firstn (1+ (length last-notes)) cantus-firmus)
@@ -326,8 +334,8 @@
 
 (defn find-scale-intervals [notes scale]
   "returns the diatonic intervals between the notes according to the scale."
-  (cond ((null (rest notes))())
-        ((null (second notes))
+  (cond ((nil? (rest notes))())
+        ((nil? (second notes))
          (cons nil (find-scale-intervals (rest notes) scale)))
         (t (cons (let ((first-note-test (member (first notes) scale :test #'equal))
                        (second-note-test (member (second notes) scale :test #'equal)))
@@ -338,7 +346,7 @@
 
 (defn look-ahead-for-best-choice [cantus-firmus last-notes correct-choices]
   "looks ahead for the best choice"
-  (cond ((null correct-choices) ())
+  (cond ((nil? correct-choices) ())
         ((not (look-ahead 1
                           cantus-firmus
                           (append last-notes (list (first correct-choices)))
@@ -375,7 +383,7 @@
 
 (defn match-rules-freely [rule rules]
   "runs the match-rule function through the rules."
-  (cond ((null rules)())
+  (cond ((nil? rules)())
         ((and (equal (first rule)(first (first rules)))
               (match-interval-rule (rest rule)(rest (first rules)))) t)
         ((and (equal (first rule)(first (first rules)))
@@ -385,21 +393,21 @@
 
 (defn match-interval-rule [rule-for-matching rule]
   "matches the freer rule to the rule from rules."
-  (cond ((and (null (first rule-for-matching))(null (first rule))) t)
+  (cond ((and (nil? (first rule-for-matching))(nil? (first rule))) t)
         ((or (and (equal (very-first rule-for-matching)(very-first rule))
                   (equal (very-second rule-for-matching)(very-second rule)))
              (and (equal (very-first rule-for-matching)(very-first rule))
-                  (null (very-second rule-for-matching))))
+                  (nil? (very-second rule-for-matching))))
          (match-interval-rule (mapcar #'rest rule-for-matching) (mapcar #'rest rule)))
         (t nil)))
 
 (defn match-rule [rule-for-matching rule]
   "matches the freer rule to the rule from rules."
-  (cond ((and (null (first (rest rule-for-matching)))(null (first (rest rule)))) t)
+  (cond ((and (nil? (first (rest rule-for-matching)))(nil? (first (rest rule)))) t)
         ((or (and (equal (very-first (rest rule-for-matching))(very-first (rest rule)))
                   (equal (very-second (rest rule-for-matching))(very-second (rest rule))))
              (and (equal (very-first (rest rule-for-matching))(very-first (rest rule)))
-                  (null (very-second (rest rule-for-matching)))))
+                  (nil? (very-second (rest rule-for-matching)))))
          (match-rule (cons (first rule-for-matching)(mapcar #'rest (rest rule-for-matching)))
                      (cons (first rule)(mapcar #'rest (rest rule)))))
         (t nil)))
@@ -424,7 +432,7 @@
   ([verticals] (get-complement verticals 0))
   ([verticals number]
 
-  (cond ((null verticals)())
+  (cond ((nil? verticals)())
         ((member number verticals)
          (get-complement (rest verticals)(1+ number)))
         (t (cons number (get-complement verticals (1+ number)))))))
@@ -444,7 +452,7 @@
 
 (defn project [numbers]
   ""
-  (if (null numbers)()
+  (if (nil? numbers)()
       (append (pro (first numbers))
               (project (rest numbers)))))
 
@@ -469,28 +477,28 @@
 
 (defn remove-legal-motions [legal-motions motions]
   "removes the legal motions from the motions arg."
-  (cond ((null legal-motions) motions)
+  (cond ((nil? legal-motions) motions)
         ((member (first legal-motions) motions :test #'equal)
-         (progn (setf motions (remove (first legal-motions) motions :test #'equal))
+         (do (setf motions (remove (first legal-motions) motions :test #'equal))
                 (remove-legal-motions (rest legal-motions) motions)))
         (t (remove-legal-motions (rest legal-motions) motions))))
 
 (defn find-legals [models]
   "collects the legal motions in its arg."
-  (if (null models)()
+  (if (nil? models)()
       (append (find-the-legals (pair (first models)))
               (find-legals (rest models)))))
 
 (defn find-the-legals [paired-model]
   "discovers the legal motions in its arg."
-  (if (null (rest paired-model))()
+  (if (nil? (rest paired-model))()
       (cons (list (- (first (first paired-model))(second (first paired-model)))
                   (- (first (second paired-model))(second (second paired-model))))
             (find-the-legals (rest paired-model)))))
 
 (defn remove-illegal-verticals [illegal-verticals all-verticals]
   "removes the illegal verticals in its second arg."
-  (cond ((null all-verticals) ())
+  (cond ((nil? all-verticals) ())
         ((anyp illegal-verticals (first all-verticals))
          (remove-illegal-verticals illegal-verticals (rest all-verticals)))
         (t (cons (first all-verticals)
@@ -516,13 +524,13 @@
 
 (defn possible-combinations [list &optional [save-list list)]
   "returns all possible combinations of its list arg."
-  (if (null list)()
+  (if (nil? list)()
       (append (combinations (first list) save-list)
               (possible-combinations (rest list) save-list))))
 
 (defn combinations [object list]
   "a sub-function of possible-combinations."
-  (if (null list)()
+  (if (nil? list)()
       (cons (list object (first list))
             (combinations object (rest list)))))
 
@@ -556,7 +564,7 @@
 
 (defn collect-all [map saved-templates]
   "collects all of the occurances of each member of its arg."
-  (cond ((null saved-templates)())
+  (cond ((nil? saved-templates)())
         ((equal map (second (first saved-templates)))
          (cons (first saved-templates)
                (collect-all map (rest saved-templates))))
@@ -564,7 +572,7 @@
 
 (defn return-counts [templates]
   "simply adds the count of occurances to the beginning of each member of its arg."
-  (if (null templates)()
+  (if (nil? templates)()
       (cons (list (count (first templates) templates :test #'equal)(first templates))
             (return-counts (remove (first templates) templates :test #'equal)))))
 
@@ -575,13 +583,13 @@
 
 (defn get-diatonic-note [current-note interval scale]
   "a simple variant of choose-from-scale which uses a diatonic interval as its second arg."
-  (cond ((null interval)())
+  (cond ((nil? interval)())
         ((plusp interval)(nth interval (member current-note scale)))
         (t (nth (abs interval) (member current-note (reverse scale))))))
 
 (defn make-events (pitch-groupings &optional (ontime 0)]
   "makes consecutive events out of the pairs of pitches in its arg."
-  (if (null pitch-groupings) ()
+  (if (nil? pitch-groupings) ()
       (append (list (make-event ontime (first (first pitch-groupings)) 1)
                     (make-event ontime (second (first pitch-groupings)) 2))
               (make-events (rest pitch-groupings)(+ ontime 1000)))))
@@ -601,7 +609,7 @@
 (defn mix [list]
   "mixes its arg arbitrarily"
   (let ((choice ()))
-    (loop until (null list)
+    (loop until (nil? list)
           do (setf choice (choose-one list))
           collect choice
           do (setf list (remove choice list :count 1)))))
@@ -621,13 +629,13 @@
 
 (defn get-verticals [cantus-firmus new-line]
   "returns the intervals between two lines of counterpoint."
-  (if (null cantus-firmus)()
+  (if (nil? cantus-firmus)()
       (cons (- (first cantus-firmus)(first new-line))
             (get-verticals (rest cantus-firmus)(rest new-line)))))
 
 (defn get-intervals [notes]
   "returns a list of intervals one short of its pitch-list arg."
-  (if (null (rest notes))()
+  (if (nil? (rest notes))()
       (cons (- (second notes)(first notes))
             (get-intervals (rest notes)))))
 
@@ -646,7 +654,7 @@
 
 (defn pair [voices]
   "pairs the two lists."
-  (if (null (first voices))()
+  (if (nil? (first voices))()
       (cons (list (first (first voices))(first (second voices)))
             (pair (list (rest (first voices))(rest (second voices)))))))
 
@@ -690,7 +698,7 @@
 
 (defn check-for-nils [choices rules]
   "checking to see if all possible first notes produce rule-conflicting problems."
-  (cond ((null choices) t)
+  (cond ((nil? choices) t)
         ((member (list (first choices)
                        nil nil) rules :test #'equal)
          (check-for-nils (rest choices) rules))
@@ -698,7 +706,7 @@
 
 (defn translate-into-pitchnames [list-of-midi-note-numbers]
   "used to translate midi note numbers into note names."
-  (if (null list-of-midi-note-numbers)()
+  (if (nil? list-of-midi-note-numbers)()
       (cons (nth (position (first list-of-midi-note-numbers) major-scale*) *list-of-notes)
             (translate-into-pitchnames (rest list-of-midi-note-numbers)))))
 
@@ -709,7 +717,7 @@
 
 (defn translate-notes [first-note intervals]
   "translates interval lists into note names for readability."
-  (if (null intervals)(translate-into-pitchnames (list first-note))
+  (if (nil? intervals)(translate-into-pitchnames (list first-note))
       (let ((test (get-diatonic-note first-note (first intervals) major-scale)))
         (append (translate-into-pitchnames (list first-note))
               (translate-notes test (rest intervals))))))
