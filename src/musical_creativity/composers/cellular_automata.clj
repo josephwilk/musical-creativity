@@ -1,8 +1,7 @@
 (ns musical-creativity.composers.cellular-automata
   (:require
     [clojure.math.numeric-tower :as math]
-    [clojure.pprint :refer :all]
-    [musical-creativity.events :as events]))
+    [musical-creativity.events  :as events]))
 
 (def default-rules
     [[["*" "*" "*"] "0"]
@@ -74,7 +73,7 @@
   (swap! events conj (events/make-event entry-time {:pitch pitch})))
 
 (defn- pitch-from-position [position]
-  (math/round (+ (* position (/ 60 200)) 49)))
+  (math/round (+ (* position (/ 60 200)) 55)))
 
 (defn- duplicate-events-fn [pitch entry-time]
   (fn [event]
