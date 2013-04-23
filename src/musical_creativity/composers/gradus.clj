@@ -118,9 +118,9 @@
     ((69 71 72 74 71 72 74 72) (57 55 57 53 55 53 50 52))
     ((69 71 72 69 71 72 74 77 76 74 72) (57 55 52 53 55 57 55 53 55 53 57))))
 
-(defn sortcar [sort-fn lists]
+(defn sortcar [lists]
   "sorts by the first element."
-  (sort (fn [x y] (sort-fn (first x) (first x)))  lists))
+  (sort (fn [x y] (> (first x) (first x)))  lists))
 
 (defn get-diatonic-note [current-note interval scale]
   "a simple variant of choose-from-scale which uses a diatonic interval as its second arg."
@@ -134,8 +134,7 @@
                      (first
                       (second
                        (first
-                        (sortcar #'>
-                                 (return-counts (collect-all (get-map cantus-firmus scale) saved-templates))))))
+                        (sortcar (return-counts (collect-all (get-map cantus-firmus scale) saved-templates))))))
                      scale))
 
 (defn gradus
