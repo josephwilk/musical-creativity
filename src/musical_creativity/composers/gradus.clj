@@ -13,7 +13,7 @@
 (def counterpoint ())
 (def save-voices ())
 (def rules ())
-(def seed-note 60)
+(def *seed-note* (atom 60))
 (def seed-notes '(64 62 59 57 55 60) )
 (def backtrack () )
 (def *cantus-firmus* '(69 71 72 76 74 72 74 72 71 69))
@@ -63,8 +63,8 @@
 (def list-of-notes '(c1 d1 e1 f1 g1 a1 b1 c2 d2 e2 f2 g2 a2 b2 c3 d3 e3 f3 g3 a3 b3 c4 d4 e4 f4 g4 a4 b4 c5 d5
                         e5 f5 g5 a5 b5 c5) )
 (def look-ahead ())
-(def temporary-rules ())
-(def last-cantus-firmus ())
+(def temporary-rules (atom []))
+(def last-cantus-firmus (atom []))
 (def past-model-length ())
 (def models
   '(((72 71 74 72 71 69 67 69) (64 67 65 64 62 65 64 60))
@@ -118,6 +118,26 @@
     ((69 71 72 74 71 72 74 72) (57 55 57 53 55 53 50 52))
     ((69 71 72 69 71 72 74 77 76 74 72) (57 55 52 53 55 57 55 53 55 53 57))))
 
+(defn sortcar [sort-fn lists]
+  "sorts by the first element."
+  (sort (fn [x y] (sort-fn (first x) (first x)))  lists))
+
+(defn get-diatonic-note [current-note interval scale]
+  "a simple variant of choose-from-scale which uses a diatonic interval as its second arg."
+  (cond ((nil? interval)())
+        ((> interval 0)(nth interval (member current-note scale)))
+        (t (nth (abs interval) (member current-note (reverse scale))))))
+
+(defn select-new-seed-note [cantus-firmus scale saved-templates]
+  "select a logical new seed note."
+  (get-diatonic-note (first cantus-firmus)
+                     (first
+                      (second
+                       (first
+                        (sortcar #'>
+                                 (return-counts (collect-all (get-map cantus-firmus scale) saved-templates))))))
+                     scale))
+
 (defn gradus
   "top-level function of the counterpoint program."
   [& [auto-goals print-state seed-note cantus-firmus]]
@@ -125,21 +145,21 @@
         print-state (or print-state *print-state*)
         seed-note (or seed-note nil)
         cantus-firmus (or cantus-firmus *cantus-firmus*)]
-    (unless (equal *last-cantus-firmus* *cantus-firmus*)
+    (when-not (= last-cantus-firmus *cantus-firmus*)
             (do
-              (setq temporary-rules* ())
-              (setq *last-cantus-firmus* *cantus-firmus)))
+              (reset! temporary-rules [])
+              (reset! last-cantus-firmus *cantus-firmus*)))
 
-    (if seed-note (setq seed-note seed-note)
-        (let ((test (select-new-seed-note *cantus-firmus* *major-scale* *saved-templates)))
-          (if test (setq seed-note test))))
+    (if seed-note (reset! *seed-note* seed-note)
+        (let [test (select-new-seed-note *cantus-firmus* *major-scale* *saved-templates)]
+          (if test (reset! *seed-note* test))))
     (setq auto-goals auto-goals)
     (setq print-state print-state)
     (setq cantus-firmus cantus-firmus)
     (if (nil? auto-goals)(set-default-goals))
-    (if auto-goals (do (set-goals *models*)(setq auto-goals ())(setq *past-model-length* (length *models))))
-    (if (not (equal (length models*) *past-model-length*)) (set-goals *models))
-    (setq past-model-length* (length *models))
+    (if auto-goals (do (set-goals *models*)(setq auto-goals ())(setq past-model-length (length models))))
+    (if (not (equal (length models*) *past-model-length*)) (set-goals models))
+    (setq past-model-length (length *models))
     (setq new-line ())
     (setq solution
           (create-new-line
@@ -226,32 +246,33 @@
 
 (defn create-choices [scale last-choice]
   "creates four possible choices - seconds and thirds - from a previous pitch choice."
-  (list (choose-from-scale last-choice 1 scale)
-        (choose-from-scale last-choice 3 scale)
-        (choose-from-scale last-choice -1 scale)
-        (choose-from-scale last-choice -3 scale)))
+  [(choose-from-scale last-choice 1 scale)
+   (choose-from-scale last-choice 3 scale)
+   (choose-from-scale last-choice -1 scale)
+   (choose-from-scale last-choice -3 scale)])
 
 (defn choose-from-scale [current-note interval-class scale]
   "gets the appropriate pitch from the current scale based on the interval class."
-  (if (plusp interval-class)
-      (nth (get-diatonic-interval interval-class) (member current-note scale))
-      (nth (abs (get-diatonic-interval interval-class)) (member current-note (reverse scale)))))
+  (if (> interval-class 0)
+    (nth (get-diatonic-interval interval-class) (member current-note scale))
+    (nth (abs (get-diatonic-interval interval-class)) (member current-note (reverse scale)))))
 
 (defn get-diatonic-interval [interval-class]
   "translates interval-classes into diatonic-interval classes."
-  (cond ((equal interval-class 1) 1)
-        ((equal interval-class 2) 1)
-        ((equal interval-class 3) 2)
-        ((equal interval-class 4) 2)
-        ((equal interval-class -1) -1)
-        ((equal interval-class -2) -1)
-        ((equal interval-class -3) -2)
-        ((equal interval-class -4) -2)
-        (t 1)))
+  (case interval-class
+     1 1
+     2 1
+     3 2
+     4 2
+    -1 -1
+    -2 -1
+    -3 -2
+    -4 -2
+    :else
+    1))
 
 (defn consult-rules [rule]
-  "calling (consult-rules (-9 (2 -1 -1) (-1 2 -2)))
-    consult-rules returned nil"
+  "calling (consult-rules (-9 (2 -1 -1) (-1 2 -2))) consult-rules returned nil"
   (or (member rule rules :test #'equal)
       (member rule temporary-rules :test #'equal)))
 
@@ -262,12 +283,14 @@
      (list (the-last (length the-list)
                      (butlast cantus-firmus (- (length cantus-firmus)(length new-notes)))) the-list))))
 
-(defn test-for-vertical-dissonance [cantus-firmus-note choice]
+(defn test-for-vertical-dissonance
   "tests to ensure vertical dissonance"
+  [cantus-firmus-note choice]
   (if (member (- cantus-firmus-note choice) illegal-verticals) choice))
 
-(defn test-for-parallel-octaves-and-fifths [cantus-firmus choice last-notes]
+(defn test-for-parallel-octaves-and-fifths
   "tests for parallel octaves and fifths."
+  [cantus-firmus choice last-notes]
   (let ((cantus-firmus-to-here (firstn (1+ (length last-notes)) cantus-firmus)))
   (cond ((or (not (>= (length cantus-firmus-to-here) 2))(not (>= (length last-notes) 1))) ())
         ((member (list (abs (- (second-to-last cantus-firmus-to-here)(my-last last-notes)))
@@ -552,16 +575,6 @@
          (abs (first (find-scale-intervals (list (first cantus-firmus)(apply #'min cantus-firmus)) scale)))))
     (if (> up down) up (- down))))
 
-(defn select-new-seed-note [cantus-firmus scale saved-templates)
-  "select a logical new seed note."
-  (get-diatonic-note (first cantus-firmus)
-                     (first
-                      (second
-                       (first
-                        (sortcar #'>
-                                 (return-counts (collect-all (get-map cantus-firmus scale) saved-templates))))))
-                     scale))
-
 (defn collect-all [map saved-templates]
   "collects all of the occurances of each member of its arg."
   (cond ((nil? saved-templates)())
@@ -575,17 +588,6 @@
   (if (nil? templates)()
       (cons (list (count (first templates) templates :test #'equal)(first templates))
             (return-counts (remove (first templates) templates :test #'equal)))))
-
-(defn sortcar [function lists]
-  "sorts by the first element."
-  (sort (copy-tree lists) function :key 'first))
-
-
-(defn get-diatonic-note [current-note interval scale]
-  "a simple variant of choose-from-scale which uses a diatonic interval as its second arg."
-  (cond ((nil? interval)())
-        ((plusp interval)(nth interval (member current-note scale)))
-        (t (nth (abs interval) (member current-note (reverse scale))))))
 
 (defn make-events (pitch-groupings &optional (ontime 0)]
   "makes consecutive events out of the pairs of pitches in its arg."
