@@ -124,9 +124,13 @@
 
 (defn get-diatonic-note [current-note interval scale]
   "a simple variant of choose-from-scale which uses a diatonic interval as its second arg."
-  (cond ((nil? interval)())
-        ((> interval 0)(nth interval (member current-note scale)))
-        (t (nth (abs interval) (member current-note (reverse scale))))))
+  (cond
+   (nil? interval)
+   []
+   (> interval 0)
+   (nth interval (member current-note scale))
+   :else
+   (nth (abs interval) (member current-note (reverse scale)))))
 
 (defn select-new-seed-note [cantus-firmus scale saved-templates]
   "select a logical new seed note."
