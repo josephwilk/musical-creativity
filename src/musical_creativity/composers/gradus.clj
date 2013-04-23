@@ -18,10 +18,9 @@
 (def backtrack () )
 (def *cantus-firmus* '(69 71 72 76 74 72 74 72 71 69))
 (def new-line () )
-(def rs (make-random-state t) )
 (def save-rules () )
-(def print-state t )
-(def auto-goals () )
+(def *print-state* true )
+(def *auto-goals* () )
 (def saved-templates () )
 
 (def c1 36)
@@ -121,39 +120,40 @@
 
 (defn gradus
   "top-level function of the counterpoint program."
-  [&key [auto-goals auto-goals]
-                     (print-state print-state)
-                     (seed-note nil)
-   (cantus-firmus cantus-firmus)]
-  (unless (equal last-cantus-firmus* *cantus-firmus)
-          (do
-            (setq temporary-rules* ())
-            (setq *last-cantus-firmus* *cantus-firmus)))
+  [& [auto-goals print-state seed-note cantus-firmus]]
+  (let [auto-goals (or auto-goals *auto-goals*)
+        print-state (or print-state *print-state*)
+        seed-note (or seed-note nil)
+        cantus-firmus (or cantus-firmus *cantus-firmus*)]
+    (unless (equal *last-cantus-firmus* *cantus-firmus*)
+            (do
+              (setq temporary-rules* ())
+              (setq *last-cantus-firmus* *cantus-firmus)))
 
-  (if seed-note (setq seed-note seed-note)
-      (let ((test (select-new-seed-note *cantus-firmus* *major-scale* *saved-templates)))
-        (if test (setq seed-note test))))
-  (setq auto-goals auto-goals)
-  (setq print-state print-state)
-  (setq cantus-firmus cantus-firmus)
-  (if (nil? auto-goals)(set-default-goals))
-  (if auto-goals (do (set-goals *models*)(setq auto-goals ())(setq *past-model-length* (length *models))))
-  (if (not (equal (length models*) *past-model-length*)) (set-goals *models))
-  (setq past-model-length* (length *models))
-  (setq new-line ())
-  (setq solution
-        (create-new-line
-         cantus-firmus
-         major-scale
-         (mix (create-choices major-scale* *seed-note)) nil))
-  (setq save-voices* (list (firstn (length *solution*) *cantus-firmus)
-                           solution))
-  (setq save-voices* (mapcar #'translate-into-pitchnames *save-voices))
-  (setq counterpoint* (make-events (pair *save-voices)))
-  (if (equal (length cantus-firmus*)(length (second *save-voices)))
-    (push (analyze-for-template seed-note *cantus-firmus* *major-scale)
-          saved-templates))
-  counterpoint)
+    (if seed-note (setq seed-note seed-note)
+        (let ((test (select-new-seed-note *cantus-firmus* *major-scale* *saved-templates)))
+          (if test (setq seed-note test))))
+    (setq auto-goals auto-goals)
+    (setq print-state print-state)
+    (setq cantus-firmus cantus-firmus)
+    (if (nil? auto-goals)(set-default-goals))
+    (if auto-goals (do (set-goals *models*)(setq auto-goals ())(setq *past-model-length* (length *models))))
+    (if (not (equal (length models*) *past-model-length*)) (set-goals *models))
+    (setq past-model-length* (length *models))
+    (setq new-line ())
+    (setq solution
+          (create-new-line
+           cantus-firmus
+           major-scale
+           (mix (create-choices major-scale* *seed-note)) nil))
+    (setq save-voices* (list (firstn (length *solution*) *cantus-firmus)
+                             solution))
+    (setq save-voices* (mapcar #'translate-into-pitchnames *save-voices))
+    (setq counterpoint* (make-events (pair *save-voices)))
+    (if (equal (length cantus-firmus*)(length (second *save-voices)))
+      (push (analyze-for-template seed-note *cantus-firmus* *major-scale)
+            saved-templates))
+    counterpoint))
 
 (defn create-new-line
   "creates a new line with the cantus firmus."
@@ -188,7 +188,7 @@
                                     scale
                                     (mix (create-choices major-scale test))
                                     (append last-notes (list test))
-                                    (1- length)))))))))
+                                    (1- length))))))))
 
 (defn get-new-starting-point
   "for backtracking - starts 2 earlier or nil"
