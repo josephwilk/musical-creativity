@@ -156,25 +156,28 @@
     (if seed-note (reset! *seed-note* seed-note)
         (let [test (select-new-seed-note *cantus-firmus* *major-scale* *saved-templates)]
           (if test (reset! *seed-note* test))))
-    (setq auto-goals auto-goals)
-    (setq print-state print-state)
-    (setq cantus-firmus cantus-firmus)
+    (reset! *auto-goals* auto-goals)
+    (reset! *print-state* print-state)
+    (reset! *cantus-firmus* cantus-firmus)
     (if (nil? auto-goals)(set-default-goals))
-    (if auto-goals (do (set-goals *models*)(setq auto-goals ())(setq past-model-length (length models))))
+    (if auto-goals
+      (do (set-goals *models*)
+          (setq auto-goals [])
+          (setq past-model-length (length models))))
     (if (not (equal (length models*) *past-model-length*)) (set-goals models))
-    (setq past-model-length (length *models))
-    (setq new-line ())
-    (setq solution
-          (create-new-line
-           cantus-firmus
-           major-scale
-           (mix (create-choices major-scale* *seed-note)) nil))
-    (setq save-voices* (list (firstn (length *solution*) *cantus-firmus)
-                             solution))
-    (setq save-voices* (mapcar #'translate-into-pitchnames *save-voices))
-    (setq counterpoint* (make-events (pair *save-voices)))
-    (if (equal (length cantus-firmus*)(length (second *save-voices)))
-      (push (analyze-for-template seed-note *cantus-firmus* *major-scale)
+    (reset! past-model-length (length *models))
+    (reset! new-line [])
+    (reset! solution
+            (create-new-line
+             *cantus-firmus*
+             major-scale
+             (mix (create-choices major-scale *seed-note*)) nil))
+    (reset! save-voices (list (firstn (length *solution*) *cantus-firmus*)
+                              solution))
+    (reset! save-voices (mapcar #'translate-into-pitchnames save-voices))
+    (reset! counterpoint (make-events (pair save-voices)))
+    (if (equal (length *cantus-firmus*)(length (second save-voices)))
+      (push (analyze-for-template seed-note *cantus-firmus* major-scale)
             saved-templates))
     counterpoint))
 
