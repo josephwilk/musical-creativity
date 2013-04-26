@@ -16,12 +16,16 @@
 (def counterpoint ())
 (def save-voices ())
 (def rules ())
+
 (def *seed-note* (atom 60))
+
 (def seed-notes '(64 62 59 57 55 60) )
 (def backtrack () )
 (def *cantus-firmus* '(69 71 72 76 74 72 74 72 71 69))
-(def new-line () )
-(def save-rules () )
+
+(def new-line (atom ()))
+(def save-rules (atom ()))
+
 (def *print-state* true )
 (def *auto-goals* () )
 (def saved-templates () )
