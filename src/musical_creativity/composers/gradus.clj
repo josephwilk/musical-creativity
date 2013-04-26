@@ -6,11 +6,12 @@
                    57 59 60 62 64 65 67 69 71 72 74 76
                    77 79 81 83 84 86 88 89 91 93 95 96))
 
-(def illegal-verticals '(0 1 2 5 6 10 11 13 14 17 18 22 23 25 26 29 30 34 35 -1 -2 -3 -4 -5 -6 -7 -8))
-(def illegal-parallel-motions '((7 7)(12 12)(19 19)(24 24)))
-(def illegal-double-skips '((3 3)(3 4)(3 -3)(3 -4)(-3 -3)(-3 -4)(-3 3)(-3 4)
-                                 (4 3)(4 4)(4 -3)(4 -4)(-4 -3)(-4 -4)(-4 3)(-4 4)))
-(def direct-fifths-and-octaves '((9 7)(8 7)(21 19)(20 19)))
+(def illegal-verticals (atom '(0 1 2 5 6 10 11 13 14 17 18 22 23 25 26 29 30 34 35 -1 -2 -3 -4 -5 -6 -7 -8)))
+(def illegal-parallel-motions (atom '((7 7)(12 12)(19 19)(24 24))))
+(def illegal-double-skips (atom '((3 3)(3 4)(3 -3)(3 -4)(-3 -3)(-3 -4)(-3 3)(-3 4)
+                                 (4 3)(4 4)(4 -3)(4 -4)(-4 -3)(-4 -4)(-4 3)(-4 4))))
+(def direct-fifths-and-octaves (atom '((9 7)(8 7)(21 19)(20 19))))
+
 (def solution ())
 (def counterpoint ())
 (def save-voices ())
