@@ -1,4 +1,6 @@
-(ns musical-creativity.composers.gradus)
+(ns musical-creativity.composers.gradus
+  (:require
+   [clojure.math.numeric-tower :as math]))
 
 (def major-scale '(36 38 40 41 43 45 47 48 50 52 53 55
                    57 59 60 62 64 65 67 69 71 72 74 76
@@ -118,6 +120,18 @@
     ((69 71 72 74 71 72 74 72) (57 55 57 53 55 53 50 52))
     ((69 71 72 69 71 72 74 77 76 74 72) (57 55 52 53 55 57 55 53 55 53 57))))
 
+(defn return-counts [templates]
+  "simply adds the count of occurances to the beginning of each member of its arg."
+  (if (nil? templates)()
+      (cons (list (count (first templates) templates :test #'equal)(first templates))
+            (return-counts (remove (first templates) templates :test #'equal)))))
+
+(defn member [value list]
+  (if (seq list)
+    (if (= value (first list))
+      list
+      (recur value (rest list)))))
+
 (defn sortcar [lists]
   "sorts by the first element."
   (sort (fn [x y] (> (first x) (first x)))  lists))
@@ -130,7 +144,7 @@
    (> interval 0)
    (nth interval (member current-note scale))
    :else
-   (nth (abs interval) (member current-note (reverse scale)))))
+   (nth (math/abs interval) (member current-note (reverse scale)))))
 
 (defn select-new-seed-note [cantus-firmus scale saved-templates]
   "select a logical new seed note."
@@ -261,7 +275,7 @@
   "gets the appropriate pitch from the current scale based on the interval class."
   (if (> interval-class 0)
     (nth (get-diatonic-interval interval-class) (member current-note scale))
-    (nth (abs (get-diatonic-interval interval-class)) (member current-note (reverse scale)))))
+    (nth (math/abs (get-diatonic-interval interval-class)) (member current-note (reverse scale)))))
 
 (defn get-diatonic-interval [interval-class]
   "translates interval-classes into diatonic-interval classes."
@@ -299,8 +313,8 @@
   [cantus-firmus choice last-notes]
   (let ((cantus-firmus-to-here (firstn (1+ (length last-notes)) cantus-firmus)))
   (cond ((or (not (>= (length cantus-firmus-to-here) 2))(not (>= (length last-notes) 1))) ())
-        ((member (list (abs (- (second-to-last cantus-firmus-to-here)(my-last last-notes)))
-                       (abs (- (my-last cantus-firmus-to-here) choice)))
+        ((member (list (math/abs (- (second-to-last cantus-firmus-to-here)(my-last last-notes)))
+                       (math/abs (- (my-last cantus-firmus-to-here) choice)))
                       illegal-parallel-motions :test #'equal) t)
         (t nil))))
 
@@ -310,7 +324,7 @@
         ((member (list (- (second-to-last extended-last-notes)(my-last extended-last-notes))
                        (- (third-to-last extended-last-notes)(second-to-last extended-last-notes)))
                  illegal-double-skips :test #'equal) t)
-        ((and (> (abs (- (third-to-last extended-last-notes)(second-to-last extended-last-notes))) 2)
+        ((and (> (math/abs (- (third-to-last extended-last-notes)(second-to-last extended-last-notes))) 2)
               (not (opposite-sign (list (- (second-to-last extended-last-notes)(my-last extended-last-notes))
                                         (- (third-to-last extended-last-notes)(second-to-last extended-last-notes))))))
          t)
@@ -355,9 +369,9 @@
 
 (defn reduce-to-within-octave [interval]
   "reduces diatonic intervals to within the octave."
-  (cond ((and (> (abs interval) 7)(minusp interval))
+  (cond ((and (> (math/abs interval) 7)(minusp interval))
          (reduce-to-within-octave (+ interval 7)))
-        ((> (abs interval) 7)(- interval 7))
+        ((> (math/abs interval) 7)(- interval 7))
         ((zerop interval) -7)
         (t interval)))
 
@@ -576,9 +590,9 @@
 (defn get-tessitura [cantus-firmus scale]
   "gets the tessitura or highest/lowest interval of a note list."
   (let ((up
-         (abs (first (find-scale-intervals (list (first cantus-firmus)(apply #'max cantus-firmus)) scale))))
+         (math/abs (first (find-scale-intervals (list (first cantus-firmus)(apply #'max cantus-firmus)) scale))))
         (down
-         (abs (first (find-scale-intervals (list (first cantus-firmus)(apply #'min cantus-firmus)) scale)))))
+         (math/abs (first (find-scale-intervals (list (first cantus-firmus)(apply #'min cantus-firmus)) scale)))))
     (if (> up down) up (- down))))
 
 (defn collect-all [map saved-templates]
@@ -588,12 +602,6 @@
          (cons (first saved-templates)
                (collect-all map (rest saved-templates))))
         (t (collect-all map (rest saved-templates)))))
-
-(defn return-counts [templates]
-  "simply adds the count of occurances to the beginning of each member of its arg."
-  (if (nil? templates)()
-      (cons (list (count (first templates) templates :test #'equal)(first templates))
-            (return-counts (remove (first templates) templates :test #'equal)))))
 
 (defn make-events (pitch-groupings &optional (ontime 0)]
   "makes consecutive events out of the pairs of pitches in its arg."
@@ -633,7 +641,7 @@
 
 (defn skipp [notes]
   "returns true if its two-number arg is a skip."
-  (if (> (abs (- (second notes)(first notes))) 2) t))
+  (if (> (math/abs (- (second notes)(first notes))) 2) t))
 
 (defn get-verticals [cantus-firmus new-line]
   "returns the intervals between two lines of counterpoint."
