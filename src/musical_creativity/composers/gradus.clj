@@ -123,8 +123,8 @@
 (defn return-counts [templates]
   "simply adds the count of occurances to the beginning of each member of its arg."
   (if (nil? templates)()
-      (cons (list (count (first templates) templates :test #'equal)(first templates))
-            (return-counts (remove (first templates) templates :test #'equal)))))
+      (cons (list (count (filter #(= % (first templates)) templates)) (first templates))
+            (return-counts (remove #(= % (first templates)) templates)))))
 
 (defn member [value list]
   (if (seq list)
@@ -146,6 +146,44 @@
    :else
    (nth (math/abs interval) (member current-note (reverse scale)))))
 
+(defn collect-all [map saved-templates]
+  "collects all of the occurances of each member of its arg."
+  (cond
+   (nil? saved-templates) []
+   (= map (second (first saved-templates)))
+   (cons (first saved-templates)
+         (collect-all map (rest saved-templates)))
+   :else (collect-all map (rest saved-templates))))
+
+(defn find-scale-intervals [notes scale]
+  "returns the diatonic intervals between the notes according to the scale."
+  (cond
+   (nil? (rest notes)) []
+   (nil? (second notes))
+   (cons nil (find-scale-intervals (rest notes) scale))
+   :else (cons (let [first-note-test (member (first notes) scale)
+                     second-note-test (member (second notes) scale)]
+
+                 (if (< (first notes)(second notes))
+                   (count (butlast first-note-test (count second-note-test)))
+                   (- (count (butlast second-note-test (count first-note-test))))))
+               (find-scale-intervals (rest notes) scale))))
+
+(defn get-tessitura [cantus-firmus scale]
+  "gets the tessitura or highest/lowest interval of a note list."
+  (let  [up (math/abs (first (find-scale-intervals (list (first cantus-firmus)(apply #'max cantus-firmus)) scale)))
+         down (math/abs (first (find-scale-intervals (list (first cantus-firmus)(apply #'min cantus-firmus)) scale)))]
+    (if (> up down) up (- down))))
+
+(defn my-last [list]
+  "returns th atom last of the list."
+  (first (last list)))
+
+(defn get-map [cantus-firmus scale]
+  "returns the map part of the template."
+  (list (get-tessitura cantus-firmus scale)
+        (first (find-scale-intervals (list (first cantus-firmus)(my-last cantus-firmus)) scale))))
+
 (defn select-new-seed-note [cantus-firmus scale saved-templates]
   "select a logical new seed note."
   (get-diatonic-note (first cantus-firmus)
@@ -154,6 +192,56 @@
                        (first
                         (sortcar (return-counts (collect-all (get-map cantus-firmus scale) saved-templates))))))
                      scale))
+
+(defn set-default-goals []
+  "sets the default goals for the program."
+  (reset! illegal-verticals '(0 1 2 5 6 10 11 13 14 17 18 22 23 25 26 29 30 34 35 -1 -2 -3 -4 -5 -6 -7 -8))
+  (reset! illegal-parallel-motions '((7 7)(12 12)(19 19)(24 24)))
+  (reset! illegal-double-skips '((3 3)(3 4)(3 -3)(3 -4)(-3 -3)(-3 -4)(-3 3)(-3 4)
+                                 (4 3)(4 4)(4 -3)(4 -4)(-4 -3)(-4 -4)(-4 3)(-4 4)))
+  (reset! direct-fifths-and-octaves '((9 7)(8 7)(21 19)(20 19))))
+
+(defn get-complement
+  "incrementally returns all of the intervals not in the verticals arg."
+  ([verticals] (get-complement verticals 0))
+  ([verticals number]
+
+     (cond
+      (nil? verticals) []
+      (member number verticals)
+      (get-complement (rest verticals)(+ 1 number))
+      :else (cons number (get-complement verticals (+ 1 number))))))
+
+(defn my-sort [function lists]
+  "non-destructively sorts its arg by function."
+  (loop for item in (sort (loop for x in lists
+                                collect (list x))  function :key #'car)
+        collect (first item)))
+
+
+(defn get-the-verticals [models]
+  "collects the vertical intervals from the models used."
+  (my-sort #'<
+           (remove-duplicates
+            (project
+             (let ((voiced-music (pair (make-voices models))))
+               (loop for pair in voiced-music
+                     collect (- (first pair) (second pair))))) :test #'equal)))
+
+(defn make-voices [models]
+  "makes lists of the cantus firmus and accompanying line pitches."
+  (list (apply #'append (mapcar #'first models))(apply #'append (mapcar #'second models))))
+
+(defn get-illegal-verticals [models]
+  "returns all of the vertical intervals not in the models."
+  (get-complement (get-the-verticals models)))
+
+(defn set-goals [models]
+  "sets the goals for the gradus program."
+  (reset! illegal-verticals (get-illegal-verticals models))
+  (reset! illegal-parallel-motions (find-illegal-parallels models))
+  (reset! direct-fifths-and-octaves (find-illegal-parallels models))
+  (reset! illegal-double-skips (possible-combinations '(3 4 -3 -4))))
 
 (defn gradus
   "top-level function of the counterpoint program."
@@ -168,7 +256,7 @@
               (reset! last-cantus-firmus *cantus-firmus*)))
 
     (if seed-note (reset! *seed-note* seed-note)
-        (let [test (select-new-seed-note *cantus-firmus* *major-scale* *saved-templates)]
+        (let [test (select-new-seed-note *cantus-firmus* major-scale saved-templates)]
           (if test (reset! *seed-note* test))))
     (reset! *auto-goals* auto-goals)
     (reset! *print-state* print-state)
@@ -375,18 +463,6 @@
         ((zerop interval) -7)
         (t interval)))
 
-(defn find-scale-intervals [notes scale]
-  "returns the diatonic intervals between the notes according to the scale."
-  (cond ((nil? (rest notes))())
-        ((nil? (second notes))
-         (cons nil (find-scale-intervals (rest notes) scale)))
-        (t (cons (let ((first-note-test (member (first notes) scale :test #'equal))
-                       (second-note-test (member (second notes) scale :test #'equal)))
-                   (if (< (first notes)(second notes))
-                     (length (butlast first-note-test (length second-note-test)))
-                     (- (length (butlast second-note-test (length first-note-test))))))
-                 (find-scale-intervals (rest notes) scale)))))
-
 (defn look-ahead-for-best-choice [cantus-firmus last-notes correct-choices]
   "looks ahead for the best choice"
   (cond ((nil? correct-choices) ())
@@ -459,40 +535,6 @@
   "replenishes the seednotes when when they have all been used."
   (setq seed-notes '(60 65 64 62 59 57 55 53)))
 
-(defn set-goals [models]
-  "sets the goals for the gradus program."
-  (setf illegal-verticals (get-illegal-verticals models))
-  (setf illegal-parallel-motions (find-illegal-parallels models))
-  (setf direct-fifths-and-octaves (find-illegal-parallels models))
-  (setf illegal-double-skips (possible-combinations '(3 4 -3 -4))))
-
-(defn get-illegal-verticals [models]
-  "returns all of the vertical intervals not in the models."
-  (get-complement (get-the-verticals models)))
-
-(defn get-complement
-  "incrementally returns all of the intervals not in the verticals arg."
-  ([verticals] (get-complement verticals 0))
-  ([verticals number]
-
-  (cond ((nil? verticals)())
-        ((member number verticals)
-         (get-complement (rest verticals)(1+ number)))
-        (t (cons number (get-complement verticals (1+ number)))))))
-
-(defn get-the-verticals [models]
-  "collects the vertical intervals from the models used."
-  (my-sort #'<
-           (remove-duplicates
-            (project
-             (let ((voiced-music (pair (make-voices models))))
-               (loop for pair in voiced-music
-                     collect (- (first pair) (second pair))))) :test #'equal)))
-
-(defn make-voices [models]
-  "makes lists of the cantus firmus and accompanying line pitches."
-  (list (apply #'append (mapcar #'first models))(apply #'append (mapcar #'second models))))
-
 (defn project [numbers]
   ""
   (if (nil? numbers)()
@@ -504,12 +546,6 @@
   (if (> number 12)
     (list (- number 12) number (+ number 12))
     (list number (+ number 12)(+ number 24))))
-
-(defn my-sort [function lists]
-  "non-destructively sorts its arg by function."
-  (loop for item in (sort (loop for x in lists
-                                collect (list x))  function :key #'car)
-        collect (first item)))
 
 (defn find-illegal-parallels [models]
   "returns the non-used parallels in the models which are assumed to be illegal."
@@ -582,27 +618,6 @@
   (list (first (find-scale-intervals (list (first cantus-firmus) seed-note) scale))
         (get-map cantus-firmus scale)))
 
-(defn get-map [cantus-firmus scale]
-  "returns the map part of the template."
-  (list (get-tessitura cantus-firmus scale)
-        (first (find-scale-intervals (list (first cantus-firmus)(my-last cantus-firmus)) scale))))
-
-(defn get-tessitura [cantus-firmus scale]
-  "gets the tessitura or highest/lowest interval of a note list."
-  (let ((up
-         (math/abs (first (find-scale-intervals (list (first cantus-firmus)(apply #'max cantus-firmus)) scale))))
-        (down
-         (math/abs (first (find-scale-intervals (list (first cantus-firmus)(apply #'min cantus-firmus)) scale)))))
-    (if (> up down) up (- down))))
-
-(defn collect-all [map saved-templates]
-  "collects all of the occurances of each member of its arg."
-  (cond ((nil? saved-templates)())
-        ((equal map (second (first saved-templates)))
-         (cons (first saved-templates)
-               (collect-all map (rest saved-templates))))
-        (t (collect-all map (rest saved-templates)))))
-
 (defn make-events (pitch-groupings &optional (ontime 0)]
   "makes consecutive events out of the pairs of pitches in its arg."
   (if (nil? pitch-groupings) ()
@@ -629,10 +644,6 @@
           do (setf choice (choose-one list))
           collect choice
           do (setf list (remove choice list :count 1)))))
-
-(defn my-last [list]
-  "returns th atom last of the list."
-  (first (last list)))
 
 (defn firstn [number list]
   "returns the first n of is list arg."
@@ -694,14 +705,6 @@
 (defn very-second [list]
   "returns the first of the second of list."
   (first (second list)))
-
-(defn set-default-goals []
-  "sets the default goals for the program."
-  (setq illegal-verticals '(0 1 2 5 6 10 11 13 14 17 18 22 23 25 26 29 30 34 35 -1 -2 -3 -4 -5 -6 -7 -8))
-  (setq illegal-parallel-motions '((7 7)(12 12)(19 19)(24 24)))
-  (setq illegal-double-skips '((3 3)(3 4)(3 -3)(3 -4)(-3 -3)(-3 -4)(-3 3)(-3 4)
-                                 (4 3)(4 4)(4 -3)(4 -4)(-4 -3)(-4 -4)(-4 3)(-4 4)))
-  (setq direct-fifths-and-octaves '((9 7)(8 7)(21 19)(20 19))))
 
 (defn stop-if-all-possibilities-are-nil [seed-note cantus-firmus rules]
   "for stopping if no solution exists."
