@@ -564,6 +564,9 @@
       (look-ahead-for-best-choice cantus-firmus last-notes correct-choices)
       (first correct-choices))))
 
+(defn push [data reference]
+  (swap! reference concat data))
+
 (defn pushnew [data reference]
   (when-not (contains? data @reference))
   (swap! reference concat data))
@@ -616,14 +619,6 @@
    (<= (count last-notes) 1) []
    :else (butlast last-notes 1)))
 
-(defn mix [list]
-  "mixes its arg arbitrarily"
-  (let [choice []]
-    (loop until (nil? list)
-          do (setf choice (choose-one list))
-          collect choice
-          do (setf list (remove choice list :count 1)))))
-
 (defn create-new-line
   "creates a new line with the cantus firmus."
   ([cantus-firmus scale choices last-notes] (create-new-line cantus-firmus scale choices last-notes (count cantus-firmus)))
@@ -645,18 +640,40 @@
                 (create-new-line cantus-firmus
                                  scale
                                  (remove (my-last last-notes)
-                                         (mix (create-choices
+                                         (shuffle (create-choices
                                                major-scale
-                                               (if (nil? new-last-notes) seed-note (my-last new-last-notes)))))
+                                               (if (nil? new-last-notes) *seed-note* (my-last new-last-notes)))))
                                  new-last-notes
                                  (+ count (- (count last-notes)(count new-last-notes))))))
             (do (reset! new-line (concat new-line (list test)))
-                (if print-state (print-working cantus-firmus new-line))
+                (if *print-state* (print-working cantus-firmus new-line))
                 (create-new-line cantus-firmus
                                  scale
-                                 (mix (create-choices major-scale test))
+                                 (shuffle (create-choices major-scale test))
                                  (concat last-notes (list test))
                                  (- count 1)))))))))
+
+(defn make-event [ontime pitch channel]
+  "creates an event based on args."
+  (list ontime
+        (if (symbol? pitch) (eval pitch) pitch)
+        1000
+        channel
+        90))
+
+(defn make-events
+  "makes consecutive events out of the pairs of pitches in its arg."
+  ([pitch-groupings] (make-events pitch-groupings 0))
+  ([pitch-groupings ontime]
+  (if (nil? pitch-groupings) []
+      (concat (list (make-event ontime (first (first pitch-groupings)) 1)
+                    (make-event ontime (second (first pitch-groupings)) 2))
+              (make-events (rest pitch-groupings)(+ ontime 1000))))))
+
+(defn analyze-for-template [seed-note cantus-firmus scale]
+  "returns the complete template (seed interval and map) for saving."
+  (list (first (find-scale-intervals (list (first cantus-firmus) seed-note) scale))
+        (get-map cantus-firmus scale)))
 
 (defn gradus
   "top-level function of the counterpoint program."
@@ -681,73 +698,33 @@
       (do (set-goals models)
           (reset! auto-goals [])
           (reset! past-model-count (count models))))
-    (if (not (= (count models) past-model-length)) (set-goals models))
+    (if (not (= (count models) past-model-count)) (set-goals models))
     (reset! past-model-count (count models))
     (reset! new-line [])
     (reset! solution
             (create-new-line
              *cantus-firmus*
              major-scale
-             (mix (create-choices major-scale *seed-note*)) nil))
-    (reset! save-voices (list (firstn (count *solution*) *cantus-firmus*)
+             (shuffle (create-choices major-scale *seed-note*)) nil))
+    (reset! save-voices (list (firstn (count solution) *cantus-firmus*)
                               solution))
     (reset! save-voices (map translate-into-pitchnames save-voices))
     (reset! counterpoint (make-events (pair save-voices)))
-    (if (equal (count *cantus-firmus*)(count (second save-voices)))
+    (if (= (count *cantus-firmus*)(count (second save-voices)))
       (push (analyze-for-template seed-note *cantus-firmus* major-scale)
             saved-templates))
     counterpoint))
-
-(defn look-ahead [amount cantus-firmus last-notes rule rules]
-  "the top-level function for looking ahead."
-  (match-rules-freely
-   (reduce-rule (make-freer-rule amount (find-scale-intervals (create-relevant-cf-notes last-notes cantus-firmus) major-scale) rule))
-   rules))
-
-(defn create-relevant-cf-notes [last-notes cantus-firmus]
-  "creates the set of forward reaching cf notes."
-  (firstn 2 (nthcdr (1- (count last-notes)) cantus-firmus)))
-
-(defn reduce-rule [rule]
-  "reduces the front-end of the look-ahead rule."
-  (if (<= (count (second rule)) 3) rule
-      (let ((amount (- (count (second rule)) 3)))
-        (cons (+ (first rule)(- (first (second rule)))(first (third rule)))
-              (mapcar #'(lambda (x)(nthcdr amount x)) (rest rule))))))
-
-(defn make-freer-rule [amount cf-notes rule]
-  "adds the appropriate number of nils to the new line for look-ahead matching."
-  (if (= 0 amount) rule
-      (make-freer-rule (1- amount)
-                       (rest cf-notes)
-                       (list (first rule)
-                             (concat (second rule)(list (first cf-notes)))
-                             (concat (third rule)(list nil))))))
-
-(defn match-rules-freely [rule rules]
-  "runs the match-rule function through the rules."
-  (cond
-   (nil? rules)
-   []
-   (and (equal (first rule)(first (first rules)))
-        (match-interval-rule (rest rule)(rest (first rules))))
-   true
-   (and (equal (first rule)(first (first rules)))
-        (equal (count (second rule))(count (second (first rules))))
-        (match-rule rule (first rules)))
-   true
-   :else (match-rules-freely rule (rest rules))))
 
 (defn match-interval-rule [rule-for-matching rule]
   "matches the freer rule to the rule from rules."
   (cond
    (and (nil? (first rule-for-matching))(nil? (first rule)))
    true
-   (or (and (equal (very-first rule-for-matching)(very-first rule))
-            (equal (very-second rule-for-matching)(very-second rule)))
-       (and (equal (very-first rule-for-matching)(very-first rule))
+   (or (and (= (very-first rule-for-matching)(very-first rule))
+            (= (very-second rule-for-matching)(very-second rule)))
+       (and (= (very-first rule-for-matching)(very-first rule))
             (nil? (very-second rule-for-matching))))
-   (match-interval-rule (map rest rule-for-matching) (mapcar #'rest rule))
+   (match-interval-rule (map rest rule-for-matching) (map rest rule))
    :else nil))
 
 (defn match-rule [rule-for-matching rule]
@@ -755,41 +732,61 @@
   (cond
    (and (nil? (first (rest rule-for-matching)))(nil? (first (rest rule))))
    true
-   (or (and (equal (very-first (rest rule-for-matching))(very-first (rest rule)))
-            (equal (very-second (rest rule-for-matching))(very-second (rest rule))))
-       (and (equal (very-first (rest rule-for-matching))(very-first (rest rule)))
+   (or (and (= (very-first (rest rule-for-matching))(very-first (rest rule)))
+            (= (very-second (rest rule-for-matching))(very-second (rest rule))))
+       (and (= (very-first (rest rule-for-matching))(very-first (rest rule)))
             (nil? (very-second (rest rule-for-matching)))))
    (match-rule (cons (first rule-for-matching)(map rest (rest rule-for-matching)))
-               (cons (first rule)(mapcar #'rest (rest rule))))
+               (cons (first rule)(map rest (rest rule))))
    :else nil))
+
+(defn match-rules-freely [rule rules]
+  "runs the match-rule function through the rules."
+  (cond
+   (nil? rules)
+   []
+   (and (= (first rule)(first (first rules)))
+        (match-interval-rule (rest rule)(rest (first rules))))
+   true
+   (and (= (first rule)(first (first rules)))
+        (= (count (second rule))(count (second (first rules))))
+        (match-rule rule (first rules)))
+   true
+   :else (match-rules-freely rule (rest rules))))
+
+(defn reduce-rule [rule]
+  "reduces the front-end of the look-ahead rule."
+  (if (<= (count (second rule)) 3) rule
+      (let [amount (- (count (second rule)) 3)]
+        (cons (+ (first rule)(- (first (second rule)))(first (third rule)))
+              (map (fn [x](nth amount x)) (rest rule))))))
+
+(defn make-freer-rule [amount cf-notes rule]
+  "adds the appropriate number of nils to the new line for look-ahead matching."
+  (if (= 0 amount) rule
+      (make-freer-rule (- amount 1)
+                       (rest cf-notes)
+                       (list (first rule)
+                             (concat (second rule)(list (first cf-notes)))
+                             (concat (third rule)(list nil))))))
+
+(defn create-relevant-cf-notes [last-notes cantus-firmus]
+  "creates the set of forward reaching cf notes."
+  (firstn 2 (nth (- (count last-notes) 1) cantus-firmus)))
+
+(defn look-ahead [amount cantus-firmus last-notes rule rules]
+  "the top-level function for looking ahead."
+  (match-rules-freely
+   (reduce-rule (make-freer-rule amount (find-scale-intervals (create-relevant-cf-notes last-notes cantus-firmus) major-scale) rule))
+   rules))
 
 (defn replenish-seed-notes []
   "replenishes the seednotes when when they have all been used."
-  (setq seed-notes '(60 65 64 62 59 57 55 53)))
-
-(defn analyze-for-template [seed-note cantus-firmus scale]
-  "returns the complete template (seed interval and map) for saving."
-  (list (first (find-scale-intervals (list (first cantus-firmus) seed-note) scale))
-        (get-map cantus-firmus scale)))
-
-(defn make-events (pitch-groupings &optional (ontime 0)]
-  "makes consecutive events out of the pairs of pitches in its arg."
-  (if (nil? pitch-groupings) []
-      (concat (list (make-event ontime (first (first pitch-groupings)) 1)
-                    (make-event ontime (second (first pitch-groupings)) 2))
-              (make-events (rest pitch-groupings)(+ ontime 1000)))))
-
-(defn make-event [ontime pitch channel]
-  "creates an event based on args."
-  (list ontime
-        (if (symbol? pitch) (eval pitch) pitch)
-        1000
-        channel
-        90))
+  (reset! seed-notes '(60 65 64 62 59 57 55 53)))
 
 (defn choose-one [list]
   "chooses one its arg randomly."
-  (nth (random (count list) rs) list))
+  (nth (rand-int (count list)) list))
 
 (defn evaluate-pitch-names [voices]
   "evaluates the pitch names of its arg into midi note numbers."
@@ -797,11 +794,13 @@
 
 (defn create-canon []
   "creates a simple canon in two voices using gradus."
-  (reset! seed-note (- (my-last *cantus-firmus*) 12))
+  (reset! *seed-note* (- (my-last *cantus-firmus*) 12))
   (gradus)
   (reset! save-voices (evaluate-pitch-names save-voices))
   (let [theme (concat *cantus-firmus* (map (fn [x] (+ x 12)) (second save-voices)))
         lower-voice (map (fn [x](- x 12)) theme)]
     (make-events
-     (pair (list (concat theme theme theme (make-list (count  cantus-firmus) :initial-element 0))
-                 (concat (make-list (count cantus-firmus) :initial-element 0) lower-voice lower-voice lower-voice))))))
+     (pair (list (concat theme theme theme (vec  (repeat (count *cantus-firmus*) 0)))
+                 (concat
+                  (vec (repeat (count *cantus-firmus*) 0))
+                  lower-voice lower-voice lower-voice))))))
