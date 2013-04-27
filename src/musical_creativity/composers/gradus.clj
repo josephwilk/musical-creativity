@@ -796,8 +796,9 @@
     (reset! *auto-goals* auto-goals)
     (reset! *print-state* print-state)
     (reset! *cantus-firmus* cantus-firmus)
-    (if (nil? *auto-goals*)(set-default-goals))
-    (if *auto-goals*
+    (if (nil? @*auto-goals*)
+      (set-default-goals))
+    (if @*auto-goals*
       (do (set-goals models)
           (reset! *auto-goals* [])
           (reset! past-model-count (count models))))
