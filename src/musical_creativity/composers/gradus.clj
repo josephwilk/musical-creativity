@@ -598,6 +598,18 @@
                (cons (first rule)(map rest (rest rule))))
    :else nil))
 
+(defn match-interval-rule [rule-for-matching rule]
+  "matches the freer rule to the rule from rules."
+  (cond
+   (and (nil? (first rule-for-matching)) (nil? (first rule)))
+   true
+   (or (and (= (very-first rule-for-matching)(very-first rule))
+            (= (very-second rule-for-matching)(very-second rule)))
+       (and (= (very-first rule-for-matching)(very-first rule))
+            (nil? (very-second rule-for-matching))))
+   (match-interval-rule (map rest rule-for-matching) (map rest rule))
+   :else nil))
+
 (defn match-rules-freely [rule rules]
   "runs the match-rule function through the rules."
   (cond
@@ -611,6 +623,29 @@
         (match-rule rule (first rules)))
    true
    :else (match-rules-freely rule (rest rules))))
+
+(defn third [list]
+  (list 3))
+
+(defn reduce-rule [rule]
+  "reduces the front-end of the look-ahead rule."
+  (if (<= (count (second rule)) 3) rule
+      (let [amount (- (count (second rule)) 3)]
+        (cons (+ (first rule)(- (first (second rule)))(first (third rule)))
+              (map (fn [x](nth x amount)) (rest rule))))))
+
+(defn make-freer-rule [amount cf-notes rule]
+  "adds the appropriate number of nils to the new line for look-ahead matching."
+  (if (= 0 amount) rule
+      (make-freer-rule (- amount 1)
+                       (rest cf-notes)
+                       (list (first rule)
+                             (concat (second rule)(list (first cf-notes)))
+                             (concat (third rule)(list nil))))))
+
+(defn create-relevant-cf-notes [last-notes cantus-firmus]
+  "creates the set of forward reaching cf notes."
+  (firstn 2 (nth cantus-firmus (- (count last-notes) 1))))
 
 (defn look-ahead [amount cantus-firmus last-notes rule rules]
   "the top-level function for looking ahead."
@@ -651,7 +686,7 @@
 
 (defn print-backtracking []
   "simple printing function to show backtracking."
-  (format true "~&~a~&~a~&~a~&" "backtracking.....there are now" (count @rules) "rules."))
+  (format "~&~a~&~a~&~a~&" "backtracking.....there are now" (count @rules) "rules."))
 
 (defn position [thing list]
   (.indexOf thing list))
@@ -661,9 +696,6 @@
   (if (empty? list-of-midi-note-numbers) []
       (cons (nth list-of-notes (position (first list-of-midi-note-numbers) major-scale))
             (translate-into-pitchnames (rest list-of-midi-note-numbers)))))
-
-(defn third [list]
-  (list 3))
 
 (defn translate-notes [first-note intervals]
   "translates interval lists into note names for readability."
@@ -680,7 +712,7 @@
 
 (defn print-working [cantus-firmus last-notes]
   "simple printing function for continuing to compose"
-  (format true "~&~a~&~a~&" "working....." (list (translate-into-pitchnames cantus-firmus)(translate-into-pitchnames last-notes))))
+  (format "~&~a~&~a~&" "working....." (list (translate-into-pitchnames cantus-firmus)(translate-into-pitchnames last-notes))))
 
 (defn get-new-starting-point
   "for backtracking - starts 2 earlier or nil"
@@ -694,7 +726,7 @@
   ([cantus-firmus scale choices last-notes] (create-new-line cantus-firmus scale choices last-notes (count cantus-firmus)))
   ([cantus-firmus scale choices last-notes length]
   (if (stop-if-all-possibilities-are-nil @*seed-note* @*cantus-firmus* @rules)
-    (format true "~a~&" "i can find no solution for this cantus firmus.")
+    (format "~a~&" "i can find no solution for this cantus firmus.")
     (if (<= length 0) new-line
         (let [test (evaluate-choices cantus-firmus choices last-notes)]
           (if (nil? test)
@@ -706,7 +738,7 @@
                   (if (not (< (count @rules)(count @save-rules)))
                     (print-backtracking)))
               (let [new-last-notes (get-new-starting-point last-notes)]
-                (reset! new-line (butlast @new-line (- (count last-notes)(count new-last-notes))))
+                (reset! new-line (drop-last (- (count last-notes)(count new-last-notes)) @new-line))
                 (create-new-line cantus-firmus
                                  scale
                                  (remove (my-last last-notes)
@@ -714,14 +746,14 @@
                                                major-scale
                                                (if (nil? new-last-notes) *seed-note* (my-last new-last-notes)))))
                                  new-last-notes
-                                 (+ count (- (count last-notes)(count new-last-notes))))))
+                                 (+ length (- (count last-notes)(count new-last-notes))))))
             (do (reset! new-line (concat @new-line (list test)))
                 (if *print-state* (print-working cantus-firmus @new-line))
                 (create-new-line cantus-firmus
                                  scale
                                  (shuffle (create-choices major-scale test))
                                  (concat last-notes (list test))
-                                 (- count 1)))))))))
+                                 (- length 1)))))))))
 
 (defn make-event [ontime pitch channel]
   "creates an event based on args."
@@ -782,38 +814,6 @@
       (push (analyze-for-template seed-note @*cantus-firmus* major-scale)
             saved-templates))
     counterpoint))
-
-(defn match-interval-rule [rule-for-matching rule]
-  "matches the freer rule to the rule from rules."
-  (cond
-   (and (nil? (first rule-for-matching)) (nil? (first rule)))
-   true
-   (or (and (= (very-first rule-for-matching)(very-first rule))
-            (= (very-second rule-for-matching)(very-second rule)))
-       (and (= (very-first rule-for-matching)(very-first rule))
-            (nil? (very-second rule-for-matching))))
-   (match-interval-rule (map rest rule-for-matching) (map rest rule))
-   :else nil))
-
-(defn reduce-rule [rule]
-  "reduces the front-end of the look-ahead rule."
-  (if (<= (count (second rule)) 3) rule
-      (let [amount (- (count (second rule)) 3)]
-        (cons (+ (first rule)(- (first (second rule)))(first (third rule)))
-              (map (fn [x](nth x amount)) (rest rule))))))
-
-(defn make-freer-rule [amount cf-notes rule]
-  "adds the appropriate number of nils to the new line for look-ahead matching."
-  (if (= 0 amount) rule
-      (make-freer-rule (- amount 1)
-                       (rest cf-notes)
-                       (list (first rule)
-                             (concat (second rule)(list (first cf-notes)))
-                             (concat (third rule)(list nil))))))
-
-(defn create-relevant-cf-notes [last-notes cantus-firmus]
-  "creates the set of forward reaching cf notes."
-  (firstn 2 (nth cantus-firmus (- (count last-notes) 1))))
 
 (defn replenish-seed-notes []
   "replenishes the seednotes when when they have all been used."
