@@ -13,7 +13,7 @@
 (def direct-fifths-and-octaves (atom '((9 7)(8 7)(21 19)(20 19))))
 
 (def solution (atom []))
-(def counterpoint [])
+(def counterpoint (atom []))
 
 (def save-voices (atom []))
 (def rules       (atom []))
