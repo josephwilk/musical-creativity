@@ -14,7 +14,7 @@
 
 (def solution ())
 (def counterpoint ())
-(def save-voices ())
+(def save-voices (atom []))
 (def rules ())
 
 (def *seed-note* (atom 60))
@@ -794,13 +794,13 @@
 
 (defn create-canon []
   "creates a simple canon in two voices using gradus."
-  (reset! *seed-note* (- (my-last *cantus-firmus*) 12))
+  (reset! *seed-note* (- (my-last @*cantus-firmus*) 12))
   (gradus)
   (reset! save-voices (evaluate-pitch-names save-voices))
-  (let [theme (concat *cantus-firmus* (map (fn [x] (+ x 12)) (second save-voices)))
+  (let [theme (concat @*cantus-firmus* (map (fn [x] (+ x 12)) (second @save-voices)))
         lower-voice (map (fn [x](- x 12)) theme)]
     (make-events
-     (pair (list (concat theme theme theme (vec  (repeat (count *cantus-firmus*) 0)))
+     (pair (list (concat theme theme theme (vec  (repeat (count @*cantus-firmus*) 0)))
                  (concat
-                  (vec (repeat (count *cantus-firmus*) 0))
+                  (vec (repeat (count @*cantus-firmus*) 0))
                   lower-voice lower-voice lower-voice))))))
