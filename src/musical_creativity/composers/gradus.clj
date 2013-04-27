@@ -12,7 +12,7 @@
                                  (4 3)(4 4)(4 -3)(4 -4)(-4 -3)(-4 -4)(-4 3)(-4 4))))
 (def direct-fifths-and-octaves (atom '((9 7)(8 7)(21 19)(20 19))))
 
-(def solution [])
+(def solution (atom []))
 (def counterpoint [])
 
 (def save-voices (atom []))
@@ -807,8 +807,8 @@
     (reset! new-line [])
     (reset! solution
             (create-new-line @*cantus-firmus*  major-scale (shuffle (create-choices major-scale @*seed-note*)) nil))
-    (reset! save-voices (list (firstn (count solution) @*cantus-firmus*)
-                              solution))
+    (reset! save-voices (list (firstn (count @solution) @*cantus-firmus*)
+                              @solution))
     (reset! save-voices (map translate-into-pitchnames @save-voices))
     (reset! counterpoint (make-events (pair @save-voices)))
     (if (= (count @*cantus-firmus*)(count (second @save-voices)))
