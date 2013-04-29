@@ -718,8 +718,9 @@
   "for backtracking - starts 2 earlier or nil"
   [last-notes]
   (cond
-   (<= (count last-notes) 1) []
-   :else (butlast last-notes 1)))
+   (<= (count last-notes) 1)
+   []
+   :else (drop-last 1 last-notes)))
 
 (defn create-new-line
   "creates a new line with the cantus firmus."
