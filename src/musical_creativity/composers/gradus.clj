@@ -805,8 +805,9 @@
     (if (not (= (count models) @past-model-count)) (set-goals models))
     (reset! past-model-count (count models))
     (reset! new-line [])
-    (reset! solution
-            (create-new-line @*cantus-firmus*  major-scale (shuffle (create-choices major-scale @*seed-note*)) nil))
+    (let [choices (shuffle (create-choices major-scale @*seed-note*))]
+      (reset! solution
+              create-new-line @*cantus-firmus*  major-scale choices nil))
     (reset! save-voices (list (firstn (count @solution) @*cantus-firmus*)
                               @solution))
     (reset! save-voices (map translate-into-pitchnames @save-voices))
