@@ -821,8 +821,9 @@
   "replenishes the seednotes when when they have all been used."
   (reset! seed-notes '(60 65 64 62 59 57 55 53)))
 
-(defn choose-one [list]
+(defn choose-one
   "chooses one its arg randomly."
+  [list]
   (nth list (rand-int (count list))))
 
 (defn evaluate-pitch-names
