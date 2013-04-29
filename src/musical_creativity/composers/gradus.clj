@@ -680,7 +680,7 @@
 (defn push [data reference]
   (swap! reference concat data))
 
-(defn pushnew [data reference]
+(defn swap-unless-includes [reference data]
   (when-not (contains? data @reference)
     (swap! reference concat data)))
 
@@ -734,19 +734,18 @@
         (if (nil? test)
           (do
             (if (nil? @*look-ahead*)
-              (pushnew (create-rule cantus-firmus (concat last-notes (list (first choices)))) rules)
-              (pushnew (create-rule cantus-firmus (concat last-notes (list (first choices)))) temporary-rules))
-            (do
-              (reset! save-rules @rules)
-              (when (not (< (count @rules) (count @save-rules)))
-                (print-backtracking)))
+              (swap-unless-includes rules           (create-rule cantus-firmus (concat last-notes (list (first choices)))))
+              (swap-unless-includes temporary-rules (create-rule cantus-firmus (concat last-notes (list (first choices))))))
+
+            (reset! save-rules @rules)
+            (when (not (< (count @rules) (count @save-rules)))
+              (print-backtracking))
             (let [new-last-notes (get-new-starting-point last-notes)
                   seed-note (if (empty? new-last-notes) @*seed-note* (my-last new-last-notes))
                   choices (shuffle (create-choices major-scale seed-note))
                   new-choices (remove #(= % (my-last last-notes)) choices)]
               (reset! new-line (drop-last (- (count last-notes) (count new-last-notes)) @new-line))
 
-              (println :new new-choices)
               (create-new-line cantus-firmus
                                scale
                                new-choices
