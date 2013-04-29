@@ -658,7 +658,7 @@
   (cond
    (empty? correct-choices)
    []
-   (not (look-ahead 1
+   (not (@*look-ahead* 1
                     cantus-firmus
                     (concat last-notes (list (first correct-choices)))
                     (create-rule cantus-firmus (concat last-notes (list (first correct-choices))))
@@ -681,8 +681,8 @@
   (swap! reference concat data))
 
 (defn pushnew [data reference]
-  (when-not (contains? data @reference))
-  (swap! reference concat data))
+  (when-not (contains? data @reference)
+    (swap! reference concat data)))
 
 (defn print-backtracking []
   "simple printing function to show backtracking."
@@ -727,33 +727,39 @@
   ([cantus-firmus scale choices last-notes length]
   (if (stop-if-all-possibilities-are-nil @*seed-note* @*cantus-firmus* @rules)
     (format "~a~&" "i can find no solution for this cantus firmus.")
-    (if (<= length 0) new-line
-        (let [test (evaluate-choices cantus-firmus choices last-notes)]
-          (if (nil? test)
+    (if (<= length 0)
+      new-line
+      (let [test (evaluate-choices cantus-firmus choices last-notes)]
+        (if (nil? test)
+          (do
+            (if (nil? @*look-ahead*)
+              (pushnew (create-rule cantus-firmus (concat last-notes (list (first choices)))) rules)
+              (pushnew (create-rule cantus-firmus (concat last-notes (list (first choices)))) temporary-rules))
             (do
-              (if (nil? @*look-ahead*)
-                (pushnew (create-rule cantus-firmus (concat last-notes (list (first choices)))) rules)
-                (pushnew (create-rule cantus-firmus (concat last-notes (list (first choices)))) temporary-rules))
-              (do (reset! save-rules @rules)
-                  (if (not (< (count @rules)(count @save-rules)))
-                    (print-backtracking)))
-              (let [new-last-notes (get-new-starting-point last-notes)]
-                (reset! new-line (drop-last (- (count last-notes)(count new-last-notes)) @new-line))
-                (create-new-line cantus-firmus
-                                 scale
-                                 (remove (my-last last-notes)
-                                         (shuffle (create-choices
-                                               major-scale
-                                               (if (nil? new-last-notes) *seed-note* (my-last new-last-notes)))))
-                                 new-last-notes
-                                 (+ length (- (count last-notes)(count new-last-notes))))))
-            (do (reset! new-line (concat @new-line (list test)))
-                (if *print-state* (print-working cantus-firmus @new-line))
-                (create-new-line cantus-firmus
-                                 scale
-                                 (shuffle (create-choices major-scale test))
-                                 (concat last-notes (list test))
-                                 (- length 1)))))))))
+              (reset! save-rules @rules)
+              (when (not (< (count @rules) (count @save-rules)))
+                (print-backtracking)))
+            (let [new-last-notes (get-new-starting-point last-notes)
+                  seed-note (if (empty? new-last-notes) @*seed-note* (my-last new-last-notes))
+                  choices (shuffle (create-choices major-scale seed-note))
+                  new-choices (remove #(= % (my-last last-notes)) choices)]
+              (reset! new-line (drop-last (- (count last-notes) (count new-last-notes)) @new-line))
+
+              (println :new new-choices)
+              (create-new-line cantus-firmus
+                               scale
+                               new-choices
+                               new-last-notes
+                               (+ length (- (count last-notes) (count new-last-notes))))))
+          (do
+            (reset! new-line (concat @new-line (list test)))
+            (when *print-state*
+              (print-working cantus-firmus @new-line))
+            (create-new-line cantus-firmus
+                             scale
+                             (shuffle (create-choices major-scale test))
+                             (concat last-notes (list test))
+                             (- length 1)))))))))
 
 (defn make-event [ontime pitch channel]
   "creates an event based on args."
