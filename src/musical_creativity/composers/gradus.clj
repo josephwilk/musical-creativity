@@ -69,7 +69,7 @@
 (def c5 96)
 
 (def list-of-notes '(c1 d1 e1 f1 g1 a1 b1 c2 d2 e2 f2 g2 a2 b2 c3 d3 e3 f3 g3 a3 b3 c4 d4 e4 f4 g4 a4 b4 c5 d5 e5 f5 g5 a5 b5 c5) )
-(def *look-ahead* (atom []))
+(def *look-ahead* (atom nil))
 (def temporary-rules (atom []))
 (def last-cantus-firmus (atom []))
 (def past-model-count (atom []))
@@ -672,7 +672,7 @@
   (let [correct-choices (evaluate cantus-firmus choices last-notes)]
     (if correct-choices
       (reset! *look-ahead* true)
-      (reset! *look-ahead* []))
+      (reset! *look-ahead* nil))
     (if (> (count correct-choices) 0)
       (look-ahead-for-best-choice cantus-firmus last-notes correct-choices)
       (first correct-choices))))
@@ -681,7 +681,7 @@
   (swap! reference concat data))
 
 (defn swap-unless-includes [reference data]
-  (when-not (contains? data @reference)
+  (when-not (contains? @reference data)
     (swap! reference concat data)))
 
 (defn print-backtracking []
@@ -739,11 +739,12 @@
       (let [test (evaluate-choices cantus-firmus choices last-notes)]
         (if (nil? test)
           (do
-            (if (nil? @*look-ahead*)
+            (if @*look-ahead*
               (swap-unless-includes rules           (create-rule cantus-firmus (concat last-notes (list (first choices)))))
               (swap-unless-includes temporary-rules (create-rule cantus-firmus (concat last-notes (list (first choices))))))
 
             (reset! save-rules @rules)
+
             (when (not (< (count @rules) (count @save-rules)))
               (print-backtracking))
             (let [new-last-notes (get-new-starting-point last-notes)
