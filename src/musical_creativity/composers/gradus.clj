@@ -770,9 +770,13 @@
 
 (defn make-event [ontime pitch channel]
   "creates an event based on args."
-  {:time ontime
-   :pitch (if (symbol? pitch) (-> pitch resolve var-get) pitch)
-   :channel channel})
+
+  ;TODO: find better way to resolve var in this ns?
+  (let [pitch-str (str "musical-creativity.composers.gradus/" pitch)
+        event-pitch  (-> pitch-str symbol resolve var-get)]
+    {:time ontime
+     :pitch event-pitch
+     :channel channel}))
 
 (defn make-events
   "makes consecutive events out of the pairs of pitches in its arg."
