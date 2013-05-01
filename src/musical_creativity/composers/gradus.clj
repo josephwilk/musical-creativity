@@ -561,14 +561,15 @@
 
  (defn choice-fits-goals-and-current-rules? [choice cantus-firmus last-notes]
    (let [current-rule (create-rule cantus-firmus (concat last-notes (list choice)))
-         next-position (+ 1 (count last-notes))]
+         next-position (+ 1 (count last-notes))
+         current-cantus-firmus (take next-position cantus-firmus)]
      (and (not (consult-rules current-rule))
           (not (vertical-dissonance?         (nth cantus-firmus (count last-notes)) choice))
-          (not (parallel-octaves-and-fifths? (take next-position cantus-firmus) choice last-notes))
+          (not (parallel-octaves-and-fifths? current-cantus-firmus choice last-notes))
           (not (leaps?                       (concat last-notes (list choice))))
-          (not (simultaneous-leaps?          (take next-position cantus-firmus) choice last-notes))
-          (not (direct-fifths?               (take next-position cantus-firmus) choice last-notes))
-          (not (consecutive-motions?         (take next-position cantus-firmus) choice last-notes)))))
+          (not (simultaneous-leaps?          current-cantus-firmus choice last-notes))
+          (not (direct-fifths?               current-cantus-firmus choice last-notes))
+          (not (consecutive-motions?         current-cantus-firmus choice last-notes)))))
 
 (defn evaluate
   "evaluates the various choices for a next note based on the goals and current rules"
