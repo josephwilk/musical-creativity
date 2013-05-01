@@ -1,7 +1,7 @@
-(ns musical-creativity.integration.composers.t-gradus
+(ns musical-creativity.integration.t-gradus
   (:require
    [midje.sweet :refer :all]
    [musical-creativity.composers.gradus :refer :all]))
 
 (fact "it should compose music"
-  (compose))
+  (gradus @*auto-goals* true))

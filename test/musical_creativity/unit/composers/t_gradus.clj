@@ -61,18 +61,32 @@
   (reduce-rule '(-11 (2 -1 -1 1) (-1 1 -1 nil))) =>
   '(-14 (-1 -1 1) (1 -1 nil)))
 
-(fact "create new line"
+(fact "match rules freely"
+  (match-rules-freely
+   '(-9 (-1 -1 nil) (1 1 nil))
+   '((-9 (-1 1 -1) (-1 -2 2)) (-9 (-1 -1 -1) (1 2 -1))
+     (-12 (1 -1 -1) (-1 2 2)) (-11 (2 -1 -1) (-1 2 1)) (-4 (1) (2))
+     (-4 (1 1) (-2 -1)) (-9 (1 -1 -1) (-1 -2 -1))
+     (-7 (1 1 2) (-1 -2 -2))))  => nil)
+
+(future-fact "create new line"
+  (reset! new-line [])
+
   (create-new-line
    '(69 71 72 76 74 72 74 72 71 69)
    '(36 38 40 41 43 45 47 48 50 52 53 55 57 59 60 62 64 65 67 69 71 72
         74 76 77 79 81 83 84 86 88 89 91 93 95 96)
    '(64 57 62 59)
-   nil) =>
-   '(57 55 53 55 53 57 55 57 59 62))
+   nil) => '(57 55 53 55 53 57 55 57 59 62))
 
 (fact "check relevant cf notes"
   (create-relevant-cf-notes '(57 55 57 55 53 57 55 57)
                             '(69 71 72 76 74 72 74 72 71 69)) => '(72 71))
+
+(fact "matching interval rule"
+  (match-interval-rule
+   '((-1 -1 nil) (-1 -1 nil))
+   '((-1 1 -1) (-1 -2 2))) => nil)
 
 (fact "look ahead"
   (look-ahead 1 '(69 71 72 76 74 72 74 72 71 69) '(62) '(-4 nil nil) '((-9 (-1 1 -1) (-1 -2 2)) (-9 (-1 -1 -1) (1 2 -1))
@@ -101,7 +115,7 @@
   (test-for-simultaneous-leaps '(69 71 72 76 74 72 74 72 71 69) 60 '(57 55 57 55 59 57 55 57 59))  => nil)
 
 (fact "test for direct fifths"
-  (test-for-direct-fifths'(69 71 72 76 74 72 74 72 71 69) 60 '(57 55 57 55 53 57 55 57 59)) => nil)
+  (test-for-direct-fifths '(69 71 72 76 74 72 74 72 71 69) 60 '(57 55 57 55 53 57 55 57 59)) => nil)
 
 (fact "test for consecutive motions"
   (test-for-consecutive-motions '(69 71 72 76 74 72 74 72 71 69) 65 '(57 55 53 55 59 57 59 60 62)) => nil)

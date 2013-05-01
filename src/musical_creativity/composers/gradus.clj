@@ -365,11 +365,12 @@
 (defn check-for-nils [choices rules]
   "checking to see if all possible first notes produce rule-conflicting problems."
   (cond
-   (empty? choices) true
-   (member (list (first choices)
-                 nil nil) rules)
+   (empty? choices)
+   true
+   (member (list (first choices) nil nil) rules)
    (check-for-nils (rest choices) rules)
-   :else nil))
+   :else
+   nil))
 
 (defn reduce-to-within-octave [interval]
   "reduces diatonic intervals to within the octave."
@@ -610,33 +611,40 @@
             (nil? (very-second (rest rule-for-matching)))))
    (match-rule (cons (first rule-for-matching)(map rest (rest rule-for-matching)))
                (cons (first rule)(map rest (rest rule))))
-   :else nil))
+   :else
+   nil))
 
 (defn match-interval-rule [rule-for-matching rule]
   "matches the freer rule to the rule from rules."
   (cond
-   (and (nil? (first rule-for-matching)) (nil? (first rule)))
+   (and (empty? (first rule-for-matching))
+        (empty? (first rule)))
    true
-   (or (and (= (very-first rule-for-matching)(very-first rule))
-            (= (very-second rule-for-matching)(very-second rule)))
-       (and (= (very-first rule-for-matching)(very-first rule))
+   (or (and (= (very-first rule-for-matching) (very-first rule))
+            (= (very-second rule-for-matching) (very-second rule)))
+       (and (= (very-first rule-for-matching) (very-first rule))
             (nil? (very-second rule-for-matching))))
    (match-interval-rule (map rest rule-for-matching) (map rest rule))
-   :else nil))
+   :else
+   nil))
 
 (defn match-rules-freely [rule rules]
   "runs the match-rule function through the rules."
-  (cond
+ (cond
    (empty? rules)
-   []
-   (and (= (first rule)(first (first rules)))
-        (match-interval-rule (rest rule)(rest (first rules))))
+   nil
+   (and (= (first rule)
+           (first (first rules)))
+        (match-interval-rule (rest rule) (rest (first rules))))
    true
-   (and (= (first rule)(first (first rules)))
-        (= (count (second rule))(count (second (first rules))))
+   (and (= (first rule)
+           (first (first rules)))
+        (= (count (second rule))
+           (count (second (first rules))))
         (match-rule rule (first rules)))
    true
-   :else (match-rules-freely rule (rest rules))))
+   :else
+   (match-rules-freely rule (rest rules))))
 
 (defn third [list]
   (nth list 2))
@@ -682,7 +690,8 @@
                     (create-rule cantus-firmus (concat last-notes (list (first correct-choices))))
                     @rules))
    (first correct-choices)
-   :else (look-ahead-for-best-choice cantus-firmus last-notes (rest correct-choices))))
+   :else
+   (look-ahead-for-best-choice cantus-firmus last-notes (rest correct-choices))))
 
 (defn evaluate-choices
   "runs the evaluate and look-ahead functions through the various choices."
@@ -707,7 +716,8 @@
   (format "~&~a~&~a~&~a~&" "backtracking.....there are now" (count @rules) "rules."))
 
 (defn position [thing list]
-  (.indexOf thing list))
+  (let [index (.indexOf list thing)]
+    (when (>= index 0) index)))
 
 (defn translate-into-pitchnames [list-of-midi-note-numbers]
   "used to translate midi note numbers into note names."
@@ -747,7 +757,7 @@
   (if (stop-if-all-possibilities-are-nil @*seed-note* @*cantus-firmus* @rules)
     (format "~a~&" "i can find no solution for this cantus firmus.")
     (if (<= length 0)
-      new-line
+      @new-line
       (let [test (evaluate-choices cantus-firmus choices last-notes)]
         (if (nil? test)
           (do
@@ -830,8 +840,7 @@
     (reset! past-model-count (count models))
     (reset! new-line [])
     (let [choices (shuffle (create-choices major-scale @*seed-note*))]
-      (reset! solution
-              create-new-line @*cantus-firmus*  major-scale choices nil))
+      (reset! solution (create-new-line @*cantus-firmus*  major-scale choices nil)))
     (reset! save-voices (list (firstn (count @solution) @*cantus-firmus*)
                               @solution))
     (reset! save-voices (map translate-into-pitchnames @save-voices))
