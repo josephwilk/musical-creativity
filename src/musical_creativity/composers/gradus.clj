@@ -6,11 +6,11 @@
                    57 59 60 62 64 65 67 69 71 72 74 76
                    77 79 81 83 84 86 88 89 91 93 95 96))
 
-(def illegal-verticals (atom '(0 1 2 5 6 10 11 13 14 17 18 22 23 25 26 29 30 34 35 -1 -2 -3 -4 -5 -6 -7 -8)))
-(def illegal-parallel-motions (atom '((7 7)(12 12)(19 19)(24 24))))
-(def illegal-double-skips (atom '((3 3)(3 4)(3 -3)(3 -4)(-3 -3)(-3 -4)(-3 3)(-3 4)
-                                 (4 3)(4 4)(4 -3)(4 -4)(-4 -3)(-4 -4)(-4 3)(-4 4))))
-(def direct-fifths-and-octaves (atom '((9 7)(8 7)(21 19)(20 19))))
+(def illegal-verticals         (atom '(0 1 2 5 6 10 11 13 14 17 18 22 23 25 26 29 30 34 35 -1 -2 -3 -4 -5 -6 -7 -8)))
+(def illegal-parallel-motions  (atom '((7 7) (12 12) (19 19) (24 24))))
+(def illegal-double-skips      (atom '((3 3) (3 4) (3 -3) (3 -4) (-3 -3) (-3 -4) (-3 3) (-3 4)
+                                      (4 3) (4 4) (4 -3) (4 -4) (-4 -3) (-4 -4) (-4 3) (-4 4))))
+(def direct-fifths-and-octaves (atom '((9 7) (8 7) (21 19) (20 19))))
 
 (def solution (atom []))
 (def counterpoint (atom []))
@@ -68,8 +68,7 @@
 (def b5 95)
 (def c5 96)
 
-(def list-of-notes '(c1 d1 e1 f1 g1 a1 b1 c2 d2 e2 f2 g2 a2 b2 c3 d3 e3 f3 g3 a3 b3 c4 d4 e4 f4 g4 a4 b4 c5 d5
-                        e5 f5 g5 a5 b5 c5) )
+(def list-of-notes '(c1 d1 e1 f1 g1 a1 b1 c2 d2 e2 f2 g2 a2 b2 c3 d3 e3 f3 g3 a3 b3 c4 d4 e4 f4 g4 a4 b4 c5 d5 e5 f5 g5 a5 b5 c5) )
 (def *look-ahead* (atom []))
 (def temporary-rules (atom []))
 (def last-cantus-firmus (atom []))
@@ -194,8 +193,9 @@
       up
       (- down))))
 
-(defn my-last [list]
+(defn my-last
   "returns th atom last of the list."
+  [list]
   (let [last-item (last list)]
     (if (seq? last-item)
       (first last-item)
@@ -208,8 +208,9 @@
         scale-intervals (find-scale-intervals (list (first cantus-firmus) (my-last cantus-firmus)) scale)]
     [tessitura (first scale-intervals)]))
 
-(defn select-new-seed-note [cantus-firmus scale saved-templates]
+(defn select-new-seed-note
   "select a logical new seed note."
+  [cantus-firmus scale saved-templates]
   (let [map-template (get-map cantus-firmus scale)
         templates (collect-all map-template saved-templates)
         counts (return-counts templates)
@@ -218,19 +219,19 @@
     (when interval
       (get-diatonic-note (first cantus-firmus) interval scale))))
 
-(defn set-default-goals []
+(defn set-default-goals
   "sets the default goals for the program."
-  (reset! illegal-verticals '(0 1 2 5 6 10 11 13 14 17 18 22 23 25 26 29 30 34 35 -1 -2 -3 -4 -5 -6 -7 -8))
-  (reset! illegal-parallel-motions '((7 7)(12 12)(19 19)(24 24)))
-  (reset! illegal-double-skips '((3 3)(3 4)(3 -3)(3 -4)(-3 -3)(-3 -4)(-3 3)(-3 4)
-                                 (4 3)(4 4)(4 -3)(4 -4)(-4 -3)(-4 -4)(-4 3)(-4 4)))
-  (reset! direct-fifths-and-octaves '((9 7)(8 7)(21 19)(20 19))))
+  []
+  (reset! illegal-verticals         '(0 1 2 5 6 10 11 13 14 17 18 22 23 25 26 29 30 34 35 -1 -2 -3 -4 -5 -6 -7 -8))
+  (reset! illegal-parallel-motions  '((7 7) (12 12) (19 19) (24 24)))
+  (reset! illegal-double-skips      '((3 3) (3 4) (3 -3) (3 -4) (-3 -3) (-3 -4) (-3 3) (-3 4)
+                                      (4 3) (4 4) (4 -3) (4 -4) (-4 -3) (-4 -4) (-4 3) (-4 4)))
+  (reset! direct-fifths-and-octaves '((9 7) (8 7) (21 19) (20 19))))
 
 (defn get-complement
   "incrementally returns all of the intervals not in the verticals arg."
   ([verticals] (get-complement verticals 0))
   ([verticals number]
-
      (cond
       (empty? verticals) []
       (member number verticals)
@@ -569,7 +570,6 @@
      :else
      nil)))
 
-
  (defn choice-fits-goals-and-current-rules? [choice cantus-firmus last-notes]
    (let [current-rule (create-rule cantus-firmus (concat last-notes (list choice)))
          next-position (+ 1 (count last-notes))]
@@ -713,7 +713,7 @@
 
 (defn print-backtracking []
   "simple printing function to show backtracking."
-  (format "~&~a~&~a~&~a~&" "backtracking.....there are now" (count @rules) "rules."))
+  (println (format "~&~a~&~a~&~a~&" "backtracking.....there are now" (count @rules) "rules.")))
 
 (defn position [thing list]
   (let [index (.indexOf list thing)]
@@ -721,26 +721,31 @@
 
 (defn translate-into-pitchnames [list-of-midi-note-numbers]
   "used to translate midi note numbers into note names."
-  (if (empty? list-of-midi-note-numbers) []
-      (cons (nth list-of-notes (position (first list-of-midi-note-numbers) major-scale))
-            (translate-into-pitchnames (rest list-of-midi-note-numbers)))))
+  (if (empty? list-of-midi-note-numbers)
+    []
+    (cons (nth list-of-notes (position (first list-of-midi-note-numbers) major-scale))
+          (translate-into-pitchnames (rest list-of-midi-note-numbers)))))
 
-(defn translate-notes [first-note intervals]
+(defn translate-notes
   "translates interval lists into note names for readability."
-  (if (empty? intervals)(translate-into-pitchnames (list first-note))
-      (let [test (get-diatonic-note first-note (first intervals) major-scale)]
-        (concat (translate-into-pitchnames (list first-note))
+  [first-note intervals]
+  (if (empty? intervals)
+    (translate-into-pitchnames (list first-note))
+    (let [test (get-diatonic-note first-note (first intervals) major-scale)]
+      (concat (translate-into-pitchnames (list first-note))
               (translate-notes test (rest intervals))))))
 
-(defn translate-rule-into-pitches [first-note rule]
+(defn translate-rule-into-pitches
   "translates rules into more readable pitch names."
+  [first-note rule]
   (list (translate-notes first-note (second rule))
         (translate-notes (get-diatonic-note first-note (first rule) major-scale)(third rule))))
 
-
-(defn print-working [cantus-firmus last-notes]
-  "simple printing function for continuing to compose"
-  (format "~&~a~&~a~&" "working....." (list (translate-into-pitchnames cantus-firmus)(translate-into-pitchnames last-notes))))
+(defn print-working
+  [cantus-firmus last-notes]
+  (let [notes (translate-into-pitchnames cantus-firmus)
+        last-notes (translate-into-pitchnames last-notes)]
+    (println "cantus firmus:" notes "notes:" last-notes)))
 
 (defn get-new-starting-point
   "for backtracking - starts 2 earlier or nil"
@@ -791,21 +796,19 @@
 
 (defn make-event [ontime pitch channel]
   "creates an event based on args."
-  (list ontime
-        (if (symbol? pitch) (eval pitch) pitch)
-        1000
-        channel
-        90))
+  {:time ontime
+   :pitch (if (symbol? pitch) (-> pitch resolve var-get) pitch)
+   :channel channel})
 
 (defn make-events
   "makes consecutive events out of the pairs of pitches in its arg."
   ([pitch-groupings] (make-events pitch-groupings 0))
   ([pitch-groupings ontime]
-  (if (empty? pitch-groupings) []
-      (concat (list (make-event ontime (first (first pitch-groupings)) 1)
-                    (make-event ontime (second (first pitch-groupings)) 2))
-              (make-events (rest pitch-groupings)(+ ontime 1000))))))
-
+  (if (empty? pitch-groupings)
+    []
+    (concat (list (make-event ontime (first (first pitch-groupings)) 1)
+                  (make-event ontime (second (first pitch-groupings)) 2))
+            (make-events (rest pitch-groupings)(+ ontime 1000))))))
 (defn analyze-for-template [seed-note cantus-firmus scale]
   "returns the complete template (seed interval and map) for saving."
   (list (first (find-scale-intervals (list (first cantus-firmus) seed-note) scale))
@@ -848,8 +851,7 @@
     (if (= (count @*cantus-firmus*)(count (second @save-voices)))
       (push (analyze-for-template seed-note @*cantus-firmus* major-scale)
             saved-templates))
-    counterpoint))
-
+    @counterpoint))
 (defn replenish-seed-notes []
   "replenishes the seednotes when when they have all been used."
   (reset! seed-notes '(60 65 64 62 59 57 55 53)))
@@ -878,5 +880,8 @@
                   (vec (repeat (count @*cantus-firmus*) 0))
                   lower-voice lower-voice lower-voice))))))
 
-(defn compose []
+(defn compose-canon []
   (create-canon))
+
+(defn compose [& args]
+  (apply gradus args))

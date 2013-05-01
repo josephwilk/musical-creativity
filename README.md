@@ -34,13 +34,15 @@ Experiments with models for computers generating music.
 
 (musician/play (markov/compose data.bach/bach1 61 50) piano)
 
-;Minuet
-(require '[musical-creativity.composers.minuet :as minuet] :reload)
-(musician/play (minuet/compose) piano)
-
 ;Fuzzy
 (require '[musical-creativity.composers.fuzzy :as fuzzy] :reload)
 (musician/play (fuzzy/compose) piano)
+
+;Gradus
+(require '[musical-creativity.composers.gradus :as gradus] :reload)
+
+(musician/play (gradus/compose) piano)
+(musician/play (gradus/compose-canon) piano)
 ```
 
 ##Book
