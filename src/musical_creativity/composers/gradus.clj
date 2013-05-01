@@ -156,14 +156,8 @@
 
 (defn collect-all
   "collects all of the occurances of each member of its arg."
-  [map saved-templates]
-  (cond
-   (empty? saved-templates)
-   []
-   (= map (second (first saved-templates)))
-   (cons (first saved-templates)
-         (collect-all map (rest saved-templates)))
-   :else (collect-all map (rest saved-templates))))
+  [item saved-templates]
+  (filter #(= item (second %)) saved-templates))
 
 (defn find-scale-intervals
   "returns the diatonic intervals between the notes according to the scale."
