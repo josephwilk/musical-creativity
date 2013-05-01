@@ -73,3 +73,35 @@
 (fact "check relevant cf notes"
   (create-relevant-cf-notes '(57 55 57 55 53 57 55 57)
                             '(69 71 72 76 74 72 74 72 71 69)) => '(72 71))
+
+(fact "look ahead"
+  (look-ahead 1 '(69 71 72 76 74 72 74 72 71 69) '(62) '(-4 nil nil) '((-9 (-1 1 -1) (-1 -2 2)) (-9 (-1 -1 -1) (1 2 -1))
+                                                                       (-12 (1 -1 -1) (-1 2 2)) (-11 (2 -1 -1) (-1 2 1))
+                                                                       (-4 (1) (2)) (-4 (1 1) (-2 -1))
+                                                                       (-9 (1 -1 -1) (-1 -2 -1)) (-7 (1 1 2) (-1 -2 -2))))
+  => truthy)
+
+(fact "evalulate choices"
+  (evaluate-choices '(69 71 72 76 74 72 74 72 71 69)
+                    '(53 57 52 59)
+                    '(57 55 57 55 53 57 55)) => 57)
+
+(fact "evaluate"
+  (evaluate '(69 71 72 76 74 72 74 72 71 69)
+            '(48 52 47)
+            '(57 55 57 55 53 52 50)) => '(52))
+
+(fact "test for parallel octaves and fifths"
+  (test-for-parallel-octaves-and-fifths '(69 71 72 76 74 72) 52 '(57 55 53 52 53)) => nil)
+
+(fact "test for leaps"
+  (test-for-leaps '(57 55 57 55 53 57 53)) => truthy)
+
+(fact "test for simultaneous leaps"
+  (test-for-simultaneous-leaps '(69 71 72 76 74 72 74 72 71 69) 60 '(57 55 57 55 59 57 55 57 59))  => nil)
+
+(fact "test for direct fifths"
+  (test-for-direct-fifths'(69 71 72 76 74 72 74 72 71 69) 60 '(57 55 57 55 53 57 55 57 59)) => nil)
+
+(fact "test for consecutive motions"
+  (test-for-consecutive-motions '(69 71 72 76 74 72 74 72 71 69) 65 '(57 55 53 55 59 57 59 60 62)) => nil)

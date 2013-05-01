@@ -447,11 +447,6 @@
      (list (the-last (count the-list)
                      (drop-last (- (count cantus-firmus)(count new-notes)) cantus-firmus)) the-list))))
 
-(defn test-for-vertical-dissonance
-  "tests to ensure vertical dissonance"
-  [cantus-firmus-note choice]
-  (if (member (- cantus-firmus-note choice) @illegal-verticals) choice))
-
 (defn firstn [number list]
   "returns the first n of is list arg."
   (take number list))
@@ -459,19 +454,6 @@
 (defn second-to-last [list]
   "returns the second to last of the list arg."
   (my-last (butlast list)))
-
-(defn test-for-parallel-octaves-and-fifths
-  "tests for parallel octaves and fifths."
-  [cantus-firmus choice last-notes]
-  (let [cantus-firmus-to-here (firstn (+ 1 (count last-notes)) cantus-firmus)]
-    (cond
-     (or (not (>= (count cantus-firmus-to-here) 2))(not (>= (count last-notes) 1)))
-     []
-     (member (list (math/abs (- (second-to-last cantus-firmus-to-here)(my-last last-notes)))
-                   (math/abs (- (my-last cantus-firmus-to-here) choice)))
-             illegal-parallel-motions)
-     true
-     :else nil)))
 
 (defn third-to-last [list]
   "returns the third to last of the list arg."
@@ -487,34 +469,9 @@
            (< (second numbers) 0)))
     true))
 
-(defn test-for-leaps [extended-last-notes]
-  "tests for leaps and avoids two in row and ensures that leaps are followed by contrary motion steps."
-  (cond
-   (not (>= (count extended-last-notes) 3))
-   []
-   (member (list (- (second-to-last extended-last-notes)(my-last extended-last-notes))
-                 (- (third-to-last extended-last-notes)(second-to-last extended-last-notes)))
-           illegal-double-skips)
-   true
-   (and (> (math/abs (- (third-to-last extended-last-notes)(second-to-last extended-last-notes))) 2)
-        (not (opposite-sign (list (- (second-to-last extended-last-notes)(my-last extended-last-notes))
-                                  (- (third-to-last extended-last-notes)(second-to-last extended-last-notes))))))
-   true
-   :else []))
-
 (defn skipp [notes]
   "returns true if its two-number arg is a skip."
   (if (> (math/abs (- (second notes)(first notes))) 2) true))
-
- (defn test-for-simultaneous-leaps [cantus-firmus choice last-notes]
-   "tests for the presence of simultaneous leaps."
-   (let [cantus-firmus-to-here  (firstn (+ 1 (count last-notes)) cantus-firmus)]
-     (cond
-      (or (not (>= (count cantus-firmus-to-here) 2))(not (>= (count last-notes) 1)))
-      []
-      (and (skipp (the-last 2 cantus-firmus-to-here))(skipp (the-last 2 (concat last-notes (list choice)))))
-      true
-      :else [])))
 
 (defn get-verticals [cantus-firmus new-line]
   "returns the intervals between two lines of counterpoint."
@@ -522,29 +479,83 @@
       (cons (- (first cantus-firmus)(first new-line))
             (get-verticals (rest cantus-firmus)(rest new-line)))))
 
- (defn test-for-direct-fifths [cantus-firmus choice last-notes]
-   "tests for direct fifths between the two lines."
-   (let [cantus-firmus-to-here  (firstn (+ 1 (count last-notes)) cantus-firmus)]
-     (cond
-      (or (not (>= (count cantus-firmus-to-here) 2))(not (>= (count last-notes) 1)))
-      []
-      (member (get-verticals (the-last 2 cantus-firmus-to-here)(the-last 2 (concat last-notes (list choice))))
-              direct-fifths-and-octaves)
-      true
-      :else [])))
-
 (defn get-intervals [notes]
   "returns a list of intervals one short of its pitch-list arg."
   (if (empty? (rest notes)) []
       (cons (- (second notes)(first notes))
             (get-intervals (rest notes)))))
 
+(defn test-for-vertical-dissonance
+  "tests to ensure vertical dissonance"
+  [cantus-firmus-note choice]
+  (if (member (- cantus-firmus-note choice) @illegal-verticals) choice))
+
+ (defn test-for-simultaneous-leaps [cantus-firmus choice last-notes]
+   "tests for the presence of simultaneous leaps."
+   (let [cantus-firmus-to-here  (firstn (+ 1 (count last-notes)) cantus-firmus)]
+     (cond
+      (or (not (>= (count cantus-firmus-to-here) 2))(not (>= (count last-notes) 1)))
+      nil
+      (and (skipp (the-last 2 cantus-firmus-to-here))(skipp (the-last 2 (concat last-notes (list choice)))))
+      true
+      :else
+      nil)))
+
+(defn test-for-parallel-octaves-and-fifths
+  "tests for parallel octaves and fifths."
+  [cantus-firmus choice last-notes]
+  (let [next-position (+ 1 (count last-notes))
+        cantus-firmus-to-here (take next-position cantus-firmus)]
+    (cond
+     (or (not (>= (count cantus-firmus-to-here) 2))
+         (not (>= (count last-notes) 1)))
+     nil
+     (member (list (math/abs (- (second-to-last cantus-firmus-to-here)
+                                (my-last last-notes)))
+                   (math/abs (- (my-last cantus-firmus-to-here) choice)))
+             @illegal-parallel-motions)
+     true
+     :else
+     nil)))
+
+(defn test-for-leaps [extended-last-notes]
+  "tests for leaps and avoids two in row and ensures that leaps are followed by contrary motion steps."
+  (cond
+   (not (>= (count extended-last-notes) 3))
+   nil
+   (member (list (- (second-to-last extended-last-notes)
+                    (my-last extended-last-notes))
+                 (- (third-to-last extended-last-notes)
+                    (second-to-last extended-last-notes)))
+           @illegal-double-skips)
+   true
+   (and (> (math/abs (- (third-to-last extended-last-notes)
+                        (second-to-last extended-last-notes)))
+           2)
+        (not (opposite-sign (list (- (second-to-last extended-last-notes)(my-last extended-last-notes))
+                                  (- (third-to-last extended-last-notes)(second-to-last extended-last-notes))))))
+   true
+   :else
+   nil))
+
+ (defn test-for-direct-fifths [cantus-firmus choice last-notes]
+   "tests for direct fifths between the two lines."
+   (let [cantus-firmus-to-here  (firstn (+ 1 (count last-notes)) cantus-firmus)]
+     (cond
+      (or (not (>= (count cantus-firmus-to-here) 2))(not (>= (count last-notes) 1)))
+      nil
+      (member (get-verticals (the-last 2 cantus-firmus-to-here)(the-last 2 (concat last-notes (list choice))))
+              @direct-fifths-and-octaves)
+      true
+      :else
+      nil)))
+
 (defn test-for-consecutive-motions [cantus-firmus choice last-notes]
   "tests to see if there are more than two consecutive save-direction motions."
   (let [cantus-firmus-to-here  (firstn (+ 1 (count last-notes)) cantus-firmus)]
     (cond
      (or (not (> (count cantus-firmus-to-here) 3))(not (> (count last-notes) 2)))
-     []
+     nil
      (let [last-four-cf (the-last 4 cantus-firmus-to-here)
            last-four-newline (the-last 4 (concat last-notes (list choice)))]
        (not (or (opposite-sign (list (first (get-intervals (firstn 2 last-four-cf)))
@@ -554,8 +565,20 @@
                 (opposite-sign (list (first (get-intervals (the-last 2 last-four-cf)))
                                      (first (get-intervals (the-last 2 last-four-newline))))))))
      true
-     :else [])))
+     :else
+     nil)))
 
+
+ (defn choice-fits-goals-and-current-rules? [choice cantus-firmus last-notes]
+   (let [current-rule (create-rule cantus-firmus (concat last-notes (list choice)))
+         next-position (+ 1 (count last-notes))]
+     (and (not (consult-rules current-rule))
+          (not (test-for-vertical-dissonance (nth cantus-firmus (count last-notes)) choice))
+          (not (test-for-parallel-octaves-and-fifths (take next-position cantus-firmus) choice last-notes))
+          (not (test-for-leaps (concat last-notes (list choice))))
+          (not (test-for-simultaneous-leaps (take next-position cantus-firmus) choice last-notes))
+          (not (test-for-direct-fifths (take next-position cantus-firmus) choice last-notes))
+          (not (test-for-consecutive-motions (take next-position cantus-firmus) choice last-notes)))))
 
 (defn evaluate
   "evaluates the various choices for a next note based on the goals and current rules"
@@ -563,19 +586,10 @@
   (let [choice (first choices)]
     (cond
      (empty? choices) []
-     (and (not (consult-rules (create-rule cantus-firmus (concat last-notes (list choice)))))
-          (not (test-for-vertical-dissonance (nth cantus-firmus (count last-notes)) choice))
-          (not (test-for-parallel-octaves-and-fifths (firstn (+ 1 (count last-notes)) cantus-firmus)
-                                                     choice last-notes))
-          (not (test-for-leaps (concat last-notes (list choice))))
-          (not (test-for-simultaneous-leaps (firstn (+ 1 (count last-notes)) cantus-firmus)
-                                            choice last-notes))
-          (not (test-for-direct-fifths (firstn (+ 1 (count last-notes)) cantus-firmus)
-                                       choice last-notes))
-          (not (test-for-consecutive-motions (firstn (+ 1 (count last-notes)) cantus-firmus)
-                                             choice last-notes)))
+     (choice-fits-goals-and-current-rules? choice cantus-firmus last-notes)
      (cons choice (evaluate cantus-firmus (rest choices) last-notes))
-     :else (evaluate cantus-firmus (rest choices) last-notes))))
+     :else
+     (evaluate cantus-firmus (rest choices) last-notes))))
 
 (defn very-first [list]
   "returns the first of the first of list."
@@ -652,20 +666,21 @@
 
 (defn look-ahead [amount cantus-firmus last-notes rule rules]
   "the top-level function for looking ahead."
-  (match-rules-freely
-   (reduce-rule (make-freer-rule amount (find-scale-intervals (create-relevant-cf-notes last-notes cantus-firmus) major-scale) rule))
-   rules))
+  (let [cf-notes (create-relevant-cf-notes last-notes cantus-firmus)
+        scale-intervals (find-scale-intervals cf-notes major-scale)
+        freer-rule (make-freer-rule amount scale-intervals rule)]
+    (match-rules-freely (reduce-rule freer-rule) rules)))
 
 (defn look-ahead-for-best-choice [cantus-firmus last-notes correct-choices]
   "looks ahead for the best choice"
   (cond
    (empty? correct-choices)
    []
-   (not (@*look-ahead* 1
+   (not (look-ahead 1
                     cantus-firmus
                     (concat last-notes (list (first correct-choices)))
                     (create-rule cantus-firmus (concat last-notes (list (first correct-choices))))
-                    rules))
+                    @rules))
    (first correct-choices)
    :else (look-ahead-for-best-choice cantus-firmus last-notes (rest correct-choices))))
 
