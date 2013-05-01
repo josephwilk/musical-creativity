@@ -686,7 +686,7 @@
 
 (defn print-backtracking []
   "simple printing function to show backtracking."
-  (println (format "~&~a~&~a~&~a~&" "backtracking.....there are now" (count @rules) "rules.")))
+  (println (str "backtracking.....there are now " (count @rules) " rules.")))
 
 (defn position [thing list]
   (let [index (.indexOf list thing)]
