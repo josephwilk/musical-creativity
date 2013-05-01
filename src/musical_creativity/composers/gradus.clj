@@ -238,9 +238,6 @@
       (get-complement (rest verticals)(+ 1 number))
       :else (cons number (get-complement verticals (+ 1 number))))))
 
-(defn sort-by [function lists]
-  (sort (fn [x y] (function x y)) lists))
-
 (defn project-octaves-out-from [number]
   (if (> number 12)
     (list (- number 12) number (+ number 12))
@@ -264,8 +261,7 @@
 
 (defn get-the-verticals [models]
   "collects the vertical intervals from the models used."
-  (sort-by <
-           (distinct
+  (sort < (distinct
             (project
              (let [voiced-music (pair (make-voices models))]
                (map (fn [pair] (- (first pair) (second pair))) voiced-music)
