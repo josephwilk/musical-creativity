@@ -682,7 +682,7 @@
 
 (defn swap-unless-includes [reference data]
   (when-not (contains? @reference data)
-    (swap! reference concat data)))
+    (swap! reference conj data)))
 
 (defn print-backtracking []
   "simple printing function to show backtracking."
