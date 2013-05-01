@@ -106,16 +106,16 @@
             '(57 55 57 55 53 52 50)) => '(52))
 
 (fact "test for parallel octaves and fifths"
-  (test-for-parallel-octaves-and-fifths '(69 71 72 76 74 72) 52 '(57 55 53 52 53)) => nil)
+  (parallel-octaves-and-fifths? '(69 71 72 76 74 72) 52 '(57 55 53 52 53)) => nil)
 
 (fact "test for leaps"
-  (test-for-leaps '(57 55 57 55 53 57 53)) => truthy)
+  (leaps? '(57 55 57 55 53 57 53)) => truthy)
 
 (fact "test for simultaneous leaps"
-  (test-for-simultaneous-leaps '(69 71 72 76 74 72 74 72 71 69) 60 '(57 55 57 55 59 57 55 57 59))  => nil)
+  (simultaneous-leaps? '(69 71 72 76 74 72 74 72 71 69) 60 '(57 55 57 55 59 57 55 57 59))  => nil)
 
 (fact "test for direct fifths"
-  (test-for-direct-fifths '(69 71 72 76 74 72 74 72 71 69) 60 '(57 55 57 55 53 57 55 57 59)) => nil)
+  (direct-fifths? '(69 71 72 76 74 72 74 72 71 69) 60 '(57 55 57 55 53 57 55 57 59)) => nil)
 
 (fact "test for consecutive motions"
-  (test-for-consecutive-motions '(69 71 72 76 74 72 74 72 71 69) 65 '(57 55 53 55 59 57 59 60 62)) => nil)
+  (consecutive-motions? '(69 71 72 76 74 72 74 72 71 69) 65 '(57 55 53 55 59 57 59 60 62)) => nil)
