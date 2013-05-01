@@ -475,12 +475,12 @@
       (cons (- (second notes)(first notes))
             (get-intervals (rest notes)))))
 
-(defn test-for-vertical-dissonance
+(defn vertical-dissonance?
   "tests to ensure vertical dissonance"
   [cantus-firmus-note choice]
   (if (member (- cantus-firmus-note choice) @illegal-verticals) choice))
 
- (defn test-for-simultaneous-leaps [cantus-firmus choice last-notes]
+ (defn simultaneous-leaps? [cantus-firmus choice last-notes]
    "tests for the presence of simultaneous leaps."
    (let [cantus-firmus-to-here  (take (+ 1 (count last-notes)) cantus-firmus)]
      (cond
@@ -492,7 +492,7 @@
       :else
       nil)))
 
-(defn test-for-parallel-octaves-and-fifths
+(defn parallel-octaves-and-fifths?
   "tests for parallel octaves and fifths."
   [cantus-firmus choice last-notes]
   (let [next-position (+ 1 (count last-notes))
@@ -509,7 +509,7 @@
      :else
      nil)))
 
-(defn test-for-leaps [extended-last-notes]
+(defn leaps? [extended-last-notes]
   "tests for leaps and avoids two in row and ensures that leaps are followed by contrary motion steps."
   (cond
    (not (>= (count extended-last-notes) 3))
@@ -529,7 +529,7 @@
    :else
    nil))
 
- (defn test-for-direct-fifths [cantus-firmus choice last-notes]
+ (defn direct-fifths? [cantus-firmus choice last-notes]
    "tests for direct fifths between the two lines."
    (let [cantus-firmus-to-here  (take (+ 1 (count last-notes)) cantus-firmus)]
      (cond
@@ -541,7 +541,7 @@
       :else
       nil)))
 
-(defn test-for-consecutive-motions [cantus-firmus choice last-notes]
+(defn consecutive-motions? [cantus-firmus choice last-notes]
   "tests to see if there are more than two consecutive save-direction motions."
   (let [cantus-firmus-to-here  (take (+ 1 (count last-notes)) cantus-firmus)]
     (cond
@@ -563,12 +563,12 @@
    (let [current-rule (create-rule cantus-firmus (concat last-notes (list choice)))
          next-position (+ 1 (count last-notes))]
      (and (not (consult-rules current-rule))
-          (not (test-for-vertical-dissonance (nth cantus-firmus (count last-notes)) choice))
-          (not (test-for-parallel-octaves-and-fifths (take next-position cantus-firmus) choice last-notes))
-          (not (test-for-leaps (concat last-notes (list choice))))
-          (not (test-for-simultaneous-leaps (take next-position cantus-firmus) choice last-notes))
-          (not (test-for-direct-fifths (take next-position cantus-firmus) choice last-notes))
-          (not (test-for-consecutive-motions (take next-position cantus-firmus) choice last-notes)))))
+          (not (vertical-dissonance?         (nth cantus-firmus (count last-notes)) choice))
+          (not (parallel-octaves-and-fifths? (take next-position cantus-firmus) choice last-notes))
+          (not (leaps?                       (concat last-notes (list choice))))
+          (not (simultaneous-leaps?          (take next-position cantus-firmus) choice last-notes))
+          (not (direct-fifths?               (take next-position cantus-firmus) choice last-notes))
+          (not (consecutive-motions?         (take next-position cantus-firmus) choice last-notes)))))
 
 (defn evaluate
   "evaluates the various choices for a next note based on the goals and current rules"
