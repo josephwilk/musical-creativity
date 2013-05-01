@@ -625,14 +625,17 @@
    :else (match-rules-freely rule (rest rules))))
 
 (defn third [list]
-  (list 3))
+  (nth list 2))
 
 (defn reduce-rule [rule]
   "reduces the front-end of the look-ahead rule."
-  (if (<= (count (second rule)) 3) rule
-      (let [amount (- (count (second rule)) 3)]
-        (cons (+ (first rule)(- (first (second rule)))(first (third rule)))
-              (map (fn [x](nth x amount)) (rest rule))))))
+  (if (<= (count (second rule)) 3)
+    rule
+    (let [amount (- (count (second rule)) 3)]
+      (cons (+ (first rule)
+               (- (first (second rule)))
+               (first (third rule)))
+            (map #(rest %) (rest rule))))))
 
 (defn make-freer-rule [amount cf-notes rule]
   "adds the appropriate number of nils to the new line for look-ahead matching."
@@ -645,7 +648,7 @@
 
 (defn create-relevant-cf-notes [last-notes cantus-firmus]
   "creates the set of forward reaching cf notes."
-  (firstn 2 (nth cantus-firmus (- (count last-notes) 1))))
+  (firstn 2 (drop (- (count last-notes) 1) cantus-firmus)))
 
 (defn look-ahead [amount cantus-firmus last-notes rule rules]
   "the top-level function for looking ahead."

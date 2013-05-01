@@ -57,6 +57,10 @@
   (get-new-starting-point '(57 55 53 52 55)) =>
   '(57 55 53 52))
 
+(fact "reduce rule"
+  (reduce-rule '(-11 (2 -1 -1 1) (-1 1 -1 nil))) =>
+  '(-14 (-1 -1 1) (1 -1 nil)))
+
 (fact "create new line"
   (create-new-line
    '(69 71 72 76 74 72 74 72 71 69)
@@ -65,3 +69,7 @@
    '(64 57 62 59)
    nil) =>
    '(57 55 53 55 53 57 55 57 59 62))
+
+(fact "check relevant cf notes"
+  (create-relevant-cf-notes '(57 55 57 55 53 57 55 57)
+                            '(69 71 72 76 74 72 74 72 71 69)) => '(72 71))
