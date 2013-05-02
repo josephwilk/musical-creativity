@@ -276,14 +276,7 @@
 (defn remove-illegal-verticals
   "removes the illegal verticals in its second arg."
   [illegal-verticals all-verticals]
-  (cond
-   (empty? all-verticals)
-   []
-   (find-first-args-also-in-second-arg illegal-verticals (first all-verticals))
-   (remove-illegal-verticals illegal-verticals (rest all-verticals))
-   :else
-   (cons (first all-verticals)
-         (remove-illegal-verticals illegal-verticals (rest all-verticals)))))
+  (remove #(find-first-args-also-in-second-arg illegal-verticals %) all-verticals))
 
 (defn find-motions
   "sub-function of find-all-possible-motions."
