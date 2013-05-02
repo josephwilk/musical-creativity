@@ -247,7 +247,7 @@
   "pairs the two lists."
   (if (empty? (first voices))
     []
-    (cons (list (first (first voices))(first (second voices)))
+    (cons (list (first (first voices)) (first (second voices)))
           (pair (list (rest (first voices))(rest (second voices)))))))
 
 (defn make-voices [models]
@@ -308,10 +308,8 @@
 
 (defn find-legals [models]
   "collects the legal motions in its arg."
-  (if (empty? models)
-    []
-    (concat (find-the-legals (pair (first models)))
-            (find-legals (rest models)))))
+  (apply concat
+         (map #(find-the-legals (pair %)) models)))
 
 (defn remove-legal-motions [legal-motions motions]
   "removes the legal motions from the motions arg."
