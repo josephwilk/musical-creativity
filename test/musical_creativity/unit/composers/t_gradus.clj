@@ -30,8 +30,8 @@
                              74 76 77 79 81 83 84 86 88 89 91 93 95 96))
   => 57)
 
-(fact "stop-if-all-possibilities-are-nil"
-  (stop-if-all-possibilities-are-nil
+(fact "no-solution-exists?"
+  (no-solution-exists?
    60
    '(69 71 72 76 74 72 74 72 71 69)
    '((-7 (1 1 2) (-1 -2 1)) (-9 (1 -1 -1) (-1 -2 2)) (-4 (1) (-1))
