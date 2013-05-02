@@ -554,13 +554,7 @@
 (defn evaluate
   "evaluates the various choices for a next note based on the goals and current rules"
   [cantus-firmus choices last-notes]
-  (let [choice (first choices)]
-    (cond
-     (empty? choices) []
-     (choice-fits-goals-and-current-rules? choice cantus-firmus last-notes)
-     (cons choice (evaluate cantus-firmus (rest choices) last-notes))
-     :else
-     (evaluate cantus-firmus (rest choices) last-notes))))
+  (filter #(choice-fits-goals-and-current-rules? % cantus-firmus last-notes) choices))
 
 (defn very-second [list]
   "returns the first of the second of list."
