@@ -243,27 +243,28 @@
       (concat (project-octaves-out-from (first numbers))
               (project (rest numbers)))))
 
-(defn pair [voices]
-  "pairs the two lists."
-  (if (empty? (first voices))
-    []
-    (cons (list (first (first voices)) (first (second voices)))
-          (pair (list (rest (first voices))(rest (second voices)))))))
+(defn pair
+  [[voices1 voices2]]
+  (map vector voices1 voices2))
 
-(defn make-voices [models]
+(defn make-voices
   "makes lists of the cantus firmus and accompanying line pitches."
-  (list (apply concat (map first models))(apply concat (map second models))))
+  [models]
+  (list (apply concat (map first models))
+        (apply concat (map second models))))
 
-(defn get-the-verticals [models]
+(defn get-the-verticals
   "collects the vertical intervals from the models used."
+  [models]
   (sort < (distinct
             (project
              (let [voiced-music (pair (make-voices models))]
                (map (fn [pair] (- (first pair) (second pair))) voiced-music)
                )))))
 
-(defn get-illegal-verticals [models]
+(defn get-illegal-verticals
   "returns all of the vertical intervals not in the models."
+  [models]
   (get-complement (get-the-verticals models)))
 
 (defn find-first-args-also-in-second-arg [find-list target-list]
@@ -272,8 +273,9 @@
    (fn [find] (when (member find target-list) find))
    find-list)))
 
-(defn remove-illegal-verticals [illegal-verticals all-verticals]
+(defn remove-illegal-verticals
   "removes the illegal verticals in its second arg."
+  [illegal-verticals all-verticals]
   (cond
    (empty? all-verticals)
    []
@@ -283,8 +285,9 @@
    (cons (first all-verticals)
          (remove-illegal-verticals illegal-verticals (rest all-verticals)))))
 
-(defn find-motions [extent value]
+(defn find-motions
   "sub-function of find-all-possible-motions."
+  [extent value]
   (if (= 0 value) []
       (cons (list extent value)
             (find-motions extent (- value 1)))))
@@ -301,8 +304,9 @@
   (list (- (first model1) (second model1))
         (- (first model2) (second model2))))
 
-(defn find-the-legals [paired-model]
+(defn find-the-legals
   "discovers the legal motions in its arg."
+  [paired-model]
   (let [partitioned-paired-models (partition 2 1 paired-model)]
     (map motions partitioned-paired-models)))
 
