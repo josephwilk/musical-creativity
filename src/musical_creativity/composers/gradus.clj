@@ -143,7 +143,7 @@
       (recur value (rest list)))))
 
 (defn sort-by-first-element [lists]
-  (sort (fn [x y] (> (first x) (first x)))  lists))
+  (sort (fn [[x & _] [y & _]] (> x y))  lists))
 
 (defn get-diatonic-note [current-note interval scale]
   "a simple variant of choose-from-scale which uses a diatonic interval as its second arg."
