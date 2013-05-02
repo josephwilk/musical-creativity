@@ -440,16 +440,17 @@
       (cons (- (first cantus-firmus)(first new-line))
             (get-verticals (rest cantus-firmus)(rest new-line)))))
 
-(defn get-intervals [notes]
+(defn get-intervals
   "returns a list of intervals one short of its pitch-list arg."
-  (if (empty? (rest notes)) []
-      (cons (- (second notes)(first notes))
-            (get-intervals (rest notes)))))
+  [notes]
+  (let [partitioned-notes (partition 2 1 notes)]
+    (map (fn [[note1 note2]] (- note2 note1)) partitioned-notes)))
 
 (defn vertical-dissonance?
   "tests to ensure vertical dissonance"
   [cantus-firmus-note choice]
-  (if (member (- cantus-firmus-note choice) @illegal-verticals) choice))
+  (when (member (- cantus-firmus-note choice) @illegal-verticals)
+    choice))
 
  (defn simultaneous-leaps? [cantus-firmus choice last-notes]
    "tests for the presence of simultaneous leaps."
