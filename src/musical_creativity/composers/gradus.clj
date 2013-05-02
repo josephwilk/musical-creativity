@@ -128,12 +128,13 @@
 (defn third [list]
   (nth list 2))
 
-(defn return-counts [templates]
+(defn return-counts
   "simply adds the count of occurances to the beginning of each member of its arg."
-  (if (empty? templates)
-    []
-    (cons (list (count (filter #(= % (first templates)) templates)) (first templates))
-          (return-counts (remove #(= % (first templates)) templates)))))
+  [templates]
+  (letfn [(occurences [template templates]
+            (count (filter #(= template %) templates)))]
+    (map (fn [template]
+           [(occurences template templates) template]) templates)))
 
 (defn member [value list]
   (if (seq list)
