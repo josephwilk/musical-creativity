@@ -338,13 +338,7 @@
 
 (defn all-first-notes-conflict-rules? [choices rules]
   "checking to see if all possible first notes produce rule-conflicting problems."
-  (cond
-   (empty? choices)
-   true
-   (member (list (first choices) nil nil) rules)
-   (all-first-notes-conflict-rules? (rest choices) rules)
-   :else
-   nil))
+  (every? #(member (list % nil nil) rules) choices))
 
 (defn reduce-to-within-octave [interval]
   "reduces diatonic intervals to within the octave."
