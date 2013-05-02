@@ -297,13 +297,14 @@
          (concat (find-motions extent save-extent)
                  (find-all-possible-motions (- extent 1) value save-extent)))))
 
+(defn- motions [[model1 model2]]
+  (list (- (first model1) (second model1))
+        (- (first model2) (second model2))))
+
 (defn find-the-legals [paired-model]
   "discovers the legal motions in its arg."
-  (if (empty? (rest paired-model))
-    []
-    (cons (list (- (first (first paired-model))(second (first paired-model)))
-                (- (first (second paired-model))(second (second paired-model))))
-          (find-the-legals (rest paired-model)))))
+  (let [partitioned-paired-models (partition 2 1 paired-model)]
+    (map motions partitioned-paired-models)))
 
 (defn find-legals [models]
   "collects the legal motions in its arg."
@@ -757,6 +758,7 @@
         (if (nil? test)
           (create-line-from-choices cantus-firmus scale choices last-notes length)
           (create-line-from-new-choices test cantus-firmus scale last-notes length)))))))
+
 (defn resolve-pitch [pitch]
   (if (symbol? pitch)
     (-> (str "musical-creativity.composers.gradus/" pitch) symbol resolve var-get)
