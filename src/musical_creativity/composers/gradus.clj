@@ -329,17 +329,14 @@
     (remove-legal-motions model-verticals legal-verticals)))
 
 (defn combinations [object list]
-  "a sub-function of possible-combinations."
   (map (fn [item] [object item]) list))
 
 (defn possible-combinations
   "returns all possible combinations of its list arg."
   ([list] (possible-combinations list list))
   ([list save-list]
-     (if (empty? list)
-       []
-       (concat (combinations (first list) save-list)
-               (possible-combinations (rest list) save-list)))))
+     (apply concat
+            (map #(combinations % save-list) list))))
 
 (defn set-goals [models]
   "sets the goals for the gradus program."
