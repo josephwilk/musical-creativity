@@ -775,12 +775,13 @@
           (create-line-from-choices cantus-firmus scale choices last-notes length)
           (create-line-from-new-choices test cantus-firmus scale last-notes length)))))))
 
-(defn make-event [ontime pitch channel]
+(defn make-event
   "creates an event based on args."
+  [ontime pitch channel]
 
   ;TODO: find better way to resolve var in this ns?
   (let [pitch-str (str "musical-creativity.composers.gradus/" pitch)
-        event-pitch  (-> pitch-str symbol resolve var-get)]
+        event-pitch (if ( symbol? pitch) (-> pitch-str symbol resolve var-get) pitch)]
     {:time ontime
      :pitch event-pitch
      :channel channel}))
