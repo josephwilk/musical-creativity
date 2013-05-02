@@ -28,7 +28,7 @@
 (def new-line (atom []))
 
 (def *print-state* (atom true))
-(def *auto-goals* (atom []))
+(def *auto-goals* (atom nil))
 (def saved-templates (atom []))
 
 (def c1 36)
@@ -808,36 +808,43 @@
         print-state (or print-state @*print-state*)
         seed-note (or seed-note nil)
         cantus-firmus (or cantus-firmus @*cantus-firmus*)]
+
     (when-not (= last-cantus-firmus @*cantus-firmus*)
-            (do
-              (reset! temporary-rules [])
-              (reset! last-cantus-firmus @*cantus-firmus*)))
+      (reset! temporary-rules [])
+      (reset! last-cantus-firmus @*cantus-firmus*))
 
     (if seed-note
       (reset! *seed-note* seed-note)
       (let [test (select-new-seed-note @*cantus-firmus* major-scale @saved-templates)]
-        (if test (reset! *seed-note* test))))
+        (when test (reset! *seed-note* test))))
+
     (reset! *auto-goals* auto-goals)
     (reset! *print-state* print-state)
     (reset! *cantus-firmus* cantus-firmus)
+
     (if (nil? @*auto-goals*)
       (set-default-goals))
-    (if @*auto-goals*
-      (do (set-goals models)
-          (reset! *auto-goals* [])
-          (reset! past-model-count (count models))))
-    (if (not (= (count models) @past-model-count)) (set-goals models))
+
+    (when @*auto-goals*
+      (set-goals models)
+      (reset! *auto-goals* nil)
+      (reset! past-model-count (count models)))
+
+    (when (not (= (count models) @past-model-count)) (set-goals models))
+
     (reset! past-model-count (count models))
     (reset! new-line [])
+
     (let [choices (shuffle (create-choices major-scale @*seed-note*))]
       (reset! solution (create-new-line @*cantus-firmus*  major-scale choices nil)))
-    (reset! save-voices (list (take (count @solution) @*cantus-firmus*)
-                              @solution))
+
+    (reset! save-voices (list (take (count @solution) @*cantus-firmus*) @solution))
     (reset! save-voices (map translate-into-pitchnames @save-voices))
     (reset! counterpoint (make-events (pair @save-voices)))
-    (if (= (count @*cantus-firmus*)(count (second @save-voices)))
-      (push (analyze-for-template seed-note @*cantus-firmus* major-scale)
-            saved-templates))
+
+    (when (= (count @*cantus-firmus*)
+             (count (second @save-voices)))
+      (push (analyze-for-template seed-note @*cantus-firmus* major-scale) saved-templates))
     @counterpoint))
 
 (defn replenish-seed-notes []
