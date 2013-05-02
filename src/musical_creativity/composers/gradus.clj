@@ -313,13 +313,7 @@
 
 (defn remove-legal-motions [legal-motions motions]
   "removes the legal motions from the motions arg."
-  (cond
-   (empty? legal-motions) motions
-   (member (first legal-motions) motions)
-   (let [motions (remove (fn [test] (= test (first legal-motions))) motions)
-         motions (remove-legal-motions (rest legal-motions) motions)]
-     motions)
-   :else (remove-legal-motions (rest legal-motions) motions)))
+  (remove #(some #{%} legal-motions) motions))
 
 (defn find-illegal-parallels [models]
   "returns the non-used parallels in the models which are assumed to be illegal."
