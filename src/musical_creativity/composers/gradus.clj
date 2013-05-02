@@ -636,19 +636,17 @@
         freer-rule (make-freer-rule amount scale-intervals rule)]
     (match-rules-freely (reduce-rule freer-rule) rules)))
 
+(defn- look-ahead-filter-fn [cantus-firmus last-notes]
+  (fn [choice]
+    (let [new-choice (list choice)
+          new-last-notes (concat last-notes new-choice)
+          new-rule (create-rule cantus-firmus new-last-notes)]
+      (not (look-ahead 1 cantus-firmus new-last-notes new-rule @rules)))))
+
 (defn look-ahead-for-best-choice [cantus-firmus last-notes correct-choices]
   "looks ahead for the best choice"
-  (cond
-   (empty? correct-choices)
-   []
-   (not (look-ahead 1
-                    cantus-firmus
-                    (concat last-notes (list (first correct-choices)))
-                    (create-rule cantus-firmus (concat last-notes (list (first correct-choices))))
-                    @rules))
-   (first correct-choices)
-   :else
-   (look-ahead-for-best-choice cantus-firmus last-notes (rest correct-choices))))
+  (first
+   (filter (look-ahead-filter-fn cantus-firmus last-notes) correct-choices)))
 
 (defn evaluate-choices
   "runs the evaluate and look-ahead functions through the various choices."
