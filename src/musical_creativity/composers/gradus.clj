@@ -774,14 +774,17 @@
         (if (nil? test)
           (create-line-from-choices cantus-firmus scale choices last-notes length)
           (create-line-from-new-choices test cantus-firmus scale last-notes length)))))))
+(defn resolve-pitch [pitch]
+  (if (symbol? pitch)
+    (-> (str "musical-creativity.composers.gradus/" pitch) symbol resolve var-get)
+    pitch))
 
 (defn make-event
   "creates an event based on args."
   [ontime pitch channel]
 
   ;TODO: find better way to resolve var in this ns?
-  (let [pitch-str (str "musical-creativity.composers.gradus/" pitch)
-        event-pitch (if ( symbol? pitch) (-> pitch-str symbol resolve var-get) pitch)]
+  (let [event-pitch (resolve-pitch pitch)]
     {:time ontime
      :pitch event-pitch
      :channel channel}))
@@ -856,7 +859,7 @@
 (defn evaluate-pitch-names
   "evaluates the pitch names of its arg into midi note numbers."
   [voices]
-  (map (fn [x] (map eval x)) voices))
+  (map (fn [x] (map resolve-pitch x)) voices))
 
 (defn create-canon
   "creates a simple canon in two voices using gradus."
