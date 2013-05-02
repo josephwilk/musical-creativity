@@ -261,7 +261,6 @@
                (map (fn [pair] (- (first pair) (second pair))) voiced-music)
                )))))
 
-
 (defn get-illegal-verticals [models]
   "returns all of the vertical intervals not in the models."
   (get-complement (get-the-verticals models)))
@@ -349,13 +348,13 @@
   (reset! direct-fifths-and-octaves (find-illegal-parallels models))
   (reset! illegal-double-skips (possible-combinations '(3 4 -3 -4))))
 
-(defn check-for-nils [choices rules]
+(defn all-first-notes-conflict-rules? [choices rules]
   "checking to see if all possible first notes produce rule-conflicting problems."
   (cond
    (empty? choices)
    true
    (member (list (first choices) nil nil) rules)
-   (check-for-nils (rest choices) rules)
+   (all-first-notes-conflict-rules? (rest choices) rules)
    :else
    nil))
 
@@ -401,10 +400,10 @@
    (choose-from-scale last-choice -1 scale)
    (choose-from-scale last-choice -3 scale)])
 
-(defn stop-if-all-possibilities-are-nil
+(defn no-solution-exists?
   "for stopping if no solution exists."
   [seed-note cantus-firmus rules]
-  (check-for-nils
+  (all-first-notes-conflict-rules?
    (map (fn [x]
           (reduce-to-within-octave
            (first (find-scale-intervals (list (first cantus-firmus) x)
@@ -766,7 +765,7 @@
   "creates a new line with the cantus firmus."
   ([cantus-firmus scale choices last-notes] (create-new-line cantus-firmus scale choices last-notes (count cantus-firmus)))
   ([cantus-firmus scale choices last-notes length]
-  (if (stop-if-all-possibilities-are-nil @*seed-note* @*cantus-firmus* @rules)
+  (if (no-solution-exists? @*seed-note* @*cantus-firmus* @rules)
     (println "i can find no solution for this cantus firmus.")
     (if (<= length 0)
       @new-line
