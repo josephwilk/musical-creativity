@@ -803,49 +803,46 @@
 
 (defn gradus
   "top-level function of the counterpoint program."
-  [& [auto-goals print-state seed-note cantus-firmus]]
-  (let [auto-goals (or auto-goals @*auto-goals*)
-        print-state (or print-state @*print-state*)
-        seed-note (or seed-note nil)
-        cantus-firmus (or cantus-firmus @*cantus-firmus*)]
+  ([] (gradus @*auto-goals* @*print-state* nil @*cantus-firmus*))
+  ([auto-goals print-state seed-note cantus-firmus]
 
-    (when-not (= last-cantus-firmus @*cantus-firmus*)
-      (reset! temporary-rules [])
-      (reset! last-cantus-firmus @*cantus-firmus*))
+     (when-not (= last-cantus-firmus @*cantus-firmus*)
+       (reset! temporary-rules [])
+       (reset! last-cantus-firmus @*cantus-firmus*))
 
-    (if seed-note
-      (reset! *seed-note* seed-note)
-      (let [test (select-new-seed-note @*cantus-firmus* major-scale @saved-templates)]
-        (when test (reset! *seed-note* test))))
+     (if seed-note
+       (reset! *seed-note* seed-note)
+       (let [test (select-new-seed-note @*cantus-firmus* major-scale @saved-templates)]
+         (when test (reset! *seed-note* test))))
 
-    (reset! *auto-goals* auto-goals)
-    (reset! *print-state* print-state)
-    (reset! *cantus-firmus* cantus-firmus)
+     (reset! *auto-goals* auto-goals)
+     (reset! *print-state* print-state)
+     (reset! *cantus-firmus* cantus-firmus)
 
-    (if (nil? @*auto-goals*)
-      (set-default-goals))
+     (when-not @*auto-goals* (set-default-goals))
 
-    (when @*auto-goals*
-      (set-goals models)
-      (reset! *auto-goals* nil)
-      (reset! past-model-count (count models)))
+     (when @*auto-goals*
+       (set-goals models)
+       (reset! *auto-goals* nil)
+       (reset! past-model-count (count models)))
 
-    (when (not (= (count models) @past-model-count)) (set-goals models))
+     (when (not (= (count models)
+                   @past-model-count)) (set-goals models))
 
-    (reset! past-model-count (count models))
-    (reset! new-line [])
+     (reset! past-model-count (count models))
+     (reset! new-line [])
 
-    (let [choices (shuffle (create-choices major-scale @*seed-note*))]
-      (reset! solution (create-new-line @*cantus-firmus*  major-scale choices nil)))
+     (let [choices (shuffle (create-choices major-scale @*seed-note*))]
+       (reset! solution (create-new-line @*cantus-firmus*  major-scale choices nil)))
 
-    (reset! save-voices (list (take (count @solution) @*cantus-firmus*) @solution))
-    (reset! save-voices (map translate-into-pitchnames @save-voices))
-    (reset! counterpoint (make-events (pair @save-voices)))
+     (reset! save-voices (list (take (count @solution) @*cantus-firmus*) @solution))
+     (reset! save-voices (map translate-into-pitchnames @save-voices))
+     (reset! counterpoint (make-events (pair @save-voices)))
 
-    (when (= (count @*cantus-firmus*)
-             (count (second @save-voices)))
-      (push (analyze-for-template seed-note @*cantus-firmus* major-scale) saved-templates))
-    @counterpoint))
+     (when (= (count @*cantus-firmus*)
+              (count (second @save-voices)))
+       (push (analyze-for-template seed-note @*cantus-firmus* major-scale) saved-templates))
+     @counterpoint))
 
 (defn replenish-seed-notes []
   "replenishes the seednotes when when they have all been used."
@@ -864,9 +861,10 @@
 (defn create-canon
   "creates a simple canon in two voices using gradus."
   []
-  (reset! *seed-note* (- (llast @*cantus-firmus*) 12))
-  (gradus)
-  (reset! save-voices (evaluate-pitch-names @save-voices))
+  (let [seed-note (- (llast @*cantus-firmus*) 12)]
+    (gradus nil true seed-note @*cantus-firmus*))
+
+ (reset! save-voices (evaluate-pitch-names @save-voices))
   (let [theme (concat @*cantus-firmus* (map (fn [x] (+ x 12)) (second @save-voices)))
         lower-voice (map (fn [x](- x 12)) theme)]
     (make-events
@@ -878,5 +876,5 @@
 (defn compose-canon []
   (create-canon))
 
-(defn compose [& args]
-  (apply gradus args))
+(defn compose []
+  (gradus))
