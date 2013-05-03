@@ -844,6 +844,7 @@
                  (concat (vec (repeat (count cantus-firmus) 0)) lower-voice lower-voice lower-voice))))))
 
 (defn compose-canon []
+  (set-default-goals)
   (reset! illegal-verticals
         '(0 1 2 5 6 7 10 11 13 14 17 18 19 22 23 25 26 29 30 34 35 -1 -2 -3 -4 -5 -6 -7 -8))
   (reset! *cantus-firmus* '(69 71 72 76 74 72 71))
