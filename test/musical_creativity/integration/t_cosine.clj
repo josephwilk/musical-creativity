@@ -6,4 +6,4 @@
 (fact "it should generate events"
   (let [events (cosine/compose)
         all-keys (reduce concat [] (map keys events))]
-     (distinct all-keys) => [:time :pitch]))
+    (vec (distinct all-keys)) => [:time :log :pitch :channel]))

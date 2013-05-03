@@ -32,7 +32,7 @@
 (defn- compose-pitches [start length stm]
   (nth (iterate (pick-pitches-fn stm) [start]) length))
 
-(defn- probabilities-for [stm [first-pitch second-pitch]]
+(defn probabilities-for [stm [first-pitch second-pitch]]
   (let [stm-key first-pitch
         stm-row (or (stm stm-key) [])]
     (assoc stm stm-key (conj stm-row second-pitch))))

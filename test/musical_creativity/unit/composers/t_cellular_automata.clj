@@ -22,5 +22,5 @@
 
 (facts "apply-the-rule"
   (fact "it should apply the rule"
-    (cellular-automata/apply-the-rule ["0" "0" "*"] rules 11 1) => "0"
-    (cellular-automata/apply-the-rule ["0" "*" "*"] rules 11 1) => "*"))
+    (cellular-automata/apply-rule ["0" "0" "*"] rules 11 1) => "0"
+    (cellular-automata/apply-rule ["0" "*" "*"] rules 11 1) => "*"))

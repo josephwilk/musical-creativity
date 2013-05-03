@@ -17,5 +17,5 @@
   ["0" "0" "0" "0" "0" "0" "0" "0" "0" "0" "0" "0" "*" "0" "0" "0" "0" "0" "0" "0" "0" "0" "0" "0" "0"])
 
 (fact "it should generate events"
-  (let [events (cellular-automata/compose 20 start rules)]
-    events => (contains {:pitch 41, :time 4750})))
+  (let [events (cellular-automata/compose rules)]
+    (count events) => 151))
