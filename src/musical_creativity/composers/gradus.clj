@@ -1,6 +1,7 @@
 (ns musical-creativity.composers.gradus
   (:require
-   [clojure.math.numeric-tower :as math]))
+   [clojure.math.numeric-tower :as math]
+   [musical-creativity.events :as events]))
 
 (def major-scale '(36 38 40 41 43 45 47 48 50 52 53 55
                    57 59 60 62 64 65 67 69 71 72 74 76
@@ -754,26 +755,6 @@
     (-> (str "musical-creativity.composers.gradus/" pitch) symbol resolve var-get)
     pitch))
 
-(defn make-event
-  "creates an event based on args."
-  [ontime pitch channel]
-
-  ;TODO: find better way to resolve var in this ns?
-  (let [event-pitch (resolve-pitch pitch)]
-    {:time ontime
-     :pitch event-pitch
-     :channel channel}))
-
-(defn make-events
-  "makes consecutive events out of the pairs of pitches in its arg."
-  ([pitch-groupings] (make-events pitch-groupings 0))
-  ([pitch-groupings ontime]
-  (if (empty? pitch-groupings)
-    []
-    (concat (list (make-event ontime (first (first pitch-groupings)) 1)
-                  (make-event ontime (second (first pitch-groupings)) 2))
-            (make-events (rest pitch-groupings)(+ ontime 1000))))))
-
 (defn analyze-for-template [seed-note cantus-firmus scale]
   "returns the complete template (seed interval and map) for saving."
   (list (first (find-scale-intervals (list (first cantus-firmus) seed-note) scale))
@@ -835,6 +816,17 @@
   "evaluates the pitch names of its arg into midi note numbers."
   [voices]
   (map (fn [x] (map resolve-pitch x)) voices))
+
+(defn make-events
+  "makes consecutive events out of the pairs of pitches in its arg."
+  ([pitch-groupings] (make-events pitch-groupings 0))
+  ([pitch-groupings ontime]
+     (let [ontimes (range 0 (* 1000 (count pitch-groupings)) 1000)]
+       (flatten
+        (map (fn [[pitch1 pitch2] ontime]
+               [(events/make-event ontime (resolve-pitch pitch1) 1)
+                (events/make-event ontime (resolve-pitch pitch2) 2)])
+             pitch-groupings ontimes)))))
 
 (defn create-canon
   "creates a simple canon in two voices using gradus."
