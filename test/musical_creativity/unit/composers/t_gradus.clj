@@ -4,6 +4,8 @@
    [musical-creativity.composers.gradus :refer :all]
    [overtone.music.pitch :as music]))
 
+(namespace-state-changes (before :facts (set-default-goals!)))
+
 (defn pitch-as-note-checker [note-name]
   (chatty-checker [pitch]
                   (= pitch (music/note note-name))))
@@ -55,7 +57,7 @@
 (fact "no-solution-exists?"
   (no-solution-exists?
    (music/note :C3)
-   (map music/note [:A3 :B3 :C4 :E4 :D4 :C4 :D4 :C4 :B3 :A3])
+   default-cantus-firmus
    '((-7 (1 1 2) (-1 -2 1)) (-9 (1 -1 -1) (-1 -2 2)) (-4 (1) (-1))
      (-4 (1 1) (-2 2))))
   => false)
@@ -91,7 +93,7 @@
 
 (future-fact "create new line"
   (reset! new-line [])
-  (create-new-line  (map music/note [:A3 :B3 :C4 :E4 :D4 :C4 :D4 :C4 :B3 :A3])
+  (create-new-line  default-cantus-firmus
                     major-scale
                     (map music/note [:E3 :A2 :D3 :B2])
                     nil) => (map music/note [:A2 :G2 :F2 :G2 :F2 :A2 :G2 :A2 :B2 :D3]))
@@ -106,22 +108,21 @@
    '((-1 1 -1) (-1 -2 2))) => nil)
 
 (fact "look ahead"
-  (look-ahead 1 '(69 71 72 76 74 72 74 72 71 69) '(62) '(-4 nil nil) '((-9 (-1 1 -1) (-1 -2 2)) (-9 (-1 -1 -1) (1 2 -1))
+  (look-ahead 1 default-cantus-firmus '(62) '(-4 nil nil) '((-9 (-1 1 -1) (-1 -2 2)) (-9 (-1 -1 -1) (1 2 -1))
                                                                        (-12 (1 -1 -1) (-1 2 2)) (-11 (2 -1 -1) (-1 2 1))
                                                                        (-4 (1) (2)) (-4 (1 1) (-2 -1))
                                                                        (-9 (1 -1 -1) (-1 -2 -1)) (-7 (1 1 2) (-1 -2 -2))))
   => truthy)
 
 (fact "evalulate choices"
-  (evaluate-choices '(69 71 72 76 74 72 74 72 71 69)
-                    '(53 57 52 59)
-                    '(57 55 57 55 53 57 55)) => 57)
+  (evaluate-choices default-cantus-firmus
+                    (map music/note [:F2 :A2 :E2 :B2])
+                    (map music/note [:A2 :G2 :A2 :G2 :F2 :A2 :G2])) => (pitch-as-note :A2))
 
 (fact "evaluate"
-  (let [note
-        (evaluate (map music/note [:A3 :B3 :C4 :E4 :D4 :C4 :D4 :C4 :B3 :A3])
-                  (map music/note [:C2 :E2 :B1])
-                  (map music/note [:A1 :G2 :A2 :G2 :F2 :E2 :D2]))]
+  (let [note (evaluate default-cantus-firmus
+                       (map music/note [:C2 :E2 :B1])
+                       (map music/note [:A1 :G2 :A2 :G2 :F2 :E2 :D2]))]
     (count note) => 1
     (first note)) => (pitch-as-note :E2))
 
@@ -129,7 +130,7 @@
   (parallel-octaves-and-fifths? '(69 71 72 76 74 72) 52 '(57 55 53 52 53)) => nil)
 
 (fact "test for leaps"
-  (leaps? '(57 55 57 55 53 57 53)) => truthy)
+  (leaps? (map music/note [:A2 :G2 :A2 :G2 :F2 :A2 :F2])) => truthy)
 
 (fact "test for simultaneous leaps"
   (simultaneous-leaps? '(69 71 72 76 74 72 74 72 71 69) 60 '(57 55 57 55 59 57 55 57 59))  => nil)

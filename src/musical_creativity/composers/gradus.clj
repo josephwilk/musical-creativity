@@ -22,10 +22,13 @@
 (def rules        (atom []))
 (def save-rules   (atom []))
 
-(def *seed-note* (atom (music/note :C3)))
-(def seed-notes  (atom '(:E3 :D3 :B2 :A2 :G2 :C3)))
+(def default-seed-notes '(:E3 :D3 :B2 :A2 :G2 :C3))
+(def default-cantus-firmus (map music/note [:A3 :B3 :C4 :E4 :D4 :C4 :D4 :C4 :B3 :A3]))
 
-(def *cantus-firmus* (atom (map music/note [:A3 :B3 :C4 :E4 :D4 :C4 :D4 :C4 :B3 :A3])))
+(def *seed-note* (atom (music/note :C3)))
+(def seed-notes  (atom default-seed-notes))
+
+(def *cantus-firmus* (atom default-cantus-firmus))
 
 (def new-line (atom []))
 
@@ -195,6 +198,7 @@
 
 (defn print-backtracking []
   "simple printing function to show backtracking."
+  (println "current rukes: " ruless @rules)
   (println (str "backtracking.....there are now " (count @rules) " rules.")))
 
 (defn return-counts
@@ -388,8 +392,9 @@
     :else
     1))
 
-(defn choose-from-scale [current-note interval-class scale]
+(defn choose-from-scale
   "gets the appropriate pitch from the current scale based on the interval class."
+  [current-note interval-class scale]
   (if (> interval-class 0)
     (nth (member current-note scale) (get-diatonic-interval interval-class))
     (let [interval (math/abs (get-diatonic-interval interval-class))
