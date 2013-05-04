@@ -25,7 +25,7 @@
 (def save-rules   (atom []))
 
 (def *seed-note* (atom (music/note :C3)))
-(def seed-notes  (atom (map music/note '(:E3 :D3 :B2 :A2 :G2 :C3))))
+(def seed-notes  (atom '(:E3 :D3 :B2 :A2 :G2 :C3)))
 
 (def *cantus-firmus* (atom (map music/note [:A3 :B3 :C4 :E4 :D4 :C4 :D4 :C4 :B3 :A3])))
 
@@ -40,66 +40,58 @@
 (def last-cantus-firmus (atom []))
 (def past-model-count (atom []))
 
-(defn models-as-pitches [models]
-  (map
-   (fn [[notes1 notes2]]
-     (list (map music/note notes1)
-           (map music/note notes2)))
-   models))
-
 (def models
   (atom
-   (models-as-pitches
-        '(((:C4 :B3 :D4 :C4 :B3 :A3 :G3 :A3) (:E3 :G3 :F3 :E3 :D3 :F3 :E3 :C3))
-          ((:C4 :B3 :D4 :C4 :B3 :A3 :G3 :A3) (:A2 :G2 :F2 :A2 :G2 :F2 :G2 :F2))
-          ((:C4 :B3 :D4 :C4 :B3 :A3 :G3 :A3) (:A2 :G2 :F2 :E2 :D2 :F2 :E2 :C2))
-          ((:C4 :B3 :D4 :C4 :B3 :A3 :G3 :A3) (:E3 :G3 :F3 :E3 :G3 :F3 :E3 :C3))
-          ((:A3 :B3 :C4 :A3 :B3 :C4 :D4 :F4 :E4 :D4 :C4) (:A2 :G2 :E2 :F2 :G2 :A2 :G2 :A2 :G2 :B2 :A2))
-          ((:A3 :B3 :C4 :A3 :B3 :C4 :D4 :F4 :E4 :D4 :C4) (:A2 :G2 :E2 :F2 :G2 :A2 :G2 :F2 :G2 :F2 :E2))
-          ((:A3 :B3 :C4 :A3 :B3 :C4 :D4 :F4 :E4 :D4 :C4) (:A2 :G2 :E2 :F2 :G2 :A2 :G2 :F2 :G2 :B2 :A2))
-          ((:A3 :B3 :C4 :A3 :B3 :C4 :D4 :F4 :E4 :D4 :C4) (:A2 :G2 :E2 :F2 :G2 :A2 :G2 :A2 :C3 :B2 :C3))
-          ((:A3 :B3 :C4 :A3 :B3 :C4 :D4 :F4 :E4 :D4 :C4) (:A2 :G2 :E2 :F2 :G2 :A2 :G2 :A2 :C3 :B2 :A2))
-          ((:C4 :B3 :A3 :G3 :A3 :C4 :B3 :C4) (:E3 :D3 :C3 :E3 :D3 :C3 :D3 :E3))
-          ((:C4 :B3 :A3 :G3 :A3 :C4 :B3 :C4) (:E3 :D3 :F3 :E3 :F3 :E3 :G3 :F3))
-          ((:C4 :B3 :A3 :G3 :A3 :C4 :B3 :C4) (:A2 :B2 :C3 :E3 :D3 :C3 :D3 :E3))
-          ((:C4 :B3 :A3 :G3 :A3 :C4 :B3 :C4) (:A2 :G2 :F2 :G2 :F2 :E2 :D2 :C2))
-          ((:C4 :B3 :A3 :G3 :A3 :C4 :B3 :C4) (:E3 :D3 :F3 :E3 :F3 :E3 :D3 :E3))
-          ((:C4 :B3 :A3 :G3 :A3 :C4 :B3 :C4) (:E3 :G3 :F3 :E3 :D3 :C3 :D3 :E3))
-          ((:C4 :B3 :A3 :G3 :A3 :C4 :B3 :C4) (:A2 :B2 :C3 :E3 :D3 :E3 :G3 :F3))
-          ((:C4 :B3 :A3 :G3 :A3 :C4 :B3 :C4) (:A2 :G2 :F2 :G2 :F2 :E2 :G2 :F2))
-          ((:C4 :B3 :A3 :G3 :A3 :C4 :B3 :C4) (:E3 :D3 :F3 :E3 :D3 :C3 :D3 :C3))
-          ((:C4 :B3 :A3 :G3 :A3 :C4 :B3 :C4) (:E3 :D3 :C3 :E3 :D3 :E3 :G3 :F3))
-          ((:C4 :B3 :A3 :G3 :A3 :C4 :B3 :C4) (:E3 :G3 :F3 :E3 :D3 :E3 :G3 :F3))
-          ((:C4 :B3 :A3 :G3 :A3 :C4 :B3 :C4) (:A2 :G2 :F2 :G2 :F2 :E2 :D2 :E2))
-          ((:C4 :B3 :A3 :G3 :A3 :C4 :B3 :C4) (:E3 :G3 :F3 :E3 :D3 :E3 :D3 :C3))
-          ((:C4 :B3 :A3 :G3 :A3 :C4 :B3 :C4) (:E3 :G3 :F3 :E3 :D3 :C3 :D3 :C3))
-          ((:C4 :B3 :A3 :G3 :A3 :C4 :B3 :C4) (:E3 :D3 :C3 :E3 :D3 :E3 :D3 :C3))
-          ((:A3 :B3 :C4 :E4 :D4 :C4 :B3 :C4 :D4 :C4) (:A2 :G2 :A2 :G2 :F2 :A2 :G2 :A2 :G2 :A2))
-          ((:A3 :B3 :C4 :E4 :D4 :C4 :B3 :C4 :D4 :C4) (:A2 :G2 :A2 :G2 :F2 :A2 :G2 :E2 :F2 :A2))
-          ((:A3 :B3 :C4 :E4 :D4 :C4 :B3 :C4 :D4 :C4) (:A2 :G2 :A2 :G2 :F2 :A2 :G2 :F2 :D2 :E2))
-          ((:A3 :B3 :C4 :E4 :D4 :C4 :B3 :C4 :D4 :C4) (:A2 :G2 :A2 :G2 :B2 :A2 :B2 :A2 :B2 :A2))
-          ((:A3 :B3 :C4 :E4 :D4 :C4 :B3 :C4 :D4 :C4) (:A2 :G2 :A2 :G2 :B2 :A2 :B2 :A2 :G2 :E2))
-          ((:A3 :B3 :C4 :E4 :D4 :C4 :B3 :C4 :D4 :C4) (:A2 :G2 :F2 :E2 :F2 :E2 :D2 :C2 :B1 :A1))
-          ((:A3 :B3 :C4 :E4 :D4 :C4 :B3 :C4 :D4 :C4) (:A2 :G2 :A2 :G2 :F2 :E2 :G2 :F2 :D2 :E2))
-          ((:A3 :B3 :A3 :C4 :B3 :D4 :C4 :B3 :A3) (:A2 :G2 :F2 :E2 :G2 :F2 :A2 :G2 :A2))
-          ((:A3 :B3 :A3 :C4 :B3 :D4 :C4 :B3 :A3) (:A2 :G2 :F2 :E2 :G2 :F2 :A2 :G2 :F2))
-          ((:A3 :B3 :A3 :C4 :B3 :D4 :C4 :B3 :A3) (:A2 :G2 :F2 :E2 :G2 :F2 :E2 :D2 :F2))
-          ((:A3 :B3 :C4 :E4 :D4 :C4 :D4 :C4 :B3 :A3) (:A2 :G2 :F2 :G2 :F2 :A2 :G2 :A2 :B2 :C3))
-          ((:A3 :B3 :C4 :E4 :D4 :C4 :D4 :C4 :B3 :A3) (:A2 :G2 :A2 :G2 :F2 :E2 :D2 :E2 :D2 :F2))
-          ((:A3 :B3 :C4 :E4 :D4 :C4 :D4 :C4 :B3 :A3) (:A2 :G2 :F2 :G2 :F2 :A2 :G2 :A2 :B2 :D3))
-          ((:A3 :B3 :C4 :E4 :D4 :C4 :D4 :C4 :B3 :A3) (:A2 :G2 :F2 :E2 :F2 :E2 :F2 :A2 :G2 :A2))
-          ((:A3 :B3 :C4 :E4 :D4 :C4 :D4 :C4 :B3 :A3) (:A2 :G2 :F2 :G2 :B2 :A2 :G2 :A2 :B2 :D3))
-          ((:A3 :B3 :C4 :E4 :D4 :C4 :D4 :C4 :B3 :A3) (:A2 :G2 :F2 :E2 :F2 :E2 :D2 :E2 :G2 :F2))
-          ((:A3 :B3 :C4 :E4 :D4 :C4 :D4 :C4 :B3 :A3) (:A2 :G2 :A2 :G2 :F2 :E2 :D2 :E2 :G2 :F2))
-          ((:A3 :B3 :C4 :E4 :D4 :C4 :D4 :C4 :B3 :A3) (:A2 :G2 :F2 :E2 :F2 :A2 :G2 :A2 :G2 :A2))
-          ((:A3 :B3 :C4 :E4 :D4 :C4 :D4 :C4 :B3 :A3) (:A2 :G2 :F2 :G2 :F2 :A2 :G2 :A2 :G2 :F2))
-          ((:A3 :B3 :C4 :E4 :D4 :C4 :D4 :C4 :B3 :A3) (:A2 :G2 :F2 :G2 :B2 :A2 :G2 :A2 :G2 :F2))
-          ((:A3 :B3 :C4 :E4 :D4 :C4 :D4 :C4 :B3 :A3) (:A2 :G2 :A2 :G2 :B2 :A2 :B2 :C3 :D3 :F3))
-          ((:A3 :B3 :C4 :E4 :D4 :C4 :D4 :C4 :B3 :A3) (:A2 :G2 :A2 :G2 :B2 :A2 :B2 :C3 :D3 :C3))
-          ((:A3 :B3 :A3 :C4 :B3 :D4 :C4 :B3 :A3) (:A2 :G2 :F2 :E2 :G2 :F2 :E2 :G2 :F2))
-          ((:A3 :B3 :C4 :E4 :D4 :C4 :B3 :C4 :D4 :C4) (:A2 :G2 :A2 :G2 :B2 :A2 :G2 :F2 :D2 :E2))
-          ((:A3 :B3 :C4 :D4 :B3 :C4 :D4 :C4) (:A2 :G2 :A2 :F2 :G2 :F2 :D2 :E2))
-          ((:A3 :B3 :C4 :A3 :B3 :C4 :D4 :F4 :E4 :D4 :C4) (:A2 :G2 :E2 :F2 :G2 :A2 :G2 :F2 :G2 :F2 :A2))))))
+   '(((:C4 :B3 :D4 :C4 :B3 :A3 :G3 :A3) (:E3 :G3 :F3 :E3 :D3 :F3 :E3 :C3))
+     ((:C4 :B3 :D4 :C4 :B3 :A3 :G3 :A3) (:A2 :G2 :F2 :A2 :G2 :F2 :G2 :F2))
+     ((:C4 :B3 :D4 :C4 :B3 :A3 :G3 :A3) (:A2 :G2 :F2 :E2 :D2 :F2 :E2 :C2))
+     ((:C4 :B3 :D4 :C4 :B3 :A3 :G3 :A3) (:E3 :G3 :F3 :E3 :G3 :F3 :E3 :C3))
+     ((:A3 :B3 :C4 :A3 :B3 :C4 :D4 :F4 :E4 :D4 :C4) (:A2 :G2 :E2 :F2 :G2 :A2 :G2 :A2 :G2 :B2 :A2))
+     ((:A3 :B3 :C4 :A3 :B3 :C4 :D4 :F4 :E4 :D4 :C4) (:A2 :G2 :E2 :F2 :G2 :A2 :G2 :F2 :G2 :F2 :E2))
+     ((:A3 :B3 :C4 :A3 :B3 :C4 :D4 :F4 :E4 :D4 :C4) (:A2 :G2 :E2 :F2 :G2 :A2 :G2 :F2 :G2 :B2 :A2))
+     ((:A3 :B3 :C4 :A3 :B3 :C4 :D4 :F4 :E4 :D4 :C4) (:A2 :G2 :E2 :F2 :G2 :A2 :G2 :A2 :C3 :B2 :C3))
+     ((:A3 :B3 :C4 :A3 :B3 :C4 :D4 :F4 :E4 :D4 :C4) (:A2 :G2 :E2 :F2 :G2 :A2 :G2 :A2 :C3 :B2 :A2))
+     ((:C4 :B3 :A3 :G3 :A3 :C4 :B3 :C4) (:E3 :D3 :C3 :E3 :D3 :C3 :D3 :E3))
+     ((:C4 :B3 :A3 :G3 :A3 :C4 :B3 :C4) (:E3 :D3 :F3 :E3 :F3 :E3 :G3 :F3))
+     ((:C4 :B3 :A3 :G3 :A3 :C4 :B3 :C4) (:A2 :B2 :C3 :E3 :D3 :C3 :D3 :E3))
+     ((:C4 :B3 :A3 :G3 :A3 :C4 :B3 :C4) (:A2 :G2 :F2 :G2 :F2 :E2 :D2 :C2))
+     ((:C4 :B3 :A3 :G3 :A3 :C4 :B3 :C4) (:E3 :D3 :F3 :E3 :F3 :E3 :D3 :E3))
+     ((:C4 :B3 :A3 :G3 :A3 :C4 :B3 :C4) (:E3 :G3 :F3 :E3 :D3 :C3 :D3 :E3))
+     ((:C4 :B3 :A3 :G3 :A3 :C4 :B3 :C4) (:A2 :B2 :C3 :E3 :D3 :E3 :G3 :F3))
+     ((:C4 :B3 :A3 :G3 :A3 :C4 :B3 :C4) (:A2 :G2 :F2 :G2 :F2 :E2 :G2 :F2))
+     ((:C4 :B3 :A3 :G3 :A3 :C4 :B3 :C4) (:E3 :D3 :F3 :E3 :D3 :C3 :D3 :C3))
+     ((:C4 :B3 :A3 :G3 :A3 :C4 :B3 :C4) (:E3 :D3 :C3 :E3 :D3 :E3 :G3 :F3))
+     ((:C4 :B3 :A3 :G3 :A3 :C4 :B3 :C4) (:E3 :G3 :F3 :E3 :D3 :E3 :G3 :F3))
+     ((:C4 :B3 :A3 :G3 :A3 :C4 :B3 :C4) (:A2 :G2 :F2 :G2 :F2 :E2 :D2 :E2))
+     ((:C4 :B3 :A3 :G3 :A3 :C4 :B3 :C4) (:E3 :G3 :F3 :E3 :D3 :E3 :D3 :C3))
+     ((:C4 :B3 :A3 :G3 :A3 :C4 :B3 :C4) (:E3 :G3 :F3 :E3 :D3 :C3 :D3 :C3))
+     ((:C4 :B3 :A3 :G3 :A3 :C4 :B3 :C4) (:E3 :D3 :C3 :E3 :D3 :E3 :D3 :C3))
+     ((:A3 :B3 :C4 :E4 :D4 :C4 :B3 :C4 :D4 :C4) (:A2 :G2 :A2 :G2 :F2 :A2 :G2 :A2 :G2 :A2))
+     ((:A3 :B3 :C4 :E4 :D4 :C4 :B3 :C4 :D4 :C4) (:A2 :G2 :A2 :G2 :F2 :A2 :G2 :E2 :F2 :A2))
+     ((:A3 :B3 :C4 :E4 :D4 :C4 :B3 :C4 :D4 :C4) (:A2 :G2 :A2 :G2 :F2 :A2 :G2 :F2 :D2 :E2))
+     ((:A3 :B3 :C4 :E4 :D4 :C4 :B3 :C4 :D4 :C4) (:A2 :G2 :A2 :G2 :B2 :A2 :B2 :A2 :B2 :A2))
+     ((:A3 :B3 :C4 :E4 :D4 :C4 :B3 :C4 :D4 :C4) (:A2 :G2 :A2 :G2 :B2 :A2 :B2 :A2 :G2 :E2))
+     ((:A3 :B3 :C4 :E4 :D4 :C4 :B3 :C4 :D4 :C4) (:A2 :G2 :F2 :E2 :F2 :E2 :D2 :C2 :B1 :A1))
+     ((:A3 :B3 :C4 :E4 :D4 :C4 :B3 :C4 :D4 :C4) (:A2 :G2 :A2 :G2 :F2 :E2 :G2 :F2 :D2 :E2))
+     ((:A3 :B3 :A3 :C4 :B3 :D4 :C4 :B3 :A3) (:A2 :G2 :F2 :E2 :G2 :F2 :A2 :G2 :A2))
+     ((:A3 :B3 :A3 :C4 :B3 :D4 :C4 :B3 :A3) (:A2 :G2 :F2 :E2 :G2 :F2 :A2 :G2 :F2))
+     ((:A3 :B3 :A3 :C4 :B3 :D4 :C4 :B3 :A3) (:A2 :G2 :F2 :E2 :G2 :F2 :E2 :D2 :F2))
+     ((:A3 :B3 :C4 :E4 :D4 :C4 :D4 :C4 :B3 :A3) (:A2 :G2 :F2 :G2 :F2 :A2 :G2 :A2 :B2 :C3))
+     ((:A3 :B3 :C4 :E4 :D4 :C4 :D4 :C4 :B3 :A3) (:A2 :G2 :A2 :G2 :F2 :E2 :D2 :E2 :D2 :F2))
+     ((:A3 :B3 :C4 :E4 :D4 :C4 :D4 :C4 :B3 :A3) (:A2 :G2 :F2 :G2 :F2 :A2 :G2 :A2 :B2 :D3))
+     ((:A3 :B3 :C4 :E4 :D4 :C4 :D4 :C4 :B3 :A3) (:A2 :G2 :F2 :E2 :F2 :E2 :F2 :A2 :G2 :A2))
+     ((:A3 :B3 :C4 :E4 :D4 :C4 :D4 :C4 :B3 :A3) (:A2 :G2 :F2 :G2 :B2 :A2 :G2 :A2 :B2 :D3))
+     ((:A3 :B3 :C4 :E4 :D4 :C4 :D4 :C4 :B3 :A3) (:A2 :G2 :F2 :E2 :F2 :E2 :D2 :E2 :G2 :F2))
+     ((:A3 :B3 :C4 :E4 :D4 :C4 :D4 :C4 :B3 :A3) (:A2 :G2 :A2 :G2 :F2 :E2 :D2 :E2 :G2 :F2))
+     ((:A3 :B3 :C4 :E4 :D4 :C4 :D4 :C4 :B3 :A3) (:A2 :G2 :F2 :E2 :F2 :A2 :G2 :A2 :G2 :A2))
+     ((:A3 :B3 :C4 :E4 :D4 :C4 :D4 :C4 :B3 :A3) (:A2 :G2 :F2 :G2 :F2 :A2 :G2 :A2 :G2 :F2))
+     ((:A3 :B3 :C4 :E4 :D4 :C4 :D4 :C4 :B3 :A3) (:A2 :G2 :F2 :G2 :B2 :A2 :G2 :A2 :G2 :F2))
+     ((:A3 :B3 :C4 :E4 :D4 :C4 :D4 :C4 :B3 :A3) (:A2 :G2 :A2 :G2 :B2 :A2 :B2 :C3 :D3 :F3))
+     ((:A3 :B3 :C4 :E4 :D4 :C4 :D4 :C4 :B3 :A3) (:A2 :G2 :A2 :G2 :B2 :A2 :B2 :C3 :D3 :C3))
+     ((:A3 :B3 :A3 :C4 :B3 :D4 :C4 :B3 :A3) (:A2 :G2 :F2 :E2 :G2 :F2 :E2 :G2 :F2))
+     ((:A3 :B3 :C4 :E4 :D4 :C4 :B3 :C4 :D4 :C4) (:A2 :G2 :A2 :G2 :B2 :A2 :G2 :F2 :D2 :E2))
+     ((:A3 :B3 :C4 :D4 :B3 :C4 :D4 :C4) (:A2 :G2 :A2 :F2 :G2 :F2 :D2 :E2))
+     ((:A3 :B3 :C4 :A3 :B3 :C4 :D4 :F4 :E4 :D4 :C4) (:A2 :G2 :E2 :F2 :G2 :A2 :G2 :F2 :G2 :F2 :A2)))))
 
 (defn set-default-goals
   "sets the default goals for the program."
@@ -296,8 +288,8 @@
 (defn make-voices
   "makes lists of the cantus firmus and accompanying line pitches."
   [models]
-  (list (apply concat (map first models))
-        (apply concat (map second models))))
+  (list (mapcat first models)
+        (mapcat second models)))
 
 (defn get-the-verticals
   "collects the vertical intervals from the models used."
@@ -305,7 +297,7 @@
   (sort < (distinct
             (project
              (let [voiced-music (pair (make-voices models))]
-               (map (fn [pair] (- (first pair) (second pair))) voiced-music)
+               (map (fn [pair] (- (music/note (first pair)) (music/note (second pair)))) voiced-music)
                )))))
 
 (defn get-illegal-verticals
@@ -340,8 +332,8 @@
                  (find-all-possible-motions (- extent 1) value save-extent)))))
 
 (defn- motions [[model1 model2]]
-  (list (- (first model1) (second model1))
-        (- (first model2) (second model2))))
+  (list (- (music/note (first model1)) (music/note (second model1)))
+        (- (music/note (first model2)) (music/note (second model2)))))
 
 (defn find-the-legals
   "discovers the legal motions in its arg."
@@ -351,8 +343,7 @@
 
 (defn find-legals [models]
   "collects the legal motions in its arg."
-  (apply concat
-         (map #(find-the-legals (pair %)) models)))
+  (mapcat #(find-the-legals (pair %)) models))
 
 (defn remove-legal-motions [legal-motions motions]
   "removes the legal motions from the motions arg."
@@ -372,8 +363,7 @@
   "returns all possible combinations of its list arg."
   ([list] (possible-combinations list list))
   ([list save-list]
-     (apply concat
-            (map #(combinations % save-list) list))))
+     (mapcat #(combinations % save-list) list)))
 
 (defn all-first-notes-conflict-rules? [choices rules]
   "checking to see if all possible first notes produce rule-conflicting problems."
@@ -738,7 +728,7 @@
 
 (defn replenish-seed-notes []
   "replenishes the seednotes when when they have all been used."
-  (reset! seed-notes (map music/note '(:C3 :F3 :E3 :D3 :B2 :A2 :G2 :F2))))
+  (reset! seed-notes '(:C3 :F3 :E3 :D3 :B2 :A2 :G2 :F2)))
 
 (defn gradus
   "top-level function of the counterpoint program."
@@ -804,13 +794,13 @@
   (create-canon @*cantus-firmus*))
 
 (defn compose-contemporary []
-  (reset! models (models-as-pitches '(((:C4 :B3 :D4 :C4 :B3 :A3 :G3 :A3)
-                                       (:B3 :A3 :G3 :F3 :A3 :G3 :F3 :D3))
-                                      ((:C4 :B3 :D4 :C4 :B3 :A3 :G3 :A3)
-                                       (:F3 :E3 :C3 :D3 :E3 :G3 :F3 :G3))
-                                      ((:A3 :B3 :A3 :C4 :B3 :D4 :C4 :B3 :A3)
-                                       (:D3 :E3 :G3 :F3 :E3 :C3 :D3 :E3 :D3)))))
-  (reset! seed-notes (map music/note '(:G3 :E3 :B2 :A2 :G2 :D3)))
+  (reset! models '(((:C4 :B3 :D4 :C4 :B3 :A3 :G3 :A3)
+                    (:B3 :A3 :G3 :F3 :A3 :G3 :F3 :D3))
+                   ((:C4 :B3 :D4 :C4 :B3 :A3 :G3 :A3)
+                    (:F3 :E3 :C3 :D3 :E3 :G3 :F3 :G3))
+                   ((:A3 :B3 :A3 :C4 :B3 :D4 :C4 :B3 :A3)
+                    (:D3 :E3 :G3 :F3 :E3 :C3 :D3 :E3 :D3))))
+  (reset! seed-notes '(:G3 :E3 :B2 :A2 :G2 :D3))
   (reset! *cantus-firmus* (map music/note '(:C4 :B3 :A3 :G3 :A3 :C4 :B3 :C4)))
   (reset! *auto-goals* nil)
   (create-canon @*cantus-firmus*))
