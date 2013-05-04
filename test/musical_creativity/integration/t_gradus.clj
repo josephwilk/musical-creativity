@@ -7,4 +7,4 @@
   (count (compose)) => 20)
 
 (fact "it should compose a canon"
-  (count (compose-canon)) => 140)
+  (count (compose-canon)) => 98)
