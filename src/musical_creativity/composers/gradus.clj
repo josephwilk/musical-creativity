@@ -199,8 +199,9 @@
 (defn print-backtracking
   "simple printing function to show backtracking."
   []
-  (println "current rules: " @rules)
-  (println (str "backtracking.....there are now " (count @rules) " rules.")))
+  (let [rules-as-notes (doall (map #(translate-rule-into-pitches @*seed-note* %) @rules))]
+    (println (str "backtracking.....there are now " (count @rules) " rules."))
+    (println "   rules: " rules-as-notes)))
 
 (defn return-counts
   "simply adds the count of occurances to the beginning of each member of its arg."
