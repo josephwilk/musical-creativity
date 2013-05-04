@@ -44,3 +44,14 @@
                [(make-event ontime pitch1 1)
                 (make-event ontime pitch2 2)])
              pitch-groupings ontimes)))))
+
+(defn events-as-chords
+  ([pitch-groupings] (make-as-chords pitch-groupings 0))
+  ([pitch-groupings ontime]
+     (let [interval 900
+           ontimes (range 0 (* interval (count pitch-groupings)) interval)]
+       (flatten
+        (map (fn [chord ontime]
+               (let [chord-pitches (opitch/chord (:pitch chord) :major)]
+                 (map #(make-event ontime % 1) chord-pitches)))
+             pitch-groupings ontimes)))))
