@@ -45,8 +45,8 @@
                 (make-event ontime pitch2 2)])
              pitch-groupings ontimes)))))
 
-(defn events-as-chords
-  ([pitch-groupings] (make-as-chords pitch-groupings 0))
+(defn as-chords
+  ([pitch-groupings] (as-chords pitch-groupings 0))
   ([pitch-groupings ontime]
      (let [interval 900
            ontimes (range 0 (* interval (count pitch-groupings)) interval)]

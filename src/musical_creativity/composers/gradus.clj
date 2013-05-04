@@ -170,6 +170,16 @@
   "used to translate midi note numbers into note names."
   (map music/find-note-name list-of-midi-note-numbers))
 
+(defn get-diatonic-note [current-note interval scale]
+  "a simple variant of choose-from-scale which uses a diatonic interval as its second arg."
+  (cond
+   (nil? interval)
+   []
+   (> interval 0)
+   (nth (member current-note scale) interval)
+   :else
+   (nth (member current-note (reverse scale)) (math/abs interval))))
+
 (defn translate-notes
   "translates interval lists into note names for readability."
   [first-note intervals]
@@ -207,16 +217,6 @@
             (count (filter #(= template %) templates)))]
     (map (fn [template]
            [(occurences template templates) template]) templates)))
-
-(defn get-diatonic-note [current-note interval scale]
-  "a simple variant of choose-from-scale which uses a diatonic interval as its second arg."
-  (cond
-   (nil? interval)
-   []
-   (> interval 0)
-   (nth (member current-note scale) interval)
-   :else
-   (nth (member current-note (reverse scale)) (math/abs interval))))
 
 (defn collect-all
   "collects all of the occurances of each member of its arg."
@@ -819,7 +819,7 @@
   (set-default-goals)
   (let [events (gradus)
         events-as-notes (map #(assoc % :pitch (music/find-note-name (:pitch %))) events)]
-    (events/make-as-chords events-as-notes)))
+    (events/as-chords events-as-notes)))
 
 (defn compose []
   (set-default-goals)
