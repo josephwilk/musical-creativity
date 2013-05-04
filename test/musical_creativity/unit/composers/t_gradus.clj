@@ -1,7 +1,15 @@
 (ns musical-creativity.unit.composers.t-gradus
   (:require
    [midje.sweet :refer :all]
-   [musical-creativity.composers.gradus :refer :all]))
+   [musical-creativity.composers.gradus :refer :all]
+   [overtone.music.pitch :as music]))
+
+(defn pitch-as-note-checker [note-name]
+  (chatty-checker [pitch]
+                  (= pitch (music/note note-name))))
+
+(defchecker pitch-as-note [note-name]
+  (pitch-as-note-checker note-name))
 
 (fact "find scale intervals"
   (find-scale-intervals
@@ -80,13 +88,10 @@
 
 (future-fact "create new line"
   (reset! new-line [])
-
-  (create-new-line
-   '(69 71 72 76 74 72 74 72 71 69)
-   '(36 38 40 41 43 45 47 48 50 52 53 55 57 59 60 62 64 65 67 69 71 72
-        74 76 77 79 81 83 84 86 88 89 91 93 95 96)
-   '(64 57 62 59)
-   nil) => '(57 55 53 55 53 57 55 57 59 62))
+  (create-new-line  (map music/note [:A3 :B3 :C4 :E4 :D4 :C4 :D4 :C4 :B3 :A3])
+                    major-scale
+                    (map music/note [:E3 :A2 :D3 :B2])
+                    nil) => (map music/note [:A2 :G2 :F2 :G2 :F2 :A2 :G2 :A2 :B2 :D3]))
 
 (fact "check relevant cf notes"
   (create-relevant-cf-notes '(57 55 57 55 53 57 55 57)
@@ -110,9 +115,12 @@
                     '(57 55 57 55 53 57 55)) => 57)
 
 (fact "evaluate"
-  (evaluate '(69 71 72 76 74 72 74 72 71 69)
-            '(48 52 47)
-            '(57 55 57 55 53 52 50)) => '(52))
+  (let [note
+        (evaluate (map music/note [:A3 :B3 :C4 :E4 :D4 :C4 :D4 :C4 :B3 :A3])
+                  (map music/note [:C2 :E2 :B1])
+                  (map music/note [:A1 :G2 :A2 :G2 :F2 :E2 :D2]))]
+    (count note) => 1
+    (first note)) => (pitch-as-note :E2))
 
 (fact "test for parallel octaves and fifths"
   (parallel-octaves-and-fifths? '(69 71 72 76 74 72) 52 '(57 55 53 52 53)) => nil)
