@@ -198,7 +198,7 @@
 
 (defn print-backtracking []
   "simple printing function to show backtracking."
-  (println "current rukes: " ruless @rules)
+  (println "current rules: " @rules)
   (println (str "backtracking.....there are now " (count @rules) " rules.")))
 
 (defn return-counts
