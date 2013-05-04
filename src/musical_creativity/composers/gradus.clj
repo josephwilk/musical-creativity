@@ -15,7 +15,7 @@
 (def illegal-verticals         (atom '(0 1 2 5 6 10 11 13 14 17 18 22 23 25 26 29 30 34 35 -1 -2 -3 -4 -5 -6 -7 -8)))
 (def illegal-parallel-motions  (atom '((7 7) (12 12) (19 19) (24 24))))
 (def illegal-double-skips      (atom '((3 3) (3 4) (3 -3) (3 -4) (-3 -3) (-3 -4) (-3 3) (-3 4)
-                                      (4 3) (4 4) (4 -3) (4 -4) (-4 -3) (-4 -4) (-4 3) (-4 4))))
+                                       (4 3) (4 4) (4 -3) (4 -4) (-4 -3) (-4 -4) (-4 3) (-4 4))))
 (def direct-fifths-and-octaves (atom '((9 7) (8 7) (21 19) (20 19))))
 
 (def solution     (atom []))
@@ -93,7 +93,7 @@
      ((:A3 :B3 :C4 :D4 :B3 :C4 :D4 :C4) (:A2 :G2 :A2 :F2 :G2 :F2 :D2 :E2))
      ((:A3 :B3 :C4 :A3 :B3 :C4 :D4 :F4 :E4 :D4 :C4) (:A2 :G2 :E2 :F2 :G2 :A2 :G2 :F2 :G2 :F2 :A2)))))
 
-(defn set-default-goals
+(defn set-default-goals!
   "sets the default goals for the program."
   []
   (reset! illegal-verticals         '(0 1 2 5 6 10 11 13 14 17 18 22 23 25 26 29 30 34 35 -1 -2 -3 -4 -5 -6 -7 -8))
@@ -141,9 +141,6 @@
 (defn pair
   [[list1 list2]]
   (map vector list1 list2))
-
-(defn push [data reference]
-  (swap! reference conj data))
 
 (defn swap-unless-includes [reference data]
   (when-not (some #{data} @reference)
@@ -245,7 +242,7 @@
       up
       (- down))))
 
-(defn get-map
+(defn get-map-part-of-template
   "returns the map part of the template."
   [cantus-firmus scale]
   (let [tessitura (get-tessitura cantus-firmus scale)
@@ -255,7 +252,7 @@
 (defn select-new-seed-note
   "select a logical new seed note."
   [cantus-firmus scale saved-templates]
-  (let [map-template (get-map cantus-firmus scale)
+  (let [map-template (get-map-part-of-template cantus-firmus scale)
         templates (collect-all map-template saved-templates)
         counts (return-counts templates)
         sorted-counts (sort-by-first-element counts)
@@ -345,12 +342,14 @@
   "collects the legal motions in its arg."
   (mapcat #(find-the-legals (pair %)) models))
 
-(defn remove-legal-motions [legal-motions motions]
+(defn remove-legal-motions
   "removes the legal motions from the motions arg."
+  [legal-motions motions]
   (remove #(some #{%} legal-motions) motions))
 
-(defn find-illegal-parallels [models]
+(defn find-illegal-parallels
   "returns the non-used parallels in the models which are assumed to be illegal."
+  [models]
   (let [illegal-verticals (get-illegal-verticals models)
         legal-verticals (remove-illegal-verticals illegal-verticals (find-all-possible-motions 24))
         model-verticals (find-legals models)]
@@ -443,7 +442,7 @@
 
 (defn skip? [notes]
   "returns true if its two-number arg is a skip."
-  (if (> (math/abs (- (second notes)(first notes))) 2) true))
+  (if (> (math/abs (- (second notes) (first notes))) 2) true))
 
 (defn get-verticals [cantus-firmus new-line]
   "returns the intervals between two lines of counterpoint."
@@ -718,9 +717,9 @@
   (let [cantus-firmus-note (first cantus-firmus)
         cantus-firmus-note-and-seed (list cantus-firmus-note seed-note)
         scale-intervals (find-scale-intervals cantus-firmus-note-and-seed scale)]
-    (list (first scale-intervals) (get-map cantus-firmus scale))))
+    (list (first scale-intervals) (get-map-part-of-template cantus-firmus scale))))
 
-(defn set-goals
+(defn set-goals!
   "sets the goals for the gradus program."
   [models]
   (reset! illegal-verticals (get-illegal-verticals models))
@@ -750,15 +749,15 @@
      (reset! *print-state* print-state)
      (reset! *cantus-firmus* cantus-firmus)
 
-     (when-not @*auto-goals* (set-default-goals))
+     (when-not @*auto-goals* (set-default-goals!))
 
      (when @*auto-goals*
-       (set-goals @models)
+       (set-goals! @models)
        (reset! *auto-goals* nil)
        (reset! past-model-count (count @models)))
 
      (when (not (= (count @models)
-                   @past-model-count)) (set-goals @models))
+                   @past-model-count)) (set-goals! @models))
 
      (reset! past-model-count (count @models))
      (reset! new-line [])
@@ -772,24 +771,25 @@
 
      (when (= (count @*cantus-firmus*)
               (count (second @save-voices)))
-       (push (analyze-for-template @*seed-note* @*cantus-firmus* major-scale) saved-templates))
+       (swap! saved-templates conj (analyze-for-template @*seed-note* @*cantus-firmus* major-scale)))
      @counterpoint))
 
 (defn create-canon
   "creates a simple canon in two voices using gradus."
   [cantus-firmus]
-  (let [seed-note (- (llast cantus-firmus) 12)]
-    (gradus nil true seed-note cantus-firmus))
-
- (reset! save-voices (evaluate-pitch-names @save-voices))
- (let [theme (concat cantus-firmus (map (fn [x] (+ x 12)) (second @save-voices)))
-       lower-voice (map #(- % 12) theme)]
-    (events/make-pairs
-     (pair (list (concat theme theme theme (vec (repeat (count cantus-firmus) 0)))
-                 (concat (vec (repeat (count cantus-firmus) 0)) lower-voice lower-voice lower-voice))))))
+  (let [difference 12
+        seed-note (- (llast cantus-firmus) difference)]
+    (gradus nil true seed-note cantus-firmus)
+    (reset! save-voices (evaluate-pitch-names @save-voices))
+    (let [theme (concat cantus-firmus (map (fn [x] (+ x difference)) (second @save-voices)))
+          lower-voice (map #(- % difference) theme)
+          dont-play (vec (repeat (count cantus-firmus) 0))]
+      (events/make-pairs
+       (pair (list (concat theme theme theme dont-play)
+                   (concat dont-play lower-voice lower-voice lower-voice)))))))
 
 (defn compose-canon []
-  (set-default-goals)
+  (set-default-goals!)
   (reset! illegal-verticals
         '(0 1 2 5 6 7 10 11 13 14 17 18 19 22 23 25 26 29 30 34 35 -1 -2 -3 -4 -5 -6 -7 -8))
   (reset! *cantus-firmus* (map music/note '(:A3 :B3 :C4 :E4 :D4 :C4 :B3)))
@@ -808,11 +808,11 @@
   (create-canon @*cantus-firmus*))
 
 (defn compose-as-chords []
-  (set-default-goals)
+  (set-default-goals!)
   (let [events (gradus)
         events-as-notes (map #(assoc % :pitch (music/find-note-name (:pitch %))) events)]
     (events/as-chords events-as-notes)))
 
 (defn compose []
-  (set-default-goals)
+  (set-default-goals!)
   (gradus))
