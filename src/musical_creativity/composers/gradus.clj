@@ -423,9 +423,9 @@
 
 (defn create-interval-rule [rule]
   "creates the interval rule as in (-7 (2 2 2)(-1 1 2))."
-  (list (first (find-scale-intervals (list (first (first rule))
-                                            (first (second rule)))
-                                      major-scale))
+  (list (first (find-scale-intervals (list (ffirst rule)
+                                           (first (second rule)))
+                                     major-scale))
         (find-scale-intervals (first rule) major-scale)
         (find-scale-intervals (second rule)  major-scale)))
 
@@ -487,8 +487,9 @@
      :else
      nil)))
 
-(defn leaps? [extended-last-notes]
+(defn leaps?
   "tests for leaps and avoids two in row and ensures that leaps are followed by contrary motion steps."
+  [extended-last-notes]
   (cond
    (not (>= (count extended-last-notes) 3))
    nil
@@ -507,20 +508,24 @@
    :else
    nil))
 
- (defn direct-fifths? [cantus-firmus choice last-notes]
+ (defn direct-fifths?
    "tests for direct fifths between the two lines."
+   [cantus-firmus choice last-notes]
    (let [cantus-firmus-to-here  (take (+ 1 (count last-notes)) cantus-firmus)]
      (cond
-      (or (not (>= (count cantus-firmus-to-here) 2))(not (>= (count last-notes) 1)))
+      (or (not (>= (count cantus-firmus-to-here) 2))
+          (not (>= (count last-notes) 1)))
       nil
-      (member (get-verticals (take-last 2 cantus-firmus-to-here)(take-last 2 (concat last-notes (list choice))))
+      (member (get-verticals (take-last 2 cantus-firmus-to-here)
+                             (take-last 2 (concat last-notes (list choice))))
               @direct-fifths-and-octaves)
       true
       :else
       nil)))
 
-(defn consecutive-motions? [cantus-firmus choice last-notes]
+(defn consecutive-motions?
   "tests to see if there are more than two consecutive save-direction motions."
+  [cantus-firmus choice last-notes]
   (let [cantus-firmus-to-here  (take (+ 1 (count last-notes)) cantus-firmus)]
     (cond
      (or (not (> (count cantus-firmus-to-here) 3))(not (> (count last-notes) 2)))
