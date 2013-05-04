@@ -7,12 +7,9 @@
 (load-file "data/gradus.clj")
 
 (def major-scale
-  (concat
-   (music/scale :C1 :major)
-   (music/scale :C2 :major)
-   (music/scale :C3 :major)
-   (music/scale :C4 :major)
-   (music/scale :C5 :major)))
+  (->> (music/scale-field :C :major)
+      (drop-last 46)
+      (take-last 36)))
 
 (def illegal-verticals         (atom []))
 (def illegal-parallel-motions  (atom []))
