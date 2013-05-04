@@ -38,10 +38,11 @@ Experiments with models for computers generating music.
 (require '[musical-creativity.composers.fuzzy :as fuzzy] :reload)
 (musician/play (fuzzy/compose) piano)
 
-;Gradus
+;Gradus (with each run Gradus learns how to better compose)
 (require '[musical-creativity.composers.gradus :as gradus] :reload)
 
 (musician/play (gradus/compose) piano)
+
 (musician/play (gradus/compose-canon) piano)
 
 (musician/play (gradus/compose-canon data.gradus/cantus-firmus-1) piano)
