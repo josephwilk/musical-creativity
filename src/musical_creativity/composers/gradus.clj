@@ -14,10 +14,10 @@
    (music/scale :C4 :major)
    (music/scale :C5 :major)))
 
-(def illegal-verticals         (atom '()))
-(def illegal-parallel-motions  (atom '()))
-(def illegal-double-skips      (atom '()))
-(def direct-fifths-and-octaves (atom '()))
+(def illegal-verticals         (atom []))
+(def illegal-parallel-motions  (atom []))
+(def illegal-double-skips      (atom []))
+(def direct-fifths-and-octaves (atom []))
 
 (def solution     (atom []))
 (def counterpoint (atom []))
@@ -727,12 +727,30 @@
   "replenishes the seednotes when when they have all been used."
   (reset! seed-notes '(:C3 :F3 :E3 :D3 :B2 :A2 :G2 :F2)))
 
+(defn models-changed? []
+  (not (= (count @models) @past-model-count)))
+
+(defn cantus-firmus-changed? []
+  (not (= last-cantus-firmus @*cantus-firmus*)))
+
+(defn voices-from-solution []
+  (let [voices (list (take (count @solution) @*cantus-firmus*) @solution)
+        voices-as-pitches (map translate-into-pitchnames voices)]
+    voices-as-pitches))
+
+(defn template-complete? []
+  (= (count @*cantus-firmus*)
+     (count (second @save-voices))))
+
+(defn use-auto-goals? []
+  @*auto-goals*)
+
 (defn gradus
   "top-level function of the counterpoint program."
   ([] (gradus @*auto-goals* @*print-state* nil @*cantus-firmus*))
   ([auto-goals print-state seed-note cantus-firmus]
 
-     (when-not (= last-cantus-firmus @*cantus-firmus*)
+     (when (cantus-firmus-changed?)
        (reset! temporary-rules [])
        (reset! last-cantus-firmus @*cantus-firmus*))
 
@@ -747,13 +765,12 @@
 
      (when-not @*auto-goals* (set-default-goals!))
 
-     (when @*auto-goals*
+     (when (use-auto-goals?)
        (set-goals! @models)
        (reset! *auto-goals* nil)
        (reset! past-model-count (count @models)))
 
-     (when (not (= (count @models)
-                   @past-model-count)) (set-goals! @models))
+     (when (models-changed?) (set-goals! @models))
 
      (reset! past-model-count (count @models))
      (reset! new-line [])
@@ -761,12 +778,10 @@
      (let [choices (shuffle (create-choices major-scale @*seed-note*))]
        (reset! solution (create-new-line @*cantus-firmus*  major-scale choices nil)))
 
-     (reset! save-voices (list (take (count @solution) @*cantus-firmus*) @solution))
-     (reset! save-voices (map translate-into-pitchnames @save-voices))
+     (reset! save-voices (voices-from-solution))
      (reset! counterpoint (events/make-pairs (pair @save-voices)))
 
-     (when (= (count @*cantus-firmus*)
-              (count (second @save-voices)))
+     (when (template-complete?)
        (swap! saved-templates conj (analyze-for-template @*seed-note* @*cantus-firmus* major-scale)))
      @counterpoint))
 
