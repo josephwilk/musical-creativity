@@ -1,7 +1,8 @@
 (ns musical-creativity.composers.gradus
   (:require
    [clojure.math.numeric-tower :as math]
-   [musical-creativity.events :as events]))
+   [musical-creativity.events :as events]
+   [overtone.music.pitch :as opitch]))
 
 (def major-scale '(36 38 40 41 43 45 47 48 50 52 53 55
                    57 59 60 62 64 65 67 69 71 72 74 76
@@ -197,13 +198,9 @@
     (-> (str "musical-creativity.composers.gradus/" pitch) symbol resolve var-get)
     pitch))
 
-
 (defn translate-into-pitchnames [list-of-midi-note-numbers]
   "used to translate midi note numbers into note names."
-  (if (empty? list-of-midi-note-numbers)
-    []
-    (cons (nth list-of-notes (position (first list-of-midi-note-numbers) major-scale))
-          (translate-into-pitchnames (rest list-of-midi-note-numbers)))))
+  (map opitch/find-note-name list-of-midi-note-numbers))
 
 (defn translate-notes
   "translates interval lists into note names for readability."
@@ -223,7 +220,7 @@
 (defn evaluate-pitch-names
   "evaluates the pitch names of its arg into midi note numbers."
   [voices]
-  (map (fn [x] (map resolve-pitch x)) voices))
+  (map (fn [x] (map opitch/note x)) voices))
 
 (defn print-working
   [cantus-firmus last-notes]
@@ -775,17 +772,6 @@
   "replenishes the seednotes when when they have all been used."
   (reset! seed-notes '(60 65 64 62 59 57 55 53)))
 
-(defn make-event-pairs
-  ([pitch-groupings] (make-event-pairs pitch-groupings 0))
-  ([pitch-groupings ontime]
-     (let [interval 900
-           ontimes (range 0 (* interval (count pitch-groupings)) interval)]
-       (flatten
-        (map (fn [[pitch1 pitch2] ontime]
-               [(events/make-event ontime (resolve-pitch pitch1) 1)
-                (events/make-event ontime (resolve-pitch pitch2) 2)])
-             pitch-groupings ontimes)))))
-
 (defn gradus
   "top-level function of the counterpoint program."
   ([] (gradus @*auto-goals* @*print-state* nil @*cantus-firmus*))
@@ -822,7 +808,7 @@
 
      (reset! save-voices (list (take (count @solution) @*cantus-firmus*) @solution))
      (reset! save-voices (map translate-into-pitchnames @save-voices))
-     (reset! counterpoint (make-event-pairs (pair @save-voices)))
+     (reset! counterpoint (events/make-pairs (pair @save-voices)))
 
      (when (= (count @*cantus-firmus*)
               (count (second @save-voices)))
@@ -838,7 +824,7 @@
  (reset! save-voices (evaluate-pitch-names @save-voices))
   (let [theme (concat cantus-firmus (map (fn [x] (+ x 12)) (second @save-voices)))
         lower-voice (map (fn [x](- x 12)) theme)]
-    (make-event-pairs
+    (events/make-pairs
      (pair (list (concat theme theme theme (vec (repeat (count cantus-firmus) 0)))
                  (concat (vec (repeat (count cantus-firmus) 0)) lower-voice lower-voice lower-voice))))))
 

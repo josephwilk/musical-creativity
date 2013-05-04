@@ -33,3 +33,14 @@
       (let [duration (or interval 300)]
         (concat [(make-event ontime (first pitch-groupings))]
                  (make (rest pitch-groupings) (+ ontime duration) interval))))))
+
+(defn make-pairs
+  ([pitch-groupings] (make-pairs pitch-groupings 0))
+  ([pitch-groupings ontime]
+     (let [interval 900
+           ontimes (range 0 (* interval (count pitch-groupings)) interval)]
+       (flatten
+        (map (fn [[pitch1 pitch2] ontime]
+               [(make-event ontime pitch1 1)
+                (make-event ontime pitch2 2)])
+             pitch-groupings ontimes)))))
