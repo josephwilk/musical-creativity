@@ -127,16 +127,41 @@
      ((69 71 72 74 71 72 74 72) (57 55 57 53 55 53 50 52))
      ((69 71 72 69 71 72 74 77 76 74 72) (57 55 52 53 55 57 55 53 55 53 57)))))
 
+(defn set-default-goals
+  "sets the default goals for the program."
+  []
+  (reset! illegal-verticals         '(0 1 2 5 6 10 11 13 14 17 18 22 23 25 26 29 30 34 35 -1 -2 -3 -4 -5 -6 -7 -8))
+  (reset! illegal-parallel-motions  '((7 7) (12 12) (19 19) (24 24)))
+  (reset! illegal-double-skips      '((3 3) (3 4) (3 -3) (3 -4) (-3 -3) (-3 -4) (-3 3) (-3 4)
+                                      (4 3) (4 4) (4 -3) (4 -4) (-4 -3) (-4 -4) (-4 3) (-4 4)))
+  (reset! direct-fifths-and-octaves '((9 7) (8 7) (21 19) (20 19))))
+
+(defn llast [list]
+  (let [last-item (last list)]
+    (if (seq? last-item)
+      (first last-item)
+      last-item)))
+
 (defn third [list]
   (nth list 2))
 
-(defn return-counts
-  "simply adds the count of occurances to the beginning of each member of its arg."
-  [templates]
-  (letfn [(occurences [template templates]
-            (count (filter #(= template %) templates)))]
-    (map (fn [template]
-           [(occurences template templates) template]) templates)))
+(defn very-second [list]
+  (first (second list)))
+
+(defn second-to-last [list]
+  (llast (butlast list)))
+
+(defn third-to-last [list]
+  (nth (butlast list) (- (count list) 3)))
+
+(defn opposite-sign? [numbers]
+  (if (or (and
+           (< (first numbers) 0)
+           (> (second numbers)) 0)
+          (and
+           (> (first numbers) 0)
+           (< (second numbers) 0)))
+    true))
 
 (defn member [value list]
   (if (seq list)
@@ -146,6 +171,77 @@
 
 (defn sort-by-first-element [lists]
   (sort (fn [[x & _] [y & _]] (> x y))  lists))
+
+(defn pair
+  [[list1 list2]]
+  (map vector list1 list2))
+
+(defn push [data reference]
+  (swap! reference concat data))
+
+(defn swap-unless-includes [reference data]
+  (when-not (some #{data} @reference)
+    (swap! reference conj data)))
+
+(defn position [thing list]
+  (let [index (.indexOf list thing)]
+    (when (>= index 0) index)))
+
+(defn choose-one
+  "chooses one its arg randomly."
+  [list]
+  (nth list (rand-int (count list))))
+
+(defn resolve-pitch [pitch]
+  (if (symbol? pitch)
+    (-> (str "musical-creativity.composers.gradus/" pitch) symbol resolve var-get)
+    pitch))
+
+
+(defn translate-into-pitchnames [list-of-midi-note-numbers]
+  "used to translate midi note numbers into note names."
+  (if (empty? list-of-midi-note-numbers)
+    []
+    (cons (nth list-of-notes (position (first list-of-midi-note-numbers) major-scale))
+          (translate-into-pitchnames (rest list-of-midi-note-numbers)))))
+
+(defn translate-notes
+  "translates interval lists into note names for readability."
+  [first-note intervals]
+  (if (empty? intervals)
+    (translate-into-pitchnames (list first-note))
+    (let [test (get-diatonic-note first-note (first intervals) major-scale)]
+      (concat (translate-into-pitchnames (list first-note))
+              (translate-notes test (rest intervals))))))
+
+(defn translate-rule-into-pitches
+  "translates rules into more readable pitch names."
+  [first-note rule]
+  (list (translate-notes first-note (second rule))
+        (translate-notes (get-diatonic-note first-note (first rule) major-scale)(third rule))))
+
+(defn evaluate-pitch-names
+  "evaluates the pitch names of its arg into midi note numbers."
+  [voices]
+  (map (fn [x] (map resolve-pitch x)) voices))
+
+(defn print-working
+  [cantus-firmus last-notes]
+  (let [notes (translate-into-pitchnames cantus-firmus)
+        last-notes (translate-into-pitchnames last-notes)]
+    (println "cantus firmus:" notes "notes:" last-notes)))
+
+(defn print-backtracking []
+  "simple printing function to show backtracking."
+  (println (str "backtracking.....there are now " (count @rules) " rules.")))
+
+(defn return-counts
+  "simply adds the count of occurances to the beginning of each member of its arg."
+  [templates]
+  (letfn [(occurences [template templates]
+            (count (filter #(= template %) templates)))]
+    (map (fn [template]
+           [(occurences template templates) template]) templates)))
 
 (defn get-diatonic-note [current-note interval scale]
   "a simple variant of choose-from-scale which uses a diatonic interval as its second arg."
@@ -159,8 +255,8 @@
 
 (defn collect-all
   "collects all of the occurances of each member of its arg."
-  [item saved-templates]
-  (filter #(= item (second %)) saved-templates))
+  [item templates]
+  (filter #(= item (second %)) templates))
 
 (defn find-scale-intervals
   "returns the diatonic intervals between the notes according to the scale."
@@ -192,12 +288,6 @@
       up
       (- down))))
 
-(defn llast [list]
-  (let [last-item (last list)]
-    (if (seq? last-item)
-      (first last-item)
-      last-item)))
-
 (defn get-map
   "returns the map part of the template."
   [cantus-firmus scale]
@@ -216,24 +306,17 @@
     (when interval
       (get-diatonic-note (first cantus-firmus) interval scale))))
 
-(defn set-default-goals
-  "sets the default goals for the program."
-  []
-  (reset! illegal-verticals         '(0 1 2 5 6 10 11 13 14 17 18 22 23 25 26 29 30 34 35 -1 -2 -3 -4 -5 -6 -7 -8))
-  (reset! illegal-parallel-motions  '((7 7) (12 12) (19 19) (24 24)))
-  (reset! illegal-double-skips      '((3 3) (3 4) (3 -3) (3 -4) (-3 -3) (-3 -4) (-3 3) (-3 4)
-                                      (4 3) (4 4) (4 -3) (4 -4) (-4 -3) (-4 -4) (-4 3) (-4 4)))
-  (reset! direct-fifths-and-octaves '((9 7) (8 7) (21 19) (20 19))))
-
 (defn get-complement
   "incrementally returns all of the intervals not in the verticals arg."
   ([verticals] (get-complement verticals 0))
   ([verticals number]
      (cond
-      (empty? verticals) []
+      (empty? verticals)
+      []
       (member number verticals)
-      (get-complement (rest verticals)(+ 1 number))
-      :else (cons number (get-complement verticals (+ 1 number))))))
+      (get-complement (rest verticals) (+ 1 number))
+      :else
+      (cons number (get-complement verticals (+ 1 number))))))
 
 (defn project-octaves-out-from [number]
   (if (> number 12)
@@ -244,10 +327,6 @@
   (if (empty? numbers) []
       (concat (project-octaves-out-from (first numbers))
               (project (rest numbers)))))
-
-(defn pair
-  [[voices1 voices2]]
-  (map vector voices1 voices2))
 
 (defn make-voices
   "makes lists of the cantus firmus and accompanying line pitches."
@@ -331,13 +410,6 @@
      (apply concat
             (map #(combinations % save-list) list))))
 
-(defn set-goals [models]
-  "sets the goals for the gradus program."
-  (reset! illegal-verticals (get-illegal-verticals models))
-  (reset! illegal-parallel-motions (find-illegal-parallels models))
-  (reset! direct-fifths-and-octaves (find-illegal-parallels models))
-  (reset! illegal-double-skips (possible-combinations '(3 4 -3 -4))))
-
 (defn all-first-notes-conflict-rules? [choices rules]
   "checking to see if all possible first notes produce rule-conflicting problems."
   (every? #(member (list % nil nil) rules) choices))
@@ -414,24 +486,6 @@
      (list (take-last (count the-list)
                      (drop-last (- (count cantus-firmus)(count new-notes)) cantus-firmus)) the-list))))
 
-(defn second-to-last [list]
-  "returns the second to last of the list arg."
-  (llast (butlast list)))
-
-(defn third-to-last [list]
-  "returns the third to last of the list arg."
-  (nth (butlast list) (- (count list) 3)))
-
-(defn opposite-sign [numbers]
-  "returns t if the two numbers have opposite signs."
-  (if (or (and
-           (< (first numbers) 0)
-           (> (second numbers)) 0)
-          (and
-           (> (first numbers) 0)
-           (< (second numbers) 0)))
-    true))
-
 (defn skip? [notes]
   "returns true if its two-number arg is a skip."
   (if (> (math/abs (- (second notes)(first notes))) 2) true))
@@ -497,7 +551,7 @@
    (and (> (math/abs (- (third-to-last extended-last-notes)
                         (second-to-last extended-last-notes)))
            2)
-        (not (opposite-sign (list (- (second-to-last extended-last-notes)(llast extended-last-notes))
+        (not (opposite-sign? (list (- (second-to-last extended-last-notes)(llast extended-last-notes))
                                   (- (third-to-last extended-last-notes)(second-to-last extended-last-notes))))))
    true
    :else
@@ -523,11 +577,11 @@
      nil
      (let [last-four-cf (take-last 4 cantus-firmus-to-here)
            last-four-newline (take-last 4 (concat last-notes (list choice)))]
-       (not (or (opposite-sign (list (first (get-intervals (take 2 last-four-cf)))
+       (not (or (opposite-sign? (list (first (get-intervals (take 2 last-four-cf)))
                                      (first (get-intervals (take 2 last-four-newline)))))
-                (opposite-sign (list (first (get-intervals (take 2 (rest last-four-cf))))
+                (opposite-sign? (list (first (get-intervals (take 2 (rest last-four-cf))))
                                      (first (get-intervals (take 2 (rest last-four-newline))))))
-                (opposite-sign (list (first (get-intervals (take-last 2 last-four-cf)))
+                (opposite-sign? (list (first (get-intervals (take-last 2 last-four-cf)))
                                      (first (get-intervals (take-last 2 last-four-newline))))))))
      true
      :else
@@ -549,10 +603,6 @@
   "evaluates the various choices for a next note based on the goals and current rules"
   [cantus-firmus choices last-notes]
   (filter #(choice-fits-goals-and-current-rules? % cantus-firmus last-notes) choices))
-
-(defn very-second [list]
-  "returns the first of the second of list."
-  (first (second list)))
 
 (defn match-rule [rule-for-matching rule]
   "matches the freer rule to the rule from rules."
@@ -653,49 +703,6 @@
       (look-ahead-for-best-choice cantus-firmus last-notes correct-choices)
       (first correct-choices))))
 
-(defn push [data reference]
-  (swap! reference concat data))
-
-(defn swap-unless-includes [reference data]
-  (when-not (some #{data} @reference)
-    (swap! reference conj data)))
-
-(defn print-backtracking []
-  "simple printing function to show backtracking."
-  (println (str "backtracking.....there are now " (count @rules) " rules.")))
-
-(defn position [thing list]
-  (let [index (.indexOf list thing)]
-    (when (>= index 0) index)))
-
-(defn translate-into-pitchnames [list-of-midi-note-numbers]
-  "used to translate midi note numbers into note names."
-  (if (empty? list-of-midi-note-numbers)
-    []
-    (cons (nth list-of-notes (position (first list-of-midi-note-numbers) major-scale))
-          (translate-into-pitchnames (rest list-of-midi-note-numbers)))))
-
-(defn translate-notes
-  "translates interval lists into note names for readability."
-  [first-note intervals]
-  (if (empty? intervals)
-    (translate-into-pitchnames (list first-note))
-    (let [test (get-diatonic-note first-note (first intervals) major-scale)]
-      (concat (translate-into-pitchnames (list first-note))
-              (translate-notes test (rest intervals))))))
-
-(defn translate-rule-into-pitches
-  "translates rules into more readable pitch names."
-  [first-note rule]
-  (list (translate-notes first-note (second rule))
-        (translate-notes (get-diatonic-note first-note (first rule) major-scale)(third rule))))
-
-(defn print-working
-  [cantus-firmus last-notes]
-  (let [notes (translate-into-pitchnames cantus-firmus)
-        last-notes (translate-into-pitchnames last-notes)]
-    (println "cantus firmus:" notes "notes:" last-notes)))
-
 (defn get-new-starting-point
   "for backtracking - starts 2 earlier or nil"
   [last-notes]
@@ -751,15 +758,33 @@
           (create-line-from-choices cantus-firmus scale choices last-notes length)
           (create-line-from-new-choices test cantus-firmus scale last-notes length)))))))
 
-(defn resolve-pitch [pitch]
-  (if (symbol? pitch)
-    (-> (str "musical-creativity.composers.gradus/" pitch) symbol resolve var-get)
-    pitch))
-
 (defn analyze-for-template [seed-note cantus-firmus scale]
   "returns the complete template (seed interval and map) for saving."
   (list (first (find-scale-intervals (list (first cantus-firmus) seed-note) scale))
         (get-map cantus-firmus scale)))
+
+(defn set-goals
+  "sets the goals for the gradus program."
+  [models]
+  (reset! illegal-verticals (get-illegal-verticals models))
+  (reset! illegal-parallel-motions (find-illegal-parallels models))
+  (reset! direct-fifths-and-octaves (find-illegal-parallels models))
+  (reset! illegal-double-skips (possible-combinations '(3 4 -3 -4))))
+
+(defn replenish-seed-notes []
+  "replenishes the seednotes when when they have all been used."
+  (reset! seed-notes '(60 65 64 62 59 57 55 53)))
+
+(defn make-event-pairs
+  ([pitch-groupings] (make-event-pairs pitch-groupings 0))
+  ([pitch-groupings ontime]
+     (let [interval 900
+           ontimes (range 0 (* interval (count pitch-groupings)) interval)]
+       (flatten
+        (map (fn [[pitch1 pitch2] ontime]
+               [(events/make-event ontime (resolve-pitch pitch1) 1)
+                (events/make-event ontime (resolve-pitch pitch2) 2)])
+             pitch-groupings ontimes)))))
 
 (defn gradus
   "top-level function of the counterpoint program."
@@ -797,38 +822,12 @@
 
      (reset! save-voices (list (take (count @solution) @*cantus-firmus*) @solution))
      (reset! save-voices (map translate-into-pitchnames @save-voices))
-     (reset! counterpoint (make-events (pair @save-voices)))
+     (reset! counterpoint (make-event-pairs (pair @save-voices)))
 
      (when (= (count @*cantus-firmus*)
               (count (second @save-voices)))
        (push (analyze-for-template seed-note @*cantus-firmus* major-scale) saved-templates))
      @counterpoint))
-
-(defn replenish-seed-notes []
-  "replenishes the seednotes when when they have all been used."
-  (reset! seed-notes '(60 65 64 62 59 57 55 53)))
-
-(defn choose-one
-  "chooses one its arg randomly."
-  [list]
-  (nth list (rand-int (count list))))
-
-(defn evaluate-pitch-names
-  "evaluates the pitch names of its arg into midi note numbers."
-  [voices]
-  (map (fn [x] (map resolve-pitch x)) voices))
-
-(defn make-events
-  "makes consecutive events out of the pairs of pitches in its arg."
-  ([pitch-groupings] (make-events pitch-groupings 0))
-  ([pitch-groupings ontime]
-     (let [interval 900
-           ontimes (range 0 (* interval (count pitch-groupings)) interval)]
-       (flatten
-        (map (fn [[pitch1 pitch2] ontime]
-               [(events/make-event ontime (resolve-pitch pitch1) 1)
-                (events/make-event ontime (resolve-pitch pitch2) 2)])
-             pitch-groupings ontimes)))))
 
 (defn create-canon
   "creates a simple canon in two voices using gradus."
@@ -839,7 +838,7 @@
  (reset! save-voices (evaluate-pitch-names @save-voices))
   (let [theme (concat cantus-firmus (map (fn [x] (+ x 12)) (second @save-voices)))
         lower-voice (map (fn [x](- x 12)) theme)]
-    (make-events
+    (make-event-pairs
      (pair (list (concat theme theme theme (vec (repeat (count cantus-firmus) 0)))
                  (concat (vec (repeat (count cantus-firmus) 0)) lower-voice lower-voice lower-voice))))))
 

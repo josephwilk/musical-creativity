@@ -1,4 +1,5 @@
-(ns musical-creativity.events)
+(ns musical-creativity.events
+  (:require [overtone.music.pitch :as opitch]))
 
 (defn- random-duration []
   (+ 250 (rand-int 800)))
@@ -9,7 +10,7 @@
 (defn- extract-pitch [pitch]
   (if (map? pitch)
     (:pitch pitch)
-    pitch))
+    (opitch/note pitch)))
 
 (defn make-event [ontime data & [channel]]
   {:time ontime
@@ -19,7 +20,7 @@
 
 (defn random-make [pitch-groupings & [ontime]]
   (let [ontime (or ontime 0)]
-    (if (empty? pitch-groupings) 
+    (if (empty? pitch-groupings)
       []
       (let [duration (random-duration)]
         (concat [(make-event ontime (first pitch-groupings) (random-channel))]
@@ -27,7 +28,7 @@
 
 (defn make [pitch-groupings & [ontime interval]]
   (let [ontime (or ontime 0)]
-    (if (empty? pitch-groupings) 
+    (if (empty? pitch-groupings)
       []
       (let [duration (or interval 300)]
         (concat [(make-event ontime (first pitch-groupings))]
