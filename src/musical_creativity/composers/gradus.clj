@@ -272,30 +272,25 @@
       :else
       (cons number (get-complement verticals (+ 1 number))))))
 
-(defn project-octaves-out-from [number]
-  (if (> number 12)
-    (list (- number 12) number (+ number 12))
-    (list number (+ number 12)(+ number 24))))
-
-(defn project [numbers]
-  (if (empty? numbers) []
-      (concat (project-octaves-out-from (first numbers))
-              (project (rest numbers)))))
+(defn project-octaves [numbers]
+  (letfn [(octaves-out-from [number]
+            (if (> number 12)
+              (list (- number 12) number (+ number 12))
+              (list number (+ number 12)(+ number 24))))]
+    (mapcat octaves-out-from numbers)))
 
 (defn make-voices
   "makes lists of the cantus firmus and accompanying line pitches."
   [models]
-  (list (mapcat first models)
-        (mapcat second models)))
+  [(mapcat first models) (mapcat second models)])
 
 (defn get-the-verticals
   "collects the vertical intervals from the models used."
   [models]
   (sort < (distinct
-            (project
-             (let [voiced-music (pair (make-voices models))]
-               (map (fn [pair] (- (music/note (first pair)) (music/note (second pair)))) voiced-music)
-               )))))
+           (project-octaves
+            (let [voiced-music (pair (make-voices models))]
+              (map (fn [pair] (- (music/note (first pair)) (music/note (second pair)))) voiced-music))))))
 
 (defn get-illegal-verticals
   "returns all of the vertical intervals not in the models."
