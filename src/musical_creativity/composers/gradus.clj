@@ -166,14 +166,9 @@
   [list]
   (nth list (rand-int (count list))))
 
-(defn resolve-pitch [pitch]
-  (if (symbol? pitch)
-    (-> (str "musical-creativity.composers.gradus/" pitch) symbol resolve var-get)
-    pitch))
-
 (defn translate-into-pitchnames [list-of-midi-note-numbers]
   "used to translate midi note numbers into note names."
-  (map opitch/find-note-name list-of-midi-note-numbers))
+  (map music/find-note-name list-of-midi-note-numbers))
 
 (defn translate-notes
   "translates interval lists into note names for readability."
