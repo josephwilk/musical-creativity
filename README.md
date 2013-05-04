@@ -46,6 +46,8 @@ Experiments with models for computers generating music.
 
 (musician/play (gradus/compose-canon data.gradus/cantus-firmus-1) piano)
 (musician/play (gradus/compose-canon data.gradus/cantus-firmus-2) piano)
+(musician/play (gradus/compose-canon data.gradus/cantus-firmus-7) piano)
+
 
 (musician/play (gradus/compose-contemporary) piano)
 ```
