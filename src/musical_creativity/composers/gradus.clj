@@ -196,8 +196,9 @@
         last-notes (translate-into-pitchnames last-notes)]
     (println "cantus firmus:" notes "notes:" last-notes)))
 
-(defn print-backtracking []
+(defn print-backtracking
   "simple printing function to show backtracking."
+  []
   (println "current rules: " @rules)
   (println (str "backtracking.....there are now " (count @rules) " rules.")))
 
