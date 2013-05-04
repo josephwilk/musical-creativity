@@ -4,6 +4,8 @@
    [musical-creativity.events :as events]
    [overtone.music.pitch :as music]))
 
+(load-file "data/gradus.clj")
+
 (def major-scale
   (concat
    (music/scale :C1 :major)
@@ -12,11 +14,10 @@
    (music/scale :C4 :major)
    (music/scale :C5 :major)))
 
-(def illegal-verticals         (atom '(0 1 2 5 6 10 11 13 14 17 18 22 23 25 26 29 30 34 35 -1 -2 -3 -4 -5 -6 -7 -8)))
-(def illegal-parallel-motions  (atom '((7 7) (12 12) (19 19) (24 24))))
-(def illegal-double-skips      (atom '((3 3) (3 4) (3 -3) (3 -4) (-3 -3) (-3 -4) (-3 3) (-3 4)
-                                       (4 3) (4 4) (4 -3) (4 -4) (-4 -3) (-4 -4) (-4 3) (-4 4))))
-(def direct-fifths-and-octaves (atom '((9 7) (8 7) (21 19) (20 19))))
+(def illegal-verticals         (atom '()))
+(def illegal-parallel-motions  (atom '()))
+(def illegal-double-skips      (atom '()))
+(def direct-fifths-and-octaves (atom '()))
 
 (def solution     (atom []))
 (def counterpoint (atom []))
@@ -783,14 +784,15 @@
        (pair (list (concat theme theme theme dont-play)
                    (concat dont-play lower-voice lower-voice lower-voice)))))))
 
-(defn compose-canon []
+(defn compose-canon [& [cantus-firmus]]
   (set-default-goals!)
-  (reset! illegal-verticals
-        '(0 1 2 5 6 7 10 11 13 14 17 18 19 22 23 25 26 29 30 34 35 -1 -2 -3 -4 -5 -6 -7 -8))
-  (reset! *cantus-firmus* (map music/note '(:A3 :B3 :C4 :E4 :D4 :C4 :B3)))
-  (create-canon @*cantus-firmus*))
+  (let [cantus-firmus (or cantus-firmus (map music/note '(:A3 :B3 :C4 :E4 :D4 :C4 :B3)))]
+    (reset! illegal-verticals '(0 1 2 5 6 7 10 11 13 14 17 18 19 22 23 25 26 29 30 34 35 -1 -2 -3 -4 -5 -6 -7 -8))
+    (reset! *cantus-firmus* cantus-firmus)
+    (create-canon cantus-firmus)))
 
 (defn compose-contemporary []
+  (set-default-goals!)
   (reset! models '(((:C4 :B3 :D4 :C4 :B3 :A3 :G3 :A3)
                     (:B3 :A3 :G3 :F3 :A3 :G3 :F3 :D3))
                    ((:C4 :B3 :D4 :C4 :B3 :A3 :G3 :A3)

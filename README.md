@@ -44,8 +44,10 @@ Experiments with models for computers generating music.
 (musician/play (gradus/compose) piano)
 (musician/play (gradus/compose-canon) piano)
 
-(musician/play (gradus/compose-contemporary) piano)
+(musician/play (gradus/compose-canon data.gradus/cantus-firmus-1) piano)
+(musician/play (gradus/compose-canon data.gradus/cantus-firmus-2) piano)
 
+(musician/play (gradus/compose-contemporary) piano)
 ```
 
 ##Book
