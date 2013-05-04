@@ -143,7 +143,7 @@
   (map vector list1 list2))
 
 (defn push [data reference]
-  (swap! reference concat data))
+  (swap! reference conj data))
 
 (defn swap-unless-includes [reference data]
   (when-not (some #{data} @reference)
@@ -715,8 +715,10 @@
 
 (defn analyze-for-template [seed-note cantus-firmus scale]
   "returns the complete template (seed interval and map) for saving."
-  (list (first (find-scale-intervals (list (first cantus-firmus) seed-note) scale))
-        (get-map cantus-firmus scale)))
+  (let [cantus-firmus-note (first cantus-firmus)
+        cantus-firmus-note-and-seed (list cantus-firmus-note seed-note)
+        scale-intervals (find-scale-intervals cantus-firmus-note-and-seed scale)]
+    (list (first scale-intervals) (get-map cantus-firmus scale))))
 
 (defn set-goals
   "sets the goals for the gradus program."
@@ -770,7 +772,7 @@
 
      (when (= (count @*cantus-firmus*)
               (count (second @save-voices)))
-       (push (analyze-for-template seed-note @*cantus-firmus* major-scale) saved-templates))
+       (push (analyze-for-template @*seed-note* @*cantus-firmus* major-scale) saved-templates))
      @counterpoint))
 
 (defn create-canon
