@@ -11,12 +11,20 @@
 (defchecker pitch-as-note [note-name]
   (pitch-as-note-checker note-name))
 
+(fact "translate rules into pitches"
+  (translate-rule-into-pitches (music/note :C3) '(-9 (1 -1 -1) (-1 -2 2))) => '((:C3 :D3 :C3 :B2) (:A1 :G1 :E1 :G1)))
+
+(fact "consult rules"
+  (consult-rules '(-9 (2 -1 -1) (-1 -1 -2))) => nil)
+
+(fact "diatonic interval"
+  (get-diatonic-interval 3) =>  2)
+
+(fact "get diatonic note"
+  (get-diatonic-note (music/note :A3) -5 major-scale) => (music/note :C3))
+
 (fact "find scale intervals"
-  (find-scale-intervals
-   [69 76]
-   [36 38 40 41 43 45 47 48 50 52 53 55 57 59
-    60 62 64 65 67 69 71 72 74 76 77 79 81 83
-    84 86 88 89 91 93 95 96]) => [4])
+  (find-scale-intervals (map music/note [:A3 :E4]) major-scale) => [4])
 
 (fact "find the legals"
   (find-the-legals
@@ -36,39 +44,34 @@
    [24 14]])
 
 (fact "pair"
-  (pair '((1 2 3) (4 5 6)))
-  => '((1 4) (2 5) (3 6)))
+  (pair '((1 2 3) (4 5 6))) => '((1 4) (2 5) (3 6)))
 
 (fact "combinations"
   (combinations 3 '(3 4 -3 -4)) => '((3 3) (3 4) (3 -3) (3 -4)))
 
 (fact "choose-from-scale"
-  (choose-from-scale 60 -3 '(36 38 40 41 43 45 47 48 50 52 53 55 57 59 60 62 64 65 67 69 71 72
-                             74 76 77 79 81 83 84 86 88 89 91 93 95 96))
-  => 57)
+  (choose-from-scale (music/note :C3) -3 major-scale) => (music/note :A2))
 
 (fact "no-solution-exists?"
   (no-solution-exists?
-   60
-   '(69 71 72 76 74 72 74 72 71 69)
+   (music/note :C3)
+   (map music/note [:A3 :B3 :C4 :E4 :D4 :C4 :D4 :C4 :B3 :A3])
    '((-7 (1 1 2) (-1 -2 1)) (-9 (1 -1 -1) (-1 -2 2)) (-4 (1) (-1))
      (-4 (1 1) (-2 2))))
   => false)
 
 (fact "select-new-seed-note"
   (select-new-seed-note
-   '(69 71 72 76 74 72 74 72 71 69)
-   '(36 38 40 41 43 45 47 48 50 52 53 55 57 59 60 62 64 65 67 69 71 72 74 76 77 79 81 83 84 86 88 89 91 93 95 96)
-   '((-5 (4 0)) (-5 (4 0)))) =>  60)
+   (map music/note [:A3 :B3 :C4 :E4 :D4 :C4 :D4 :C4 :B3 :A3])
+   major-scale
+   '((-5 (4 0)) (-5 (4 0)))) =>  (music/note :C3))
 
 (fact "collect-all"
   (collect-all '(4 0)
                '((-5 (4 0)))) => '((-5 (4 0))))
 
 (fact "create choices"
-(create-choices
- '(36 38 40 41 43 45 47 48 50 52 53 55 57 59 60 62 64 65 67 69 71 72
-      74 76 77 79 81 83 84 86 88 89 91 93 95 96) 60) => '(62 64 59 57))
+  (create-choices major-scale 60) => '(62 64 59 57))
 
 (fact "get new starting point"
   (get-new-starting-point '(57 55 53 52 55)) =>
@@ -84,7 +87,7 @@
    '((-9 (-1 1 -1) (-1 -2 2)) (-9 (-1 -1 -1) (1 2 -1))
      (-12 (1 -1 -1) (-1 2 2)) (-11 (2 -1 -1) (-1 2 1)) (-4 (1) (2))
      (-4 (1 1) (-2 -1)) (-9 (1 -1 -1) (-1 -2 -1))
-     (-7 (1 1 2) (-1 -2 -2))))  => nil)
+     (-7 (1 1 2) (-1 -2 -2)))) => nil)
 
 (future-fact "create new line"
   (reset! new-line [])
