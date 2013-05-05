@@ -660,7 +660,8 @@
   (cond
    (<= (count last-notes) 1)
    []
-   :else (drop-last 1 last-notes)))
+   :else
+   (drop-last 1 last-notes)))
 
 (declare create-new-line)
 
@@ -675,25 +676,19 @@
   (let [new-last-notes (get-new-starting-point last-notes)
         seed-note (if (empty? new-last-notes) @*seed-note* (llast new-last-notes))
         choices (shuffle (create-choices major-scale seed-note))
-        new-choices (remove #(= % (llast last-notes)) choices)]
-    (reset! new-line (drop-last (- (count last-notes) (count new-last-notes)) @new-line))
-
-    (create-new-line cantus-firmus
-                     scale
-                     new-choices
-                     new-last-notes
-                     (+ length (- (count last-notes) (count new-last-notes))))))
+        new-choices (remove #(= % (llast last-notes)) choices)
+        line (drop-last (- (count last-notes) (count new-last-notes)) @new-line)
+        new-length (+ length (- (count last-notes) (count new-last-notes)))]
+    (reset! new-line line)
+    (create-new-line cantus-firmus scale new-choices new-last-notes new-length)))
 
 (defn- create-line-from-new-choices [test cantus-firmus scale last-notes length]
   (reset! new-line (concat @new-line (list test)))
   (when logging?
     (print-working cantus-firmus @new-line))
-  (let [new-choices (shuffle (create-choices major-scale test))]
-    (create-new-line cantus-firmus
-                     scale
-                     new-choices
-                     (concat last-notes (list test))
-                     (- length 1))))
+  (let [new-choices (shuffle (create-choices major-scale test))
+        new-length (- length 1)]
+    (create-new-line cantus-firmus scale new-choices (concat last-notes (list test)) new-length)))
 
 (defn create-new-line
   "creates a new line with the cantus firmus."
