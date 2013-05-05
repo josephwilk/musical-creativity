@@ -32,9 +32,9 @@
 (def temporary-rules (atom []))
 
 (def *seed-note* (atom default-seed-note))
-(def seed-notes  (atom default-seed-notes))
-
 (def *cantus-firmus* (atom default-cantus-firmus))
+
+(def seed-notes  (atom default-seed-notes))
 
 (def new-line (atom []))
 
