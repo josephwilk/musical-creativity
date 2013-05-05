@@ -198,9 +198,9 @@
 
 (defn print-backtracking
   "simple printing function to show backtracking."
-  []
-  (let [rules-as-notes (doall (map #(translate-rule-into-pitches @*seed-note* %) @rules))]
-    (println (str "backtracking.....there are now " (count @rules) " rules."))
+  [seed-note rules]
+  (let [rules-as-notes (doall (map #(translate-rule-into-pitches seed-note %) rules))]
+    (println (str "backtracking.....there are now " (count rules) " rules."))
     (println "   rules: " rules-as-notes)))
 
 (defn return-counts
@@ -679,8 +679,8 @@
 
   (reset! save-rules @rules)
 
-  (when (not (< (count @rules) (count @save-rules)))
-    (print-backtracking))
+  (print-backtracking @*seed-note* @rules)
+
   (let [new-last-notes (get-new-starting-point last-notes)
         seed-note (if (empty? new-last-notes) @*seed-note* (llast new-last-notes))
         choices (shuffle (create-choices major-scale seed-note))
