@@ -13,28 +13,36 @@
       (drop-last 46)
       (take-last 36)))
 
+(def default-seed-notes '(:E3 :D3 :B2 :A2 :G2 :C3))
+(def default-cantus-firmus (map music/note [:A3 :B3 :C4 :E4 :D4 :C4 :D4 :C4 :B3 :A3]))
+(def default-seed-note (music/note :C3))
+
+(def default-illegal-verticals         '(0 1 2 5 6 10 11 13 14 17 18 22 23 25 26 29 30 34 35 -1 -2 -3 -4 -5 -6 -7 -8))
+(def default-illegal-parallel-motions  '((7 7) (12 12) (19 19) (24 24)))
+(def default-illegal-double-skips      '((3 3) (3 4) (3 -3) (3 -4) (-3 -3) (-3 -4) (-3 3) (-3 4)
+                                           (4 3) (4 4) (4 -3) (4 -4) (-4 -3) (-4 -4) (-4 3) (-4 4)))
+(def default-direct-fifths-and-octaves '((9 7) (8 7) (21 19) (20 19))))
+
 (def illegal-verticals         (atom []))
 (def illegal-parallel-motions  (atom []))
 (def illegal-double-skips      (atom []))
 (def direct-fifths-and-octaves (atom []))
 
-(def rules        (atom []))
+(def rules           (atom []))
+(def temporary-rules (atom []))
 
-(def default-seed-notes '(:E3 :D3 :B2 :A2 :G2 :C3))
-(def default-cantus-firmus (map music/note [:A3 :B3 :C4 :E4 :D4 :C4 :D4 :C4 :B3 :A3]))
-
-(def *seed-note* (atom (music/note :C3)))
+(def *seed-note* (atom default-seed-note))
 (def seed-notes  (atom default-seed-notes))
 
 (def *cantus-firmus* (atom default-cantus-firmus))
 
 (def new-line (atom []))
 
-(def *auto-goals* (atom nil))
+(def *auto-goals* (atom false))
+(def *look-ahead* (atom false))
+
 (def saved-templates (atom []))
 
-(def *look-ahead* (atom nil))
-(def temporary-rules (atom []))
 (def last-cantus-firmus (atom []))
 (def past-model-count (atom []))
 
@@ -94,11 +102,10 @@
 (defn set-default-goals!
   "sets the default goals for the program."
   []
-  (reset! illegal-verticals         '(0 1 2 5 6 10 11 13 14 17 18 22 23 25 26 29 30 34 35 -1 -2 -3 -4 -5 -6 -7 -8))
-  (reset! illegal-parallel-motions  '((7 7) (12 12) (19 19) (24 24)))
-  (reset! illegal-double-skips      '((3 3) (3 4) (3 -3) (3 -4) (-3 -3) (-3 -4) (-3 3) (-3 4)
-                                      (4 3) (4 4) (4 -3) (4 -4) (-4 -3) (-4 -4) (-4 3) (-4 4)))
-  (reset! direct-fifths-and-octaves '((9 7) (8 7) (21 19) (20 19))))
+  (reset! illegal-verticals         default-illegal-verticals)
+  (reset! illegal-parallel-motions  default-illegal-parallel-motions)
+  (reset! illegal-double-skips      default-illegal-double-skips)
+  (reset! direct-fifths-and-octaves default-direct-fifths-and-octaves))
 
 (defn llast [list]
   (let [last-item (last list)]
@@ -649,7 +656,7 @@
   (let [correct-choices (evaluate cantus-firmus choices last-notes)]
     (if correct-choices
       (reset! *look-ahead* true)
-      (reset! *look-ahead* nil))
+      (reset! *look-ahead* false))
     (if (> (count correct-choices) 0)
       (look-ahead-for-best-choice cantus-firmus last-notes correct-choices)
       (first correct-choices))))
@@ -719,9 +726,9 @@
   (reset! direct-fifths-and-octaves (find-illegal-parallels models))
   (reset! illegal-double-skips (possible-combinations '(3 4 -3 -4))))
 
-(defn replenish-seed-notes []
+(defn replenish-seed-notes! []
   "replenishes the seednotes when when they have all been used."
-  (reset! seed-notes '(:C3 :F3 :E3 :D3 :B2 :A2 :G2 :F2)))
+  (reset! seed-notes (map music/note '(:C3 :F3 :E3 :D3 :B2 :A2 :G2 :F2))))
 
 (defn models-changed? []
   (not (= (count @models) @past-model-count)))
@@ -810,7 +817,7 @@
                     (:F3 :E3 :C3 :D3 :E3 :G3 :F3 :G3))
                    ((:A3 :B3 :A3 :C4 :B3 :D4 :C4 :B3 :A3)
                     (:D3 :E3 :G3 :F3 :E3 :C3 :D3 :E3 :D3))))
-  (reset! seed-notes '(:G3 :E3 :B2 :A2 :G2 :D3))
+  (reset! seed-notes (map music/note '(:G3 :E3 :B2 :A2 :G2 :D3)))
   (reset! *auto-goals* nil)
   (create-canon (map music/note '(:C4 :B3 :A3 :G3 :A3 :C4 :B3 :C4))))
 
