@@ -17,7 +17,6 @@
 (def direct-fifths-and-octaves (atom []))
 
 (def rules        (atom []))
-(def save-rules   (atom []))
 
 (def default-seed-notes '(:E3 :D3 :B2 :A2 :G2 :C3))
 (def default-cantus-firmus (map music/note [:A3 :B3 :C4 :E4 :D4 :C4 :D4 :C4 :B3 :A3]))
@@ -676,8 +675,6 @@
       (swap-unless-includes rules new-rule)
       (swap-unless-includes temporary-rules new-rule)))
 
-  (reset! save-rules @rules)
-
   (print-backtracking @*seed-note* @rules)
 
   (let [new-last-notes (get-new-starting-point last-notes)
@@ -738,8 +735,8 @@
 (defn models-changed? []
   (not (= (count @models) @past-model-count)))
 
-(defn cantus-firmus-changed? []
-  (not (= last-cantus-firmus @*cantus-firmus*)))
+(defn cantus-firmus-changed? [cantus-firmus]
+  (not (= last-cantus-firmus cantus-firmus)))
 
 (defn voices-from-solution [solution]
   (let [voices (list (take (count solution) @*cantus-firmus*) solution)
@@ -756,39 +753,38 @@
 (defn find-voices
   ([] (find-voices @*auto-goals* @*print-state* nil @*cantus-firmus*))
   ([auto-goals print-state seed-note cantus-firmus]
+     (let [seed-note (or seed-note
+                         (select-new-seed-note cantus-firmus major-scale @saved-templates)
+                         @*seed-note*)]
 
-     (when (cantus-firmus-changed?)
-       (reset! temporary-rules [])
-       (reset! last-cantus-firmus @*cantus-firmus*))
+       (when (cantus-firmus-changed? cantus-firmus)
+         (reset! temporary-rules [])
+         (reset! last-cantus-firmus cantus-firmus))
 
-     (if seed-note
        (reset! *seed-note* seed-note)
-       (let [test (select-new-seed-note @*cantus-firmus* major-scale @saved-templates)]
-         (when test (reset! *seed-note* test))))
+       (reset! *auto-goals* auto-goals)
+       (reset! *print-state* print-state)
+       (reset! *cantus-firmus* cantus-firmus)
 
-     (reset! *auto-goals* auto-goals)
-     (reset! *print-state* print-state)
-     (reset! *cantus-firmus* cantus-firmus)
+       (if (use-auto-goals?)
+         (do
+           (set-goals! @models)
+           (reset! *auto-goals* nil)
+           (reset! past-model-count (count @models)))
+         (set-default-goals!))
 
-     (when-not @*auto-goals* (set-default-goals!))
+       (when (models-changed?) (set-goals! @models))
 
-     (when (use-auto-goals?)
-       (set-goals! @models)
-       (reset! *auto-goals* nil)
-       (reset! past-model-count (count @models)))
+       (reset! past-model-count (count @models))
+       (reset! new-line [])
 
-     (when (models-changed?) (set-goals! @models))
+       (let [choices (shuffle (create-choices major-scale seed-note))
+             solution (create-new-line cantus-firmus major-scale choices nil)
+             voices (voices-from-solution solution)]
 
-     (reset! past-model-count (count @models))
-     (reset! new-line [])
-
-     (let [choices (shuffle (create-choices major-scale @*seed-note*))
-           solution (create-new-line @*cantus-firmus* major-scale choices nil)
-           voices (voices-from-solution solution)]
-
-       (when (template-complete? voices)
-         (swap! saved-templates conj (analyze-for-template @*seed-note* @*cantus-firmus* major-scale)))
-       voices)))
+         (when (template-complete? voices)
+           (swap! saved-templates conj (analyze-for-template seed-note cantus-firmus major-scale)))
+         voices))))
 
 (defn counterpoint
   ([] (counterpoint @*auto-goals* @*print-state* nil @*cantus-firmus*))
@@ -797,18 +793,18 @@
        (events/make-pairs (pair voices)))))
 
 (defn create-canon
-  "creates a simple canon in two voices using gradus."
+  "creates a simple canon in two voices."
   [cantus-firmus]
   (let [difference 12
         seed-note (- (llast cantus-firmus) difference)
         voices (find-voices nil true seed-note cantus-firmus)
-        voices-as-pitches (evaluate-pitch-names voices)]
-    (let [theme (concat cantus-firmus (map (fn [x] (+ x difference)) (second voices-as-pitches)))
-          lower-voice (map #(- % difference) theme)
-          dont-play (vec (repeat (count cantus-firmus) 0))]
-      (events/make-pairs
-       (pair (list (concat theme theme theme dont-play)
-                   (concat dont-play lower-voice lower-voice lower-voice)))))))
+        voices-as-pitches (evaluate-pitch-names voices)
+        theme (concat cantus-firmus (map (fn [x] (+ x difference)) (second voices-as-pitches)))
+        lower-voice (map #(- % difference) theme)
+        dont-play (vec (repeat (count cantus-firmus) 0))]
+    (events/make-pairs
+     (pair (list (concat theme theme theme dont-play)
+                 (concat dont-play lower-voice lower-voice lower-voice))))))
 
 (defn compose-canon [& [cantus-firmus]]
   (set-default-goals!)
