@@ -6,6 +6,8 @@
 
 (load-file "data/gradus.clj")
 
+(def logging? true)
+
 (def major-scale
   (->> (music/scale-field :C :major)
       (drop-last 46)
@@ -28,7 +30,6 @@
 
 (def new-line (atom []))
 
-(def *print-state* (atom true))
 (def *auto-goals* (atom nil))
 (def saved-templates (atom []))
 
@@ -691,7 +692,7 @@
 
 (defn- create-line-from-new-choices [test cantus-firmus scale last-notes length]
   (reset! new-line (concat @new-line (list test)))
-  (when *print-state*
+  (when logging?
     (print-working cantus-firmus @new-line))
   (let [new-choices (shuffle (create-choices major-scale test))]
     (create-new-line cantus-firmus
@@ -751,8 +752,8 @@
   @*auto-goals*)
 
 (defn find-voices
-  ([] (find-voices @*auto-goals* @*print-state* nil @*cantus-firmus*))
-  ([auto-goals print-state seed-note cantus-firmus]
+  ([] (find-voices @*auto-goals* nil @*cantus-firmus*))
+  ([auto-goals seed-note cantus-firmus]
      (let [seed-note (or seed-note
                          (select-new-seed-note cantus-firmus major-scale @saved-templates)
                          @*seed-note*)]
@@ -763,7 +764,6 @@
 
        (reset! *seed-note* seed-note)
        (reset! *auto-goals* auto-goals)
-       (reset! *print-state* print-state)
        (reset! *cantus-firmus* cantus-firmus)
 
        (if (use-auto-goals?)
@@ -787,9 +787,9 @@
          voices))))
 
 (defn counterpoint
-  ([] (counterpoint @*auto-goals* @*print-state* nil @*cantus-firmus*))
-  ([auto-goals print-state seed-note cantus-firmus]
-     (let [voices (find-voices auto-goals print-state seed-note cantus-firmus)]
+  ([] (counterpoint @*auto-goals* nil @*cantus-firmus*))
+  ([auto-goals seed-note cantus-firmus]
+     (let [voices (find-voices auto-goals seed-note cantus-firmus)]
        (events/make-pairs (pair voices)))))
 
 (defn create-canon
@@ -797,7 +797,7 @@
   [cantus-firmus]
   (let [difference 12
         seed-note (- (llast cantus-firmus) difference)
-        voices (find-voices nil true seed-note cantus-firmus)
+        voices (find-voices false seed-note cantus-firmus)
         voices-as-pitches (evaluate-pitch-names voices)
         theme (concat cantus-firmus (map (fn [x] (+ x difference)) (second voices-as-pitches)))
         lower-voice (map #(- % difference) theme)
