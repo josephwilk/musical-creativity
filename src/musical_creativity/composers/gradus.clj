@@ -687,8 +687,9 @@
   (when logging?
     (print-working cantus-firmus @new-line))
   (let [new-choices (shuffle (create-choices major-scale test))
-        new-length (- length 1)]
-    (create-new-line cantus-firmus scale new-choices (concat last-notes (list test)) new-length)))
+        new-length (- length 1)
+        new-last-notes (concat last-notes (list test))]
+    (create-new-line cantus-firmus scale new-choices new-last-notes new-length)))
 
 (defn create-new-line
   "creates a new line with the cantus firmus."
@@ -698,10 +699,10 @@
     (println "i can find no solution for this cantus firmus.")
     (if (<= length 0)
       @new-line
-      (let [test (evaluate-choices cantus-firmus choices last-notes)]
-        (if (nil? test)
-          (create-line-from-choices cantus-firmus scale choices last-notes length)
-          (create-line-from-new-choices test cantus-firmus scale last-notes length)))))))
+      (let [new-note-choices (evaluate-choices cantus-firmus choices last-notes)]
+        (if new-note-choices
+          (create-line-from-new-choices new-note-choices cantus-firmus scale last-notes length)
+          (create-line-from-choices cantus-firmus scale choices last-notes length)))))))
 
 (defn analyze-for-template [seed-note cantus-firmus scale]
   "returns the complete template (seed interval and map) for saving."
@@ -728,20 +729,20 @@
 (defn cantus-firmus-changed? [cantus-firmus]
   (not (= last-cantus-firmus cantus-firmus)))
 
-(defn voices-from-solution [solution]
-  (let [voices (list (take (count solution) @*cantus-firmus*) solution)
+(defn voices-from-solution [solution cantus-firmus]
+  (let [voices (list (take (count solution) cantus-firmus) solution)
         voices-as-pitches (map translate-into-pitchnames voices)]
     voices-as-pitches))
 
-(defn template-complete? [voices]
-  (= (count @*cantus-firmus*)
+(defn template-complete? [voices cantus-firmus]
+  (= (count cantus-firmus)
      (count (second voices))))
 
 (defn use-auto-goals? []
   @*auto-goals*)
 
 (defn find-voices
-  ([] (find-voices @*auto-goals* nil @*cantus-firmus*))
+  ([] (find-voices @*auto-goals* nil default-cantus-firmus))
   ([auto-goals seed-note cantus-firmus]
      (let [seed-note (or seed-note
                          (select-new-seed-note cantus-firmus major-scale @saved-templates)
@@ -769,14 +770,14 @@
 
        (let [choices (shuffle (create-choices major-scale seed-note))
              solution (create-new-line cantus-firmus major-scale choices nil)
-             voices (voices-from-solution solution)]
+             voices (voices-from-solution solution cantus-firmus)]
 
-         (when (template-complete? voices)
+         (when (template-complete? voices cantus-firmus)
            (swap! saved-templates conj (analyze-for-template seed-note cantus-firmus major-scale)))
          voices))))
 
 (defn counterpoint
-  ([] (counterpoint @*auto-goals* nil @*cantus-firmus*))
+  ([] (counterpoint @*auto-goals* nil default-cantus-firmus))
   ([auto-goals seed-note cantus-firmus]
      (let [voices (find-voices auto-goals seed-note cantus-firmus)]
        (events/make-pairs (pair voices)))))
@@ -799,7 +800,6 @@
   (set-default-goals!)
   (let [cantus-firmus (or cantus-firmus (map music/note '(:A3 :B3 :C4 :E4 :D4 :C4 :B3)))]
     (reset! illegal-verticals '(0 1 2 5 6 7 10 11 13 14 17 18 19 22 23 25 26 29 30 34 35 -1 -2 -3 -4 -5 -6 -7 -8))
-    (reset! *cantus-firmus* cantus-firmus)
     (create-canon cantus-firmus)))
 
 (defn compose-contemporary []
@@ -811,9 +811,8 @@
                    ((:A3 :B3 :A3 :C4 :B3 :D4 :C4 :B3 :A3)
                     (:D3 :E3 :G3 :F3 :E3 :C3 :D3 :E3 :D3))))
   (reset! seed-notes '(:G3 :E3 :B2 :A2 :G2 :D3))
-  (reset! *cantus-firmus* (map music/note '(:C4 :B3 :A3 :G3 :A3 :C4 :B3 :C4)))
   (reset! *auto-goals* nil)
-  (create-canon @*cantus-firmus*))
+  (create-canon (map music/note '(:C4 :B3 :A3 :G3 :A3 :C4 :B3 :C4))))
 
 (defn compose-as-chords []
   (set-default-goals!)
