@@ -309,20 +309,14 @@
   [illegal-verticals all-verticals]
   (remove #(find-first-args-also-in-second-arg illegal-verticals %) all-verticals))
 
-(defn find-motions
-  "sub-function of find-all-possible-motions."
-  [extent value]
-  (if (= 0 value) []
-      (cons (list extent value)
-            (find-motions extent (- value 1)))))
+(defn find-motions [extent value]
+  (map #(list extent %) (range value 0 -1)))
 
 (defn find-all-possible-motions
   "returns all possible motions to its extent arg."
-  ([extend] (find-all-possible-motions extend 0 extend))
-  ([extent value save-extent]
-     (if (= 0 extent) []
-         (concat (find-motions extent save-extent)
-                 (find-all-possible-motions (- extent 1) value save-extent)))))
+  ([extend] (find-all-possible-motions extend extend))
+  ([extent save-extent]
+     (mapcat #(find-motions % save-extent) (range extent 0 -1))))
 
 (defn- motions [[model1 model2]]
   (list (- (music/note (first model1)) (music/note (second model1)))
