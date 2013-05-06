@@ -411,42 +411,44 @@ T|#
                    (cadence-collapse (transpose-to-bach-range *events*)))(reset! *events* ()))
            t)))
 
-(defn compose-b [&optional (counter 0)]
+(defn compose-b
   "The real horse for compose-bach."
-  (reset! *end* ())
-  (reset! *history* ())
-  (reset! *events*
-        (let [current-beat
-              (find-triad-beginning)]
-          (if (match-tonic-minor (firstn 4 (events (eval current-beat))))
-            (reset! *tonic* 'minor)(reset! *tonic* 'major))
-          (apply #'append
-                 (re-time
-                  (append
-                   (loop until (or (reset! *early-exit?* (empty? (destination-notes (eval current-beat))))
-                                   (if (and (> counter 36)
-                                            (if (= *tonic* 'minor)
-                                              (and (> (find-events-duration (events (eval current-beat))) *beat-size*)
-                                                   (match-tonic-minor (events (eval current-beat))))
-                                              (and (> (find-events-duration (events (eval current-beat))) *beat-size*)
-                                                   (match-bach-tonic (events (eval current-beat))))))
-                                     (do (reset! *end* t) t)))
-                         do (push current-beat *history*)
-                         collect (events (eval current-beat))
-                         do (reset! *previous-beat* current-beat)
-                         do (reset! current-beat
-                                  (choose-one
-                                   (let [beat-choices (beats (eval (make-lexicon-name (destination-notes (eval current-beat)))))]
-                                     (if (empty? (rest beat-choices)) beat-choices (my-remove (list *previous-beat* (incf-beat *previous-beat*)) beat-choices)))))
-                         do (incf counter))
-                   (do (push current-beat *history*)
-                          (list (events
-                                 (eval current-beat)))))))))
-  (if (and (empty? *early-exit?*)(= *composer* 'bach))
-    ;(reset! *events* (transpose-to-bach-range *events*))
-    *events* (reset! *events* ()))
-  (reset! *history* (reverse *history*))
-  (if *end* (push (list (+ 1 *compose-number*) *history*) *histories*)))
+  ([] (compose-b 0))
+  ([counter]
+     (reset! *end* ())
+     (reset! *history* ())
+     (reset! *events*
+             (let [current-beat
+                   (find-triad-beginning)]
+               (if (match-tonic-minor (firstn 4 (events (eval current-beat))))
+                 (reset! *tonic* 'minor)(reset! *tonic* 'major))
+               (apply #'append
+                      (re-time
+                       (append
+                        (loop until (or (reset! *early-exit?* (empty? (destination-notes (eval current-beat))))
+                                        (if (and (> counter 36)
+                                                 (if (= *tonic* 'minor)
+                                                   (and (> (find-events-duration (events (eval current-beat))) *beat-size*)
+                                                        (match-tonic-minor (events (eval current-beat))))
+                                                   (and (> (find-events-duration (events (eval current-beat))) *beat-size*)
+                                                        (match-bach-tonic (events (eval current-beat))))))
+                                          (do (reset! *end* t) t)))
+                              do (push current-beat *history*)
+                              collect (events (eval current-beat))
+                              do (reset! *previous-beat* current-beat)
+                              do (reset! current-beat
+                                         (choose-one
+                                          (let [beat-choices (beats (eval (make-lexicon-name (destination-notes (eval current-beat)))))]
+                                            (if (empty? (rest beat-choices)) beat-choices (my-remove (list *previous-beat* (incf-beat *previous-beat*)) beat-choices)))))
+                              do (incf counter))
+                        (do (push current-beat *history*)
+                            (list (events
+                                   (eval current-beat)))))))))
+     (if (and (empty? *early-exit?*)(= *composer* 'bach))
+                                        ;(reset! *events* (transpose-to-bach-range *events*))
+       *events* (reset! *events* ()))
+     (reset! *history* (reverse *history*))
+     (if *end* (push (list (+ 1 *compose-number*) *history*) *histories*))))
 
 (defn find-triad-beginning []
   "Returns the db with a triad beginning."
@@ -485,11 +487,13 @@ T|#
         set-differentials (get-intervals projected-sets)]
     (nth (position (first (my-sort #'< set-differentials)) set-differentials) projected-sets)))
 
-(defn project [set &optional (count (count set))(times 0)]
+(defn project
   "Projects the pc-set through its inversions."
-  (if (= length times)()
-      (cons set
-            (project (concat (rest set)(list (+ 12 (first set)))) length (+ 1 times)))))
+  ([set] (project set (count set) 0))
+  ([set length times]
+      (if (= length times)()
+          (cons set
+                (project (concat (rest set)(list (+ 12 (first set)))) length (+ 1 times))))))
 
 (defn get-intervals [sets]
   "Returns the intervals in the sets."
@@ -532,24 +536,28 @@ T|#
                                           (concat (remove-full-beat (get-channel (fourth (first events)) events))
                                                   (get-other-channels (fourth (first events)) events))))))))
 
-(defn chop [event &optional (begin-time (first event))(duration (third event))]
+(defn chop
   "Chops beats over 1000 into beat-sized pieces."
-  (if (< duration 1000)()
-      (cons (concat (list begin-time)
-                    (list (second event))
-                    '(1000)
-                    (nthcdr 3 event))
-            (chop event (+ begin-time 1000)(- duration 1000)))))
+  ([event] (chop event (first event) (third event)))
+  ([event begin-time duration]
+      (if (< duration 1000)()
+          (cons (concat (list begin-time)
+                        (list (second event))
+                        '(1000)
+                        (nthcdr 3 event))
+                (chop event (+ begin-time 1000)(- duration 1000))))))
 
-(defn remainder [event &optional (begin-time (first event))(duration (third event))]
+(defn remainder
   "Returns the remainder of the beat."
-  (cond ((empty? event)())
-        ((= duration 1000)())
-        ((< duration 1000) (list (concat (list begin-time)
-                                         (list (second event))
-                                         (list duration)
-                                         (nthcdr 3 event))))
-      (t (remainder event (+ begin-time 1000)(- duration 1000)))))
+  ([event] (remainder (first event) (third event)))
+  ([event begin-time duration]
+      (cond ((empty? event)())
+            ((= duration 1000)())
+            ((< duration 1000) (list (concat (list begin-time)
+                                             (list (second event))
+                                             (list duration)
+                                             (nthcdr 3 event))))
+            (t (remainder event (+ begin-time 1000)(- duration 1000))))))
 
 (defn get-full-beat [events &optional (begin-time (ffirst events))(duration 0)]
   "Returns one full beat of the music."
@@ -801,7 +809,7 @@ T|#
 
 (defn match-harmony [one two]
   "Checks to see if its args match mod-12."
-  (match-them (my-sort #'< one)
+  (match-them (sort < one)
               (apply #'append
                      (loop for note in two
                            collect (project-octaves note)))
@@ -854,11 +862,11 @@ T|#
 
 (defn get-db-n [exploded-lexicon]
   "Checks for dashes in the db-name."
-  (cond ((= (first exploded-lexicon) '-)
-         ())
-        ((empty? exploded-lexicon)())
-        (t (cons (first exploded-lexicon)
-                 (get-db-n (rest exploded-lexicon))))))
+  (cond (= (first exploded-lexicon) '-)
+        ()
+        (empty? exploded-lexicon)()
+        :else (cons (first exploded-lexicon)
+                    (get-db-n (rest exploded-lexicon)))))
 
 (defn match-bach-tonic [the-events]
   "Returns true if the events are tonic."
@@ -871,10 +879,10 @@ T|#
 
 (defn find-events-duration [events &optional (duration 0)]
   "Returns the events duration."
-  (cond ((empty? events) duration)
-        ((= (fourth (first events)) 1)
-         (find-events-duration (rest events) (+ duration (third (first events)))))
-        (t (find-events-duration (rest events) duration))))
+  (cond (empty? events duration)
+        (= (fourth (first events)) 1)
+        (find-events-duration (rest events) (+ duration (third (first events))))
+        :else (find-events-duration (rest events) duration)))
 
 (defn re-time [event-lists &optional (current-time 0)]
   "Re-times the beats to fit together."
@@ -900,9 +908,9 @@ T|#
 
 (defn highest-lowest-notes [events]
   "Returns the highest and lowest pitches of its arg."
-  (list (first (my-sort #'> (loop for event in (get-channel 1 events)
+  (list (first (sort > (loop for event in (get-channel 1 events)
                                   collect (second event))))
-        (first (my-sort #'< (loop for event in (let [test (get-channel 4 events)]
+        (first (sort < (loop for event in (let [test (get-channel 4 events)]
                                                  (if (empty? test)(get-channel 2 events) test))
                                   collect (second event))))))
 
@@ -912,18 +920,17 @@ T|#
 
 (defn collapse [beats]
   "Collapses the final cadence."
-  (cond ((empty? beats)())
-        ((and (= (count (first beats)) 4)
-              (= (third (first (first beats))) 2000))
+  (cond (empty? beats)()
+        (and (= (count (first beats)) 4)
+             (= (third (first (first beats))) 2000)
          (cons (make-1000s (first beats))
                (collapse (reset (rest beats) 1000))))
-        (t (cons (first beats)
-                 (collapse (rest beats))))))
+        :else (cons (first beats)
+                (collapse (rest beats)))))
 
 (defn make-1000s [beat]
   "Makes all of the beat's durations into 1000s."
-  (loop for event in beat
-        collect (concat (firstn 2 event) '(1000) (nthcdr 3 event))))
+  (map (fn [event] (concat (firstn 2 event) '(1000) (drop 3 event))) beat))
 
 (defn reset [beats subtraction]
   "Resets the beats appropriately."
@@ -938,16 +945,15 @@ T|#
 
 (defn reset-events-to [events begin-time]
   "Resets the events for the delayed beat."
-  (loop for event in (set-to-zero  events)
-        collect (cons (+ begin-time (first event))(rest event))))
+  (map (fn [event] (cons (+ begin-time (first event))(rest event))) (set-to-zero events)))
 
 (defn get-on-beat [events ontime]
   "Returns the on beat from the events."
-  (cond ((empty? events) ())
-        ((and (thousandp (ffirst events))(= (ffirst events) ontime))
-         (cons (first events)
-               (get-on-beat (rest events) ontime)))
-        (t ())))
+  (cond (empty? events) ()
+        (and (thousandp (ffirst events))(= (ffirst events) ontime))
+        (cons (first events)
+              (get-on-beat (rest events) ontime))
+        :else ()))
 
 (defn check-mt [events]
   "Returns the major tonic."
@@ -963,10 +969,10 @@ T|#
 
 (defn all [first second]
   "Tests for presence of all of first arg in second arg."
-  (cond ((empty? first) t)
-        ((member (first first) second)
-         (all (rest first) second))
-        (t ())))
+  (cond (empty? first) t
+        (member (first first) second)
+        (all (rest first) second)
+        :else ()))
 
 
 (defn ensure-necessary-cadences [ordered-events]
@@ -981,27 +987,29 @@ T|#
                                      collect (get-pitches (get-on-beat beat (ffirst beat))))]
     (and (= (count (first sorted-pitches-by-beat)) 4)
          (= (count (second sorted-pitches-by-beat)) 4)
-         (or (and (plusp (- (first (first sorted-pitches-by-beat))
-                            (first (second sorted-pitches-by-beat))))
-                  (plusp (- (second (first sorted-pitches-by-beat))
-                            (second (second sorted-pitches-by-beat))))
-                  (plusp (- (third (first sorted-pitches-by-beat))
-                            (third (second sorted-pitches-by-beat))))
-                  (plusp (- (fourth (first sorted-pitches-by-beat))
-                            (fourth (second sorted-pitches-by-beat)))))
-             (and (minusp (- (first (first sorted-pitches-by-beat))
-                             (first (second sorted-pitches-by-beat))))
-                  (minusp (- (second (first sorted-pitches-by-beat))
-                             (second (second sorted-pitches-by-beat))))
-                  (minusp (- (third (first sorted-pitches-by-beat))
-                             (third (second sorted-pitches-by-beat))))
-                  (minusp (- (fourth (first sorted-pitches-by-beat))
-                             (fourth (second sorted-pitches-by-beat)))))))))
+         (or (and (> (- (first (first sorted-pitches-by-beat))
+                        (first (second sorted-pitches-by-beat))) 0)
+                  (> (- (second (first sorted-pitches-by-beat))
+                        (second (second sorted-pitches-by-beat))) 0)
+                  (> (- (third (first sorted-pitches-by-beat))
+                        (third (second sorted-pitches-by-beat))) 0)
+                  (> (- (fourth (first sorted-pitches-by-beat))
+                        (fourth (second sorted-pitches-by-beat)))) 0)
+             (and (< (- (first (first sorted-pitches-by-beat))
+                             (first (second sorted-pitches-by-beat))) 0)
+                  (< (- (second (first sorted-pitches-by-beat))
+                             (second (second sorted-pitches-by-beat))) 0)
+                  (< (- (third (first sorted-pitches-by-beat))
+                             (third (second sorted-pitches-by-beat))) 0)
+                  (< (- (fourth (first sorted-pitches-by-beat))
+                             (fourth (second sorted-pitches-by-beat))) 0))))))
 
-(defn wait-for-cadence [events &optional (start-time (ffirst events))]
+(defn wait-for-cadence
   "Ensures the cadence is the proper length."
-  (cond ((empty? events)())
-        ((> (ffirst events) (+ start-time 4000))
-         t)
-        ((> (third (first events)) 1000) ())
-        (t (wait-for-cadence (rest events) start-time))))
+  ([events] (wait-for-cadence events (ffirst events)))
+  ([events start-time]
+     (cond (empty? events)()
+           (> (ffirst events) (+ start-time 4000))
+           true
+           (> (third (first events)) 1000) ()
+           :else (wait-for-cadence (rest events) start-time))))
