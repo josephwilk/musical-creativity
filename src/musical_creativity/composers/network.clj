@@ -1,6 +1,7 @@
 (ns musical-creativity.composers.network
   (:require
-   [clojure.math.numeric-tower :as math]))
+   [clojure.math.numeric-tower :as math]
+   [clojure.pprint :refer :all]))
 
 (def number-of-outputs (atom 5))
 (def number-of-inputs (atom 5))
@@ -144,11 +145,11 @@
       (do
         (reset! learning-cycle-counter 0)
         (zero-activations)
-        (dotimes [number (- length 1)]
-          ;pop does not work here
-          (aset @input number
-                (+ (pop input-pattern)
-                   (floating-point-random -0.08 0.08))))))))
+        (doall (map-indexed (fn [index item]
+                              (aset @input index
+                                    (+ item
+                                       (floating-point-random -0.08 0.08))))
+                            input-pattern))))))
 
 (defn initialize-the-network []
   "initialize the network."
@@ -166,7 +167,7 @@
     (if (and
          (= index maximum-index)
          (not (aget @reset maximum-index))
-         (> (aget @array-8 maximum-index) @reset-threshold))
+         (> (aget @array-8 maximum-index) reset-threshold))
       d
       0.0)))
 
@@ -260,7 +261,7 @@
 (defn firstn [number list]
   "returns the first n of list."
  (if (< (count list) number)(firstn (- number 1) list)
-     (butlast list (- (count list) number))))
+     (drop-last (- (count list) number) list)))
 
 (defn initialize-network
   "initializes the neural network."
@@ -383,47 +384,42 @@
 
 (defn make-event [ontime pitch channel]
   "creates an event based on args."
-  (list ontime
-        (if (symbol? pitch) (eval pitch) pitch)
-        1000
-        channel
-        90))
+  {:time ontime
+   :pitch pitch
+   :channel channel})
 
 (defn make-events
   "makes consecutive events out of the pairs of pitches in its arg."
   ([pitch-groupings] (make-events pitch-groupings 0))
   ([pitch-groupings ontime]
-
-      (if (nil? pitch-groupings) ()
-          (concat (list (make-event ontime (first pitch-groupings) 1))
-                  (make-events (rest pitch-groupings)(+ ontime 1000))))))
+     (if (empty? pitch-groupings)
+       []
+       (concat (list (make-event ontime (first pitch-groupings) 1))
+               (make-events (rest pitch-groupings)(+ ontime 1000))))))
 
 (defn translate-into-events [output-pitch-lists]
   "returns sontiguous events from its pitch-lists arg."
-  (make-events (apply concat output-pitch-lists)))
+  (make-events output-pitch-lists))
 
-(defn find-all [number lists]
+(defn find-all
   "returns all of the patterns associated by cdr with number."
-  (cond (nil? lists)()
-        (= (second (first lists)) number)
-        (cons (first lists)
-              (find-all number (rest lists)))
-        :else (find-all number (rest lists))))
+  [number lists]
+  (filter #(= number (second %)) lists))
 
 (defn count-them [singles numbers]
   "returns the counts of its first arg in its second arg."
-  (if (empty? singles)
-    []
-    (cons (count (filter #{(first singles)} numbers))
-          (count-them (rest singles) numbers))))
+  (map (fn [single] (count (filter #{single} numbers))) singles))
 
-(defn count-highest [lists]
+(defn count-highest
   "returns the highest occuring pattern in its arg."
+  [lists]
   (let [sorted-numbers (sort < (map second lists))
         numbers-only (distinct sorted-numbers)
-        counts (count-them numbers-only sorted-numbers)]
-    (find-all
-     (nth (position (first (sort > counts)) counts) numbers-only)  lists)))
+        counts (count-them numbers-only sorted-numbers)
+        highest-count (first (sort > counts))
+        highest-position (position highest-count counts)
+        highest-value (nth numbers-only highest-position)]
+    (find-all highest-value lists)))
 
 (defn run-one-full-cycle []
   "run one full cycle."
@@ -440,10 +436,13 @@
   (initialize-the-network)
   (learn-the-patterns 50)
 
-  (println @*learned-categories*)
+  (print "Learned categories:")
+  (pprint (count-highest (pair @input-patterns (map second @*learned-categories*))))
 
-  (translate-into-events
-   (translate-to-pitches (map first
-                              (firstn 5
-                                      (count-highest
-                                       (pair @input-patterns (map second @*learned-categories*))))))))
+  (translate-to-pitches (map first
+                             (firstn 5
+                                     (count-highest
+                                      (pair @input-patterns (map second @*learned-categories*)))))))
+
+(defn compose []
+  (translate-into-events (run-neural-net)))

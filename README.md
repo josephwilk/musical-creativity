@@ -27,6 +27,10 @@ Experiments with models for computers generating music.
 (require '[musical-creativity.composers.sonify-words :as sonify-words] :reload)
 (musician/play (sonify-words/compose "potato potato potata potatd potate potatk") piano)
 
+;Network (Using adaptive resonance theory) Learns with each execution
+(require '[musical-creativity.composers.network :as network] :reload)
+(musician/play (network/compose) piano)
+
 ;Markov chains
 (require '[musical-creativity.composers.markov :as markov] :reload)
 (musician/play (markov/compose) piano)
