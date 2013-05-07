@@ -132,8 +132,8 @@
 (defn floating-point-random
   "floating point random numbers."
   [low high]
-  (let [range (- high low)]
-    (+ (* (/ (rand-int 1000) 1000.0) range) low)))
+  (let [the-range (- high low)]
+    (+ (* (/ (rand-int 1000) 1000.0) the-range) low)))
 
 (defn set-learning-pattern [input-pattern]
   "sets up a learning pattern in the input neurons."
@@ -144,8 +144,11 @@
       (do
         (reset! learning-cycle-counter 0)
         (zero-activations)
-        (dotimes  [number (- length 1)]
-          (aset @input number (+ (pop input-pattern) (floating-point-random -0.08 0.08))))))))
+        (dotimes [number (- length 1)]
+          ;pop does not work here
+          (aset @input number
+                (+ (pop input-pattern)
+                   (floating-point-random -0.08 0.08))))))))
 
 (defn initialize-the-network []
   "initialize the network."
@@ -229,14 +232,14 @@
 (defn learn-the-patterns
   "cycles through all training patterns once."
   [number]
-  (map (fn [input-pattern]
-         (set-learning-pattern input-pattern)
-         (dotimes [n number]
-           (reset! learning-cycle-counter (+ 1 @learning-cycle-counter))
-           (run-one-full-cycle))
-         (reset! *learned-categories*
-                 (cons (list @array-7 (find-the-largest-output @array-8 @reset))
-                       @*learned-categories*))) @input-patterns))
+  (doall (map (fn [input-pattern]
+                 (set-learning-pattern input-pattern)
+                 (dotimes [n number]
+                   (reset! learning-cycle-counter (+ 1 @learning-cycle-counter))
+                   (run-one-full-cycle))
+                 (reset! *learned-categories*
+                         (cons (list @array-7 (find-the-largest-output @array-8 @reset))
+                               @*learned-categories*))) @input-patterns)))
 
 (defn pair
   "pairs the two args together."
@@ -328,27 +331,24 @@
     (if (aget @reset output-number-index)
       (aset @array-8 output-number-index -0.1))))
 
-;TODO: resets are wrong
 (defn update-weights []
   "updates the weights."
   (let [largest-output (find-the-largest-output @array-8 @reset)]
     (if (> (check-array-value largest-output) 0.02)
       (dotimes [increment (- @number-of-inputs 1)]
-        (reset! wdown
-                (aget wdown largest-output increment)
-             (+ (aget wdown largest-output increment)
-                (* downlr d
-                   (- (aget array-7 increment) (aget wdown largest-output increment)))))
 
-            (reset!
-             wup
-             (aget wup increment largest-output)
-             (+
-              (aget wup increment largest-output)
-              (*
-               uplr
-               d
-               (- (aget array-7 increment) (aget wup increment largest-output)))))))))
+        (aset @wdown largest-output increment
+              (+ (aget @wdown largest-output increment)
+                 (* downlr d
+                    (- (aget @array-7 increment) (aget @wdown largest-output increment)))))
+
+        (aset @wup increment largest-output
+              (+
+               (aget @wup increment largest-output)
+               (*
+                uplr
+                d
+                (- (aget @array-7 increment) (aget @wup increment largest-output)))))))))
 
 (defn competitive-learning-at-f2 []
   "competitive learning at slab f2."
@@ -441,6 +441,9 @@
   (initialize-network 5 5)
   (initialize-the-network)
   (learn-the-patterns 50)
+
+  (println @*learned-categories*)
+
   (translate-into-events
    (translate-to-pitches (map first
                               (firstn 5
