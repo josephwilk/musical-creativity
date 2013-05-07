@@ -162,14 +162,16 @@
        (range 0 (- number-of-inputs 1)))
 
   ; update array-6 using eq. 5
-  (reset! norm (+ (vector-l2-norm array-7 number-of-inputs) e))
-  (loop for input-number-index from 0 to (- number-of-inputs 1)
-        (setf (aget array-6 input-number-index) (/ (aget array-7 input-number-index) norm)))
+  (reset! norm (+ (vector-l2-norm @array-7 number-of-inputs) e))
+  (map (fn [input-index]
+         (reset! array-6 (assoc @array-6 input-index (/ (aget @array-7 input-index) norm))))
+       (range 0 (- number-of-inputs 1)))
 
   ; update array-5 using eq. 6:
   (reset! norm (vector-l2-norm array-3 number-of-inputs))
-  (loop for input-number-index from 0 to (- number-of-inputs 1)
-        (setf (aget array-5 input-number-index) (/ (aget array-3 input-number-index) norm)))
+  (map (fn [input-index]
+         (reset! array-5 (assoc @array-5 input-index (/ (aget @array-3 input-index) norm))))
+       (range 0 (- number-of-inputs 1)))
 
   ; update array-3 using eq. 7:
   (loop for input-number-index from 0 to (- number-of-inputs 1)
