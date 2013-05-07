@@ -1,4 +1,4 @@
-(ns musical-creativity.composers.t-network
+(ns musical-creativity.unit.composers.t-network
   (:require
    [midje.sweet :refer :all]
    [musical-creativity.composers.network :refer :all]))

@@ -21,7 +21,7 @@
 (def array-6 (atom (make-array Double/TYPE @number-of-inputs)))
 (def array-7 (atom (make-array Double/TYPE @number-of-inputs)))
 
-(def array-8 (atom (make-array Integer/TYPE @number-of-outputs)))
+(def array-8 (atom (make-array Double/TYPE @number-of-outputs)))
 
 (def resetval (atom (make-array Double/TYPE 1)))
 (def y (make-array Double/TYPE @number-of-outputs))
@@ -125,7 +125,7 @@
     (aset @array-6 input-number-index 0.0)
     (aset @array-7 input-number-index 0.0))
   (dotimes [output-number-index (- @number-of-outputs 1)]
-    (aset @array-8 output-number-index 0)
+    (aset @array-8 output-number-index 0.0)
     (aset @reset output-number-index true)
     (aset @reset-counter output-number-index 0)))
 
@@ -300,7 +300,7 @@
 
             (reset! resetval (make-array Double/TYPE 1))
 
-            (reset! array-8 (int-array @number-of-outputs))
+            (reset! array-8 (double-array @number-of-outputs))
 
             (reset! reset (boolean-array @number-of-outputs false))
 
@@ -325,7 +325,7 @@
       (reset! sum (+ @sum (* (aget @array-7 input-number-index)
                              (aget @wup input-number-index output-number-index)))))
     (aset @array-8 output-number-index @sum)
-    (if (aget reset output-number-index)
+    (if (aget @reset output-number-index)
       (aset @array-8 output-number-index -0.1))))
 
 ;TODO: resets are wrong
