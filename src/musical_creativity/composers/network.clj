@@ -31,8 +31,8 @@
 
 (def number-of-categories (atom (int-array @number-of-outputs)))
 
-(def wup   (atom (double-array @number-of-inputs @number-of-outputs)))
-(def wdown (atom (double-array @number-of-inputs @number-of-outputs)))
+(def wup   (atom (make-array Double/TYPE @number-of-inputs @number-of-outputs)))
+(def wdown (atom (make-array Double/TYPE @number-of-inputs @number-of-outputs)))
 
 (def *learned-categories* (atom []))
 
@@ -311,8 +311,8 @@
 
             (reset! number-of-categories (int-array @number-of-outputs))
 
-            (reset! wup (double-array @number-of-inputs @number-of-outputs))
-            (reset! wdown (double-array @number-of-outputs @number-of-inputs))
+            (reset! wup (make-array Double/TYPE @number-of-inputs @number-of-outputs))
+            (reset! wdown (make-array Double/TYPE @number-of-outputs @number-of-inputs))
                                         ; global variable to remember input patterns and
                                         ; their associated output category code for plotting
                                         ; by function art2-postprocess:
