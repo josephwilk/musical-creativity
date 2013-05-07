@@ -436,8 +436,8 @@
   (initialize-the-network)
   (learn-the-patterns 50)
 
-  (print "Learned categories:")
-  (pprint (count-highest (pair @input-patterns (map second @*learned-categories*))))
+  (print "Learned categories: ")
+  (pprint (map second @*learned-categories*))
 
   (translate-to-pitches (map first
                              (firstn 5
