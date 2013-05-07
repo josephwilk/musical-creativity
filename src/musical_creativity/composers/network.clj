@@ -9,14 +9,15 @@
                             (0.35 0.25 0.2 0.25 0.35) (0.35 0.2 0.1 0.25 0.2) (0.1 0.25 0.2 0.25 0.35)
                             (0.0 0.1 0.2 0.25 0.2) (0.25 0.2 0.1 0.2 0.25) (0.45 0.35 0.25 0.2 0.25) (0.0 0.1 0.2 0.25 0.2)
                             (0.0 0.0 0.1 0.2 0.25)))
-(def array-1 (make-array Double/TYPE number-of-inputs))
-(def array-2 (make-array Double/TYPE number-of-inputs))
-(def array-3 (make-array Double/TYPE number-of-inputs))
-(def array-4 (make-array Double/TYPE number-of-inputs))
-(def array-5 (make-array Double/TYPE number-of-inputs))
-(def array-6 (make-array Double/TYPE number-of-inputs))
-(def array-7 (make-array Double/TYPE number-of-inputs))
-(def array-8 (make-array Double/TYPE number-of-outputs))
+
+(def array-1 (atom (make-array Double/TYPE number-of-inputs)))
+(def array-2 (atom (make-array Double/TYPE number-of-inputs)))
+(def array-3 (atom (make-array Double/TYPE number-of-inputs)))
+(def array-4 (atom (make-array Double/TYPE number-of-inputs)))
+(def array-5 (atom (make-array Double/TYPE number-of-inputs)))
+(def array-6 (atom (make-array Double/TYPE number-of-inputs)))
+(def array-7 (atom (make-array Double/TYPE number-of-inputs)))
+(def array-8 (atom (make-array Double/TYPE number-of-outputs)))
 
 (def resetval (make-array Double/TYPE 1))
 (def y (make-array Double/TYPE number-of-outputs))
@@ -50,24 +51,24 @@
 
 (defn initialize-network
   "initializes the neural network."
-  ([numinputs numoutputs] (initialize-network numinputs numoutputs nil))
-  ([numinputs numoutputs &optional trainingpatterns]
+  ([number-inputs number-outputs] (initialize-network number-inputs number-outputs nil))
+  ([number-inputs number-outputs &optional training-patterns]
                                         ; check for specified training patterns:
-      (if trainingpatterns
+      (if training-patterns
                                         ; make sure the number of input neurons agrees with
                                         ; the size of the training patterns:
-        (if (= (count (first trainingpatterns)) numinputs)
-          (reset! input-patterns trainingpatterns)
+        (if (= (count (first training-patterns)) number-inputs)
+          (reset! input-patterns training-patterns)
           (print
            (list
-            "error: bad input to initialize-network. numinputs should have been"
-            (count (first trainingpatterns)))))
+            "error: bad input to initialize-network. number-inputs should have been"
+            (count (first training-patterns)))))
                                         ; no specified training patterns: use the default set
                                         ; defined in this package:
-        (if (not (= (count (first input-patterns)) numinputs))
+        (if (not (= (count (first input-patterns)) number-inputs))
           (print
            (list
-            "error: bad input to initialize-network. numinputs should have been"
+            "error: bad input to initialize-network. number-inputs should have been"
             (count (first input-patterns))))
                                         ; specified number of input neurons agrees with
                                         ; the size of the default training patterns defined
@@ -75,8 +76,8 @@
           (do
                                         ; resets the network
                                         ; define the network size:
-           (reset! number-of-inputs numinputs)
-           (reset! number-of-outputs numoutputs)
+            (reset! number-of-inputs number-inputs)
+            (reset! number-of-outputs number-outputs)
                                         ; array storage allocation:
            (reset! input (make-array (list number-of-inputs)))
            (reset! array-1 (make-array (list number-of-inputs)))
@@ -138,93 +139,100 @@
   (let [total-sum
         (loop [sum 0.0
                length-index 0]
-          (if (<= length-index vector-length)
+          (if (>= length-index vector-length)
             sum
             (recur (+ sum (* (aget vector length-index) (aget vector length-index))) (+ vector-length 1) )))]
     (+ (math/sqrt total-sum) 0.001)))
 
+
+(defn- wdown-total-sum-fn [input-index]
+  (fn [output-index sum]
+    (+ sum
+       (* (check-array-value output-index)
+          (aget wdown output-index input-index)))))
+
 (defn update-f1-stm-arrays [&aux sum norm max1 max2]
   "update f1 stm arrays."
+
   ; calculate array-7 from array-5 input and backwards feed back:
-  (loop for input-number-index from 0 to (- number-of-inputs 1)
-        do (do
-             (reset! sum 0.0)
-             (loop for output-number-index from 0 to (- number-of-outputs 1)
-                   do (reset! sum (+ sum (* (check-array-value output-number-index) (aget wdown output-number-index input-number-index)))))
-             (setf (aget array-7 input-number-index) (+ (aget array-5 input-number-index) sum))))
+  (map (fn [input-index]
+         (let [total-sum
+               (reduce (wdown-total-sum-fn input-index) (range 0 (- number-of-outputs 1)))]
+           (reset! array-7 (assoc @array-7 input-index (+ (aget @array-5 input-index) total-sum)))))
+       (range 0 (- number-of-inputs 1)))
 
   ; update array-6 using eq. 5
   (reset! norm (+ (vector-l2-norm array-7 number-of-inputs) e))
   (loop for input-number-index from 0 to (- number-of-inputs 1)
-        do  (setf (aget array-6 input-number-index) (/ (aget array-7 input-number-index) norm)))
+        (setf (aget array-6 input-number-index) (/ (aget array-7 input-number-index) norm)))
 
   ; update array-5 using eq. 6:
   (reset! norm (vector-l2-norm array-3 number-of-inputs))
   (loop for input-number-index from 0 to (- number-of-inputs 1)
-        do (setf (aget array-5 input-number-index) (/ (aget array-3 input-number-index) norm)))
+        (setf (aget array-5 input-number-index) (/ (aget array-3 input-number-index) norm)))
 
   ; update array-3 using eq. 7:
   (loop for input-number-index from 0 to (- number-of-inputs 1)
-        do (setf (aget array-3 input-number-index) (sigmoid-threshold-function (+ (aget array-2 input-number-index) (* b (sigmoid-threshold-function (aget array-6 input-number-index)))))))
+        (setf (aget array-3 input-number-index) (sigmoid-threshold-function (+ (aget array-2 input-number-index) (* b (sigmoid-threshold-function (aget array-6 input-number-index)))))))
 
   ; update w using eq. 8:
   (loop for input-number-index from 0 to (- number-of-inputs 1)
-        do (setf (aget array-2 input-number-index) (/ (aget array-1 input-number-index) norm)))
+        (setf (aget array-2 input-number-index) (/ (aget array-1 input-number-index) norm)))
 
   ; update array-2 using eq. 9:
   (reset! norm (+ (vector-l2-norm array-1 number-of-inputs) e))
   (loop for input-number-index from 0 to (- number-of-inputs 1)
-        do (setf (aget array-2 input-number-index) (/ (aget array-1 input-number-index) norm)))
+        (setf (aget array-2 input-number-index) (/ (aget array-1 input-number-index) norm)))
 
   ; calculate reset array-4 from eq. 20:
   (reset! max1 -1000.0 max2 -1000.0)
   (loop for input-number-index from 0 to (- number-of-inputs 1)
-        do (do
-             (if (< max1 (aget array-5 input-number-index)) (reset! max1 (aget array-5 input-number-index)))
-             (if (< max2 (aget array-7 input-number-index)) (reset! max2 (aget array-7 input-number-index)))))
+        (do
+          (if (< max1 (aget array-5 input-number-index)) (reset! max1 (aget array-5 input-number-index)))
+          (if (< max2 (aget array-7 input-number-index)) (reset! max2 (aget array-7 input-number-index)))))
   (reset! max1 (+ max1 0.001))
   (reset! max2 (+ max2 0.001))
   (loop for input-number-index from 0 to (- number-of-inputs 1)
-        do (setf
-            (aget array-4 input-number-index)
-            (- (/ (aget array-5 input-number-index) max1) (/ (aget array-7 input-number-index) max2)))))
+        (setf
+         (aget array-4 input-number-index)
+         (- (/ (aget array-5 input-number-index) max1) (/ (aget array-7 input-number-index) max2)))))
 
 (defn update-f2-stm-storage [&aux sum]
   "updates f2 stm storage."
   (loop for output-number-index from 0 to (- number-of-outputs 1)
-        do (do
-             (reset! sum 0.0)
-             (loop for input-number-index from 0 to (- number-of-inputs 1)
-                   do (reset! sum (+ sum (* (aget array-7 input-number-index) (aget wup input-number-index output-number-index)))))
-             (setf (aget array-8 output-number-index) sum)
-             (if (aget reset output-number-index) (setf (aget array-8 output-number-index) -0.1)))))
+        (do
+          (reset! sum 0.0)
+          (loop for input-number-index from 0 to (- number-of-inputs 1)
+                (reset! sum (+ sum (* (aget array-7 input-number-index) (aget wup input-number-index output-number-index)))))
+          (setf (aget array-8 output-number-index) sum)
+          (if (aget reset output-number-index) (setf (aget array-8 output-number-index) -0.1)))))
 
 (defn update-weights [&aux (largest-output (find-the-largest-output array-8))]
   "updates the weights."
   (if (> (check-array-value largest-output) 0.02)
     (loop for increment from 0 to (- number-of-inputs 1)
-      do (setf
-          (aget wdown largest-output increment)
-          (+ (aget wdown largest-output increment)
-             (*
-              downlr
-              d
-              (- (aget array-7 increment) (aget wdown largest-output increment)))))
-      do (setf
-          (aget wup increment largest-output)
-          (+
+          (setf
+           (aget wdown largest-output increment)
+           (+ (aget wdown largest-output increment)
+              (*
+               downlr
+               d
+               (- (aget array-7 increment) (aget wdown largest-output increment)))))
+          (setf
            (aget wup increment largest-output)
-           (*
-            uplr
-            d
-            (- (aget array-7 increment) (aget wup increment largest-output))))))))
+           (+
+            (aget wup increment largest-output)
+            (*
+             uplr
+             d
+             (- (aget array-7 increment) (aget wup increment largest-output))))))))
 
 (defn competitive-learning-at-f2 [&aux (largest-output (find-the-largest-output array-8))]
   "competitive learning at slab f2."
   (if (> (aget array-8 largest-output) reset-threshold)
     (loop for output-number-index from 0 to (- number-of-outputs 1)
-          do (if (not (= output-number-index largest-output))
-               (setf (aget array-8 output-number-index) 0.0)))))
+          (if (not (= output-number-index largest-output))
+            (setf (aget array-8 output-number-index) 0.0)))))
 
 (defn run-one-full-cycle []
   "run one full cycle."
@@ -253,8 +261,8 @@
       (setf (aget reset maximum-index) 1)
       (setf (aget reset-counter maximum-index) 80))
     (loop for output-number-index from 0 to (- number-of-outputs 1)
-          do (setf (aget reset-counter output-number-index) (- (aget reset-counter output-number-index) 1))
-          do (if (< (aget reset-counter output-number-index) 0)
+          (setf (aget reset-counter output-number-index) (- (aget reset-counter output-number-index) 1))
+          (if (< (aget reset-counter output-number-index) 0)
                (do
                  (if (aget reset output-number-index)  (reset! skipreset t))
                  (setf (aget reset output-number-index) nil)))))
@@ -263,7 +271,7 @@
 (defn zero-activations []
   "zero activations."
   (loop for input-number-index from 0 to (- number-of-inputs 1)
-        do (do (setf (aget array-1 input-number-index) 0.0)
+        (do (setf (aget array-1 input-number-index) 0.0)
                   (setf (aget array-2 input-number-index) 0.0)
                   (setf (aget array-3 input-number-index) 0.0)
                   (setf (aget array-4 input-number-index) 0.0)
@@ -271,7 +279,7 @@
                   (setf (aget array-6 input-number-index) 0.0)
                   (setf (aget array-7 input-number-index) 0.0)))
   (loop for output-number-index from 0 to (- number-of-outputs 1)
-        do (do (setf (aget array-8 output-number-index) 0)
+        (do (setf (aget array-8 output-number-index) 0)
                   (setf (aget reset output-number-index) 0)
                   (setf (aget reset-counter output-number-index) 0))))
 
@@ -283,7 +291,7 @@
       (reset! learning-cycle-counter 0)
       (zero-activations)
       (loop for number from 0 to (- length 1)
-            do (setf (aget input number) (+ (pop input-pattern) (floating-point-random -0.08 0.08)))))))
+            (setf (aget input number) (+ (pop input-pattern) (floating-point-random -0.08 0.08)))))))
 
 (defn initialize-the-network []
   "initialize the network."
@@ -291,21 +299,21 @@
   (loop for output-number-index from 0 to (- number-of-outputs 1)
         (do
            (loop for input-number-index from 0 to (- number-of-inputs 1)
-                 do (setf
-                     (aget wup input-number-index output-number-index) (floating-point-random 0.05 0.1)
-                     (aget wdown output-number-index input-number-index) (floating-point-random 0.01 0.03)))
+                 (setf
+                  (aget wup input-number-index output-number-index) (floating-point-random 0.05 0.1)
+                  (aget wdown output-number-index input-number-index) (floating-point-random 0.01 0.03)))
            (setf (aget number-of-categories output-number-index) 0))))
 
 (defn learn-the-patterns [number]
   "cycles through all training patterns once."
   (loop for input-pattern in input-patterns
-    do (set-learning-pattern input-pattern)
-    do (dotimes (n number)
-         (reset! learning-cycle-counter (+ 1 learning-cycle-counter))
-         (run-one-full-cycle))
-    do (reset! *learned-categories*
-          (cons (list array-7 (find-the-largest-output array-8))
-                *learned-categories*))))
+        (set-learning-pattern input-pattern)
+        (dotimes (n number)
+          (reset! learning-cycle-counter (+ 1 learning-cycle-counter))
+          (run-one-full-cycle))
+        (reset! *learned-categories*
+                (cons (list array-7 (find-the-largest-output array-8))
+                      *learned-categories*))))
 
 (defn pair [one two]
   "pairs the two args together."
