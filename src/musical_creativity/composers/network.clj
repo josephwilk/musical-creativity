@@ -38,7 +38,7 @@
 (def *learned-categories* (atom []))
 
 (def learning-cycle-counter (atom 0))
-(def maximum-index ())
+(def maximum-index (atom nil))
 
 (def skipreset (atom nil))
 
@@ -105,8 +105,8 @@
         (print (list "vigilance reset =" res "  learning cycle ="
                      @learning-cycle-counter))
         (reset! maximum-index (find-the-largest-output @array-8 @reset))
-        (aset @reset maximum-index true)
-        (aset @reset-counter maximum-index 80))
+        (aset @reset @maximum-index true)
+        (aset @reset-counter @maximum-index 80))
       (dotimes [output-number-index (- @number-of-outputs 1)]
         (aset @reset-counter output-number-index (- (aget @reset-counter output-number-index) 1))
         (if (< (aget @reset-counter output-number-index) 0)
@@ -395,7 +395,7 @@
      (if (empty? pitch-groupings)
        []
        (concat (list (make-event ontime (first pitch-groupings) 1))
-               (make-events (rest pitch-groupings)(+ ontime 1000))))))
+               (make-events (rest pitch-groupings)(+ ontime 800))))))
 
 (defn translate-into-events [output-pitch-lists]
   "returns sontiguous events from its pitch-lists arg."
