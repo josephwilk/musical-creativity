@@ -21,7 +21,7 @@
 
 (def resetval (make-array Double/TYPE 1))
 (def y (make-array Double/TYPE number-of-outputs))
-(def reset (make-array Double/TYPE number-of-outputs))
+(def reset (boolean-array number-of-outputs false))
 (def reset-counter (make-array Double/TYPE number-of-outputs))
 (def number-of-categories (make-array Double/TYPE number-of-outputs))
 
@@ -70,14 +70,14 @@
         (print (list "vigilance reset =" res "  learning cycle ="
                      learning-cycle-counter))
         (reset! maximum-index (find-the-largest-output array-8))
-        (reset! reset (assoc reset maximum-index 1))
+        (reset! reset (assoc reset maximum-index true))
         (reset! (assoc reset-counter maximum-index 80)))
       (dotimes [output-number-index (- number-of-outputs 1)]
         (reset! reset-counter (assoc reset-counter output-number-index (- (aget reset-counter output-number-index) 1)))
         (if (< (aget reset-counter output-number-index) 0)
           (do
             (if (aget reset output-number-index)  (reset! skipreset true))
-            (reset! reset (assoc @reset output-number-index nil)))))))
+            (reset! reset (assoc @reset output-number-index false)))))))
   (reset! skipreset nil))
 
 (defn zero-activations []
@@ -148,7 +148,7 @@
 (defn initialize-network
   "initializes the neural network."
   ([number-inputs number-outputs] (initialize-network number-inputs number-outputs nil))
-  ([number-inputs number-outputs &optional training-patterns]
+  ([number-inputs number-outputs training-patterns]
                                         ; check for specified training patterns:
       (if training-patterns
                                         ; make sure the number of input neurons agrees with
@@ -205,12 +205,12 @@
   "finds the largest output."
   [array]
   (let [array-with-indexes (map-indexed vector array)]
-    (first (reduce (fn [[position item] [max-pos max-value]]
+    (first (reduce (fn [[max-pos max-value] [new-position new-item]]
                      (if (and
-                          (> item max-value)
-                          (not (nth reset position)))
-                       [position item]
-                       [max-pos max-value])) [nil nil] array-with-indexes))))
+                          (> new-item max-value)
+                          (not (nth reset new-position)))
+                       [new-position new-item]
+                       [max-pos max-value])) array-with-indexes))))
 
 (defn check-array-value
   "returns d if (aref y index) is the largest value in array array-8 and (aref array-8 index) has not been reset."
