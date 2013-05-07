@@ -38,7 +38,9 @@
 
 (def learning-cycle-counter (atom 0))
 (def maximum-index ())
-(def skipreset ())
+
+(def skipreset (atom nil))
+
 (def input (atom (make-array Double/TYPE @number-of-inputs)))
 (def decimals '(0.0 0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75
                    0.8 0.85 0.9 0.95 1.0))
@@ -79,22 +81,24 @@
                length-index 0]
           (if (>= length-index vector-length)
             sum
-            (recur (+ sum (* (aget vector length-index) (aget vector length-index))) (+ vector-length 1) )))]
+            (recur (+ sum (* (aget vector length-index)
+                             (aget vector length-index)))
+                   (+ vector-length 1) )))]
     (+ (math/sqrt total-sum) 0.001)))
 
 (defn check-for-f2-reset []
   "check for an f2 reset condition."
   (let [res 0.0
-        n1 (+ (vector-l2-norm array-7 @number-of-inputs) e)]
+        n1 (+ (vector-l2-norm @array-7 @number-of-inputs) e)]
 
     (if (and
          (> n1 0.2)
          (not skipreset))
       (if (> @learning-cycle-counter 1)
         (if (> (aget array-8 (find-the-largest-output @array-8 @reset)) 0.25)
-          (reset! res (* 3.0 (vector-l2-norm array-4 @number-of-inputs))))  ; was 3.0
+          (reset! res (* 3.0 (vector-l2-norm @array-4 @number-of-inputs))))  ; was 3.0
         (reset! skipreset nil)))
-    (reset! resetval (assoc @resetval 0 res))
+    (aset @resetval 0 res)
     (if (> res (- 1.9 vigilance))  ;; 11/14/91 change
       (do
         (print (list "vigilance reset =" res "  learning cycle ="
@@ -103,11 +107,11 @@
         (aset @reset maximum-index true)
         (aset @reset-counter maximum-index 80))
       (dotimes [output-number-index (- @number-of-outputs 1)]
-        (reset! reset-counter (assoc reset-counter output-number-index (- (aget reset-counter output-number-index) 1)))
-        (if (< (aget reset-counter output-number-index) 0)
+        (aset @reset-counter output-number-index (- (aget @reset-counter output-number-index) 1))
+        (if (< (aget @reset-counter output-number-index) 0)
           (do
-            (if (aget reset output-number-index)  (reset! skipreset true))
-            (reset! reset (assoc @reset output-number-index false)))))))
+            (if (aget @reset output-number-index)  (reset! skipreset true))
+            (aset @reset output-number-index false))))))
   (reset! skipreset nil))
 
 (defn zero-activations []
@@ -190,7 +194,7 @@
          (range 0 (- @number-of-inputs 1))))
 
   ; update array-5 using eq. 6:
-  (let [norm (vector-l2-norm array-3 @number-of-inputs)]
+  (let [norm (vector-l2-norm @array-3 @number-of-inputs)]
     (map (fn [input-index]
            (aset @array-5 input-index (/ (aget @array-3 input-index) norm)))
          (range 0 (- @number-of-inputs 1)))
@@ -204,7 +208,7 @@
       (aset @array-2 input-index (/ (aget @array-1 input-index) norm))))
 
   ; update array-2 using eq. 9:
-  (let [norm (+ (vector-l2-norm array-1 @number-of-inputs) e)]
+  (let [norm (+ (vector-l2-norm @array-1 @number-of-inputs) e)]
     (dotimes [input-number-index (- @number-of-inputs 1)]
       (aset @array-2 input-number-index (/ (aget @array-1 input-number-index) norm))))
 
@@ -212,13 +216,15 @@
   (reset! max1 -1000.0)
   (reset! max2 -1000.0)
   (dotimes [input-number-index (- @number-of-inputs 1)]
-    (when (< @max1 (aget array-5 input-number-index)) (reset! max1 (aget array-5 input-number-index)))
-    (when (< @max2 (aget array-7 input-number-index)) (reset! max2 (aget array-7 input-number-index))))
+    (when (< @max1 (aget @array-5 input-number-index)) (reset! max1 (aget @array-5 input-number-index)))
+    (when (< @max2 (aget @array-7 input-number-index)) (reset! max2 (aget @array-7 input-number-index))))
   (reset! max1 (+ @max1 0.001))
   (reset! max2 (+ @max2 0.001))
   (dotimes [input-number-index (- @number-of-inputs 1)]
     (aset @array-4 input-number-index
           (- (/ (aget @array-5 input-number-index) @max1) (/ (aget @array-7 input-number-index) @max2)))))
+
+(declare run-one-full-cycle)
 
 (defn learn-the-patterns
   "cycles through all training patterns once."
@@ -309,15 +315,18 @@
                                         ; by function art2-postprocess:
             (reset! *learned-categories* nil))))))
 
-(defn update-f2-stm-storage [&aux sum]
+(def sum (atom 0.0))
+
+(defn update-f2-stm-storage []
   "updates f2 stm storage."
   (dotimes [output-number-index (- @number-of-outputs 1)]
     (reset! sum 0.0)
     (dotimes [input-number-index (- @number-of-inputs 1)]
-      (reset! sum (+ sum (* (aget array-7 input-number-index) (aget wup input-number-index output-number-index)))))
-    (reset! array-8 (assoc @array-8 output-number-index sum))
+      (reset! sum (+ @sum (* (aget @array-7 input-number-index)
+                             (aget @wup input-number-index output-number-index)))))
+    (aset @array-8 output-number-index @sum)
     (if (aget reset output-number-index)
-      (reset! array-8 (assoc @array-8 output-number-index -0.1)))))
+      (aset @array-8 output-number-index -0.1))))
 
 ;TODO: resets are wrong
 (defn update-weights []
@@ -344,10 +353,10 @@
 (defn competitive-learning-at-f2 []
   "competitive learning at slab f2."
   (let [largest-output (find-the-largest-output @array-8 @reset)]
-    (if (> (aget array-8 largest-output) reset-threshold)
+    (if (> (aget @array-8 largest-output) reset-threshold)
       (dotimes [output-number-index (- @number-of-outputs 1)]
         (if (not (= output-number-index largest-output))
-          (reset! array-8 (assoc array-8 output-number-index 0.0)))))))
+          (aset @array-8 output-number-index 0.0))))))
 
 (defn translate-pitches [decimal-numbers]
   "helps transform decimal patterns into note patterns."
