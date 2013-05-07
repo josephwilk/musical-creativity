@@ -49,6 +49,102 @@
 (def uplr 0.12)
 (def downlr 0.12)
 
+(defn position [item list]
+  (.indexOf list item))
+
+(defn check-for-f2-reset []
+  "check for an f2 reset condition."
+  (let [res 0.0
+        n1 (+ (vector-l2-norm array-7 number-of-inputs) e)]
+
+    (if (and
+         (> n1 0.2)
+         (not skipreset))
+      (if (> learning-cycle-counter 1)
+        (if (> (aget array-8 (find-the-largest-output array-8)) 0.25)
+          (reset! res (* 3.0 (vector-l2-norm array-4 number-of-inputs))))  ; was 3.0
+        (reset! skipreset nil)))
+    (reset! resetval (assoc @resetval 0 res))
+    (if (> res (- 1.9 vigilance))  ;; 11/14/91 change
+      (do
+        (print (list "vigilance reset =" res "  learning cycle ="
+                     learning-cycle-counter))
+        (reset! maximum-index (find-the-largest-output array-8))
+        (reset! reset (assoc reset maximum-index 1))
+        (reset! (assoc reset-counter maximum-index 80)))
+      (dotimes [output-number-index (- number-of-outputs 1)]
+        (reset! reset-counter (assoc reset-counter output-number-index (- (aget reset-counter output-number-index) 1)))
+        (if (< (aget reset-counter output-number-index) 0)
+          (do
+            (if (aget reset output-number-index)  (reset! skipreset true))
+            (reset! reset (assoc @reset output-number-index nil)))))))
+  (reset! skipreset nil))
+
+(defn zero-activations []
+  "zero activations."
+  (dotimes [input-number-index (- number-of-inputs 1)]
+    (reset! (aget array-1 input-number-index) 0.0)
+    (reset! (aget array-2 input-number-index) 0.0)
+    (reset! (aget array-3 input-number-index) 0.0)
+    (reset! (aget array-4 input-number-index) 0.0)
+    (reset! (aget array-5 input-number-index) 0.0)
+    (reset! (aget array-6 input-number-index) 0.0)
+    (reset! (aget array-7 input-number-index) 0.0))
+  (dotimes [output-number-index (- number-of-outputs 1)]
+    (reset! (aget array-8 output-number-index) 0)
+    (reset! (aget reset output-number-index) 0)
+    (reset! (aget reset-counter output-number-index) 0)))
+
+(defn set-learning-pattern [input-pattern]
+  "sets up a learning pattern in the input neurons."
+  (let [length (count input-pattern)]
+
+    (if (not (= length number-of-inputs))
+      (print (list "error in set-learning-pattern input:" input-pattern))
+      (do
+        (reset! learning-cycle-counter 0)
+        (zero-activations)
+        (dotimes  [number (- length 1)]
+          (reset! input (assoc @input number (+ (pop input-pattern) (floating-point-random -0.08 0.08)))))))))
+
+(defn initialize-the-network []
+  "initialize the network."
+  (zero-activations)
+  (dotimes [output-number-index (- number-of-outputs 1)]
+    (dotimes [input-number-index (- number-of-inputs 1)]
+      (reset!
+       (aget wup input-number-index output-number-index) (floating-point-random 0.05 0.1)
+       (aget wdown output-number-index input-number-index) (floating-point-random 0.01 0.03)))
+    (reset! (aget number-of-categories output-number-index) 0)))
+
+(defn learn-the-patterns [number]
+  "cycles through all training patterns once."
+  (map (fn [input-pattern]
+         (set-learning-pattern input-pattern)
+         (dotimes [n number]
+           (reset! learning-cycle-counter (+ 1 learning-cycle-counter))
+           (run-one-full-cycle))
+         (reset! *learned-categories*
+                 (cons (list array-7 (find-the-largest-output array-8))
+                       *learned-categories*))) input-patterns))
+
+(defn pair [one two]
+  "pairs the two args together."
+  (if (or (nil? one)(nil? two))()
+      (cons (list (first one)(first two))
+            (pair (rest one)(rest two)))))
+
+(defn make-note-decimals [note-patterns]
+  "transforms note patterns into decimal patterns."
+  (if (nil? note-patterns)()
+      (cons (map (fn [x] (* x 0.01)) (first note-patterns))
+            (make-note-decimals (rest note-patterns)))))
+
+(defn firstn [number list]
+  "returns the first n of list."
+ (if (< (count list) number)(firstn (- number 1) list)
+     (butlast list (- (count list) number))))
+
 (defn initialize-network
   "initializes the neural network."
   ([number-inputs number-outputs] (initialize-network number-inputs number-outputs nil))
@@ -174,67 +270,69 @@
        (range 0 (- number-of-inputs 1)))
 
   ; update array-3 using eq. 7:
-  (loop for input-number-index from 0 to (- number-of-inputs 1)
-        (setf (aget array-3 input-number-index) (sigmoid-threshold-function (+ (aget array-2 input-number-index) (* b (sigmoid-threshold-function (aget array-6 input-number-index)))))))
+  (dotimes [input-index (- number-of-inputs 1)]
+    (reset! array-3 (assoc @array-3 input-index (sigmoid-threshold-function (+ (aget @array-2 input-index) (* b (sigmoid-threshold-function (aget @array-6 input-index))))))))
 
   ; update w using eq. 8:
-  (loop for input-number-index from 0 to (- number-of-inputs 1)
-        (setf (aget array-2 input-number-index) (/ (aget array-1 input-number-index) norm)))
+  (dotimes [input-index (- number-of-inputs 1)]
+    (reset! array-2 (assoc @array-2 input-index) (/ (aget @array-1 input-index) norm)))
 
   ; update array-2 using eq. 9:
   (reset! norm (+ (vector-l2-norm array-1 number-of-inputs) e))
-  (loop for input-number-index from 0 to (- number-of-inputs 1)
-        (setf (aget array-2 input-number-index) (/ (aget array-1 input-number-index) norm)))
+  (dotimes [input-number-index (- number-of-inputs 1)]
+    (reset! array-2 (assoc array-2 input-number-index (/ (aget @array-1 input-number-index) norm))))
 
   ; calculate reset array-4 from eq. 20:
   (reset! max1 -1000.0 max2 -1000.0)
-  (loop for input-number-index from 0 to (- number-of-inputs 1)
-        (do
-          (if (< max1 (aget array-5 input-number-index)) (reset! max1 (aget array-5 input-number-index)))
-          (if (< max2 (aget array-7 input-number-index)) (reset! max2 (aget array-7 input-number-index)))))
+  (dotimes [input-number-index (- number-of-inputs 1)]
+    (when (< max1 (aget array-5 input-number-index)) (reset! max1 (aget array-5 input-number-index)))
+    (when (< max2 (aget array-7 input-number-index)) (reset! max2 (aget array-7 input-number-index))))
   (reset! max1 (+ max1 0.001))
   (reset! max2 (+ max2 0.001))
-  (loop for input-number-index from 0 to (- number-of-inputs 1)
-        (setf
-         (aget array-4 input-number-index)
-         (- (/ (aget array-5 input-number-index) max1) (/ (aget array-7 input-number-index) max2)))))
+  (dotimes [input-number-index (- number-of-inputs 1)]
+        (reset! array-4
+                (assoc @array-4 input-number-index
+                       (- (/ (aget @array-5 input-number-index) max1) (/ (aget @array-7 input-number-index) max2))))))
 
 (defn update-f2-stm-storage [&aux sum]
   "updates f2 stm storage."
-  (loop for output-number-index from 0 to (- number-of-outputs 1)
-        (do
-          (reset! sum 0.0)
-          (loop for input-number-index from 0 to (- number-of-inputs 1)
-                (reset! sum (+ sum (* (aget array-7 input-number-index) (aget wup input-number-index output-number-index)))))
-          (setf (aget array-8 output-number-index) sum)
-          (if (aget reset output-number-index) (setf (aget array-8 output-number-index) -0.1)))))
+  (dotimes [output-number-index (- number-of-outputs 1)]
+    (reset! sum 0.0)
+    (dotimes [input-number-index (- number-of-inputs 1)]
+      (reset! sum (+ sum (* (aget array-7 input-number-index) (aget wup input-number-index output-number-index)))))
+    (reset! array-8 (assoc @array-8 output-number-index sum))
+    (if (aget reset output-number-index)
+      (reset! array-8 (assoc @array-8 output-number-index -0.1)))))
 
-(defn update-weights [&aux (largest-output (find-the-largest-output array-8))]
+;TODO: resets are wrong
+(defn update-weights []
   "updates the weights."
-  (if (> (check-array-value largest-output) 0.02)
-    (loop for increment from 0 to (- number-of-inputs 1)
-          (setf
-           (aget wdown largest-output increment)
-           (+ (aget wdown largest-output increment)
-              (*
-               downlr
-               d
-               (- (aget array-7 increment) (aget wdown largest-output increment)))))
-          (setf
-           (aget wup increment largest-output)
-           (+
-            (aget wup increment largest-output)
-            (*
-             uplr
-             d
-             (- (aget array-7 increment) (aget wup increment largest-output))))))))
+  (let [largest-output (find-the-largest-output array-8)]
+    (if (> (check-array-value largest-output) 0.02)
+      (dotimes [increment (- number-of-inputs 1)]
+        (reset! wdown
+                (aget wdown largest-output increment)
+             (+ (aget wdown largest-output increment)
+                (* downlr d
+                   (- (aget array-7 increment) (aget wdown largest-output increment)))))
 
-(defn competitive-learning-at-f2 [&aux (largest-output (find-the-largest-output array-8))]
+            (reset!
+             wup
+             (aget wup increment largest-output)
+             (+
+              (aget wup increment largest-output)
+              (*
+               uplr
+               d
+               (- (aget array-7 increment) (aget wup increment largest-output)))))))))
+
+(defn competitive-learning-at-f2 []
   "competitive learning at slab f2."
-  (if (> (aget array-8 largest-output) reset-threshold)
-    (loop for output-number-index from 0 to (- number-of-outputs 1)
-          (if (not (= output-number-index largest-output))
-            (setf (aget array-8 output-number-index) 0.0)))))
+  (let [largest-output (find-the-largest-output array-8)]
+    (if (> (aget array-8 largest-output) reset-threshold)
+      (dotimes [output-number-index (- number-of-outputs 1)]
+        (if (not (= output-number-index largest-output))
+          (reset! array-8 (assoc array-8 output-number-index 0.0)))))))
 
 (defn run-one-full-cycle []
   "run one full cycle."
@@ -245,164 +343,78 @@
   (update-weights)
   (competitive-learning-at-f2))
 
-(defn check-for-f2-reset [&aux (res 0.0)(n1 (+ (vector-l2-norm array-7 number-of-inputs) e))]
-  "check for an f2 reset condition."
-  (if (and
-       (> n1 0.2)
-       (not skipreset))
-    (if (> learning-cycle-counter 1)
-      (if (> (aget array-8 (find-the-largest-output array-8)) 0.25)
-        (reset! res (* 3.0 (vector-l2-norm array-4 number-of-inputs))))  ; was 3.0
-      (reset! skipreset nil)))
-  (setf (aget resetval 0) res)
-  (if (> res (- 1.9 vigilance))  ;; 11/14/91 change
-    (do
-      (print (list "vigilance reset =" res "  learning cycle ="
-                   learning-cycle-counter))
-      (reset! maximum-index (find-the-largest-output array-8))
-      (setf (aget reset maximum-index) 1)
-      (setf (aget reset-counter maximum-index) 80))
-    (loop for output-number-index from 0 to (- number-of-outputs 1)
-          (setf (aget reset-counter output-number-index) (- (aget reset-counter output-number-index) 1))
-          (if (< (aget reset-counter output-number-index) 0)
-               (do
-                 (if (aget reset output-number-index)  (reset! skipreset t))
-                 (setf (aget reset output-number-index) nil)))))
-  (reset! skipreset nil))
-
-(defn zero-activations []
-  "zero activations."
-  (loop for input-number-index from 0 to (- number-of-inputs 1)
-        (do (setf (aget array-1 input-number-index) 0.0)
-                  (setf (aget array-2 input-number-index) 0.0)
-                  (setf (aget array-3 input-number-index) 0.0)
-                  (setf (aget array-4 input-number-index) 0.0)
-                  (setf (aget array-5 input-number-index) 0.0)
-                  (setf (aget array-6 input-number-index) 0.0)
-                  (setf (aget array-7 input-number-index) 0.0)))
-  (loop for output-number-index from 0 to (- number-of-outputs 1)
-        (do (setf (aget array-8 output-number-index) 0)
-                  (setf (aget reset output-number-index) 0)
-                  (setf (aget reset-counter output-number-index) 0))))
-
-(defn set-learning-pattern [input-pattern &aux (count (count input-pattern))]
-  "sets up a learning pattern in the input neurons."
-  (if (not (= length number-of-inputs))
-    (print (list "error in set-learning-pattern input:" input-pattern))
-    (do
-      (reset! learning-cycle-counter 0)
-      (zero-activations)
-      (loop for number from 0 to (- length 1)
-            (setf (aget input number) (+ (pop input-pattern) (floating-point-random -0.08 0.08)))))))
-
-(defn initialize-the-network []
-  "initialize the network."
-  (zero-activations)
-  (loop for output-number-index from 0 to (- number-of-outputs 1)
-        (do
-           (loop for input-number-index from 0 to (- number-of-inputs 1)
-                 (setf
-                  (aget wup input-number-index output-number-index) (floating-point-random 0.05 0.1)
-                  (aget wdown output-number-index input-number-index) (floating-point-random 0.01 0.03)))
-           (setf (aget number-of-categories output-number-index) 0))))
-
-(defn learn-the-patterns [number]
-  "cycles through all training patterns once."
-  (loop for input-pattern in input-patterns
-        (set-learning-pattern input-pattern)
-        (dotimes (n number)
-          (reset! learning-cycle-counter (+ 1 learning-cycle-counter))
-          (run-one-full-cycle))
-        (reset! *learned-categories*
-                (cons (list array-7 (find-the-largest-output array-8))
-                      *learned-categories*))))
-
-(defn pair [one two]
-  "pairs the two args together."
-  (if (or (null one)(null two))()
-      (cons (list (first one)(first two))
-            (pair (rest one)(rest two)))))
-
-(defn make-note-decimals [note-patterns]
-  "transforms note patterns into decimal patterns."
-  (if (null note-patterns)()
-      (cons (map (fn [x] (* x .01)) (first note-patterns))
-            (make-note-decimals (rest note-patterns)))))
-
-(defn firstn [number list]
-  "returns the first n of list."
- (if (< (count list) number)(firstn (- number 1) list)
-     (butlast list (- (count list) number))))
+(defn translate-pitches [decimal-numbers]
+  "helps transform decimal patterns into note patterns."
+  (if (nil? decimal-numbers)()
+      (let [test (nth (position (first decimal-numbers) decimals) pitches)]
+        (cons (if (nil? test) 0.69 test)
+            (translate-pitches (rest decimal-numbers))))))
 
 (defn translate-to-pitches [decimal-lists]
   "transforms decimal patterns into note patterns."
-  (if (null decimal-lists)()
+  (if (nil? decimal-lists)()
       (cons (translate-pitches (first decimal-lists))
             (translate-to-pitches (rest decimal-lists)))))
 
-(defn translate-pitches [decimal-numbers]
-  "helps transform decimal patterns into note patterns."
-  (if (null decimal-numbers)()
-      (let ((test (nth (position (first decimal-numbers) decimals) pitches)))
-        (cons (if (null test) .69 test)
-            (translate-pitches (rest decimal-numbers))))))
-
-(defn translate-to-decimals [pitch-lists]
-  "changes lists of pitches into lists of 0.0 - 1.0 range decimals."
-    (if (null pitch-lists)()
-      (cons (translate-decimals (first pitch-lists))
-            (translate-to-decimals (rest pitch-lists)))))
-
 (defn translate-decimals [pitch-numbers]
   "changes pitches into 0.0 - 1.0 range decimals."
-  (if (null pitch-numbers)()
+  (if (nil? pitch-numbers)()
       (cons (nth (position (first pitch-numbers) pitches) decimals)
             (translate-decimals (rest pitch-numbers)))))
 
-(defn translate-into-events [output-pitch-lists]
-  "returns sontiguous events from its pitch-lists arg."
-  (make-events (apply 'append output-pitch-lists)))
-
-(defn make-events [pitch-groupings &optional (ontime 0)]
-  "makes consecutive events out of the pairs of pitches in its arg."
-  (if (null pitch-groupings) ()
-      (append (list (make-event ontime (first pitch-groupings) 1))
-              (make-events (rest pitch-groupings)(+ ontime 1000)))))
+(defn translate-to-decimals [pitch-lists]
+  "changes lists of pitches into lists of 0.0 - 1.0 range decimals."
+    (if (nil? pitch-lists)()
+      (cons (translate-decimals (first pitch-lists))
+            (translate-to-decimals (rest pitch-lists)))))
 
 (defn make-event [ontime pitch channel]
   "creates an event based on args."
   (list ontime
-        (if (symbolp pitch) (eval pitch) pitch)
+        (if (symbol? pitch) (eval pitch) pitch)
         1000
         channel
         90))
 
-(defn count-highest [lists]
-  "returns the highest occuring pattern in its arg."
-  (let [sorted-numbers (my-sort #'< (mapcar #'second lists)) ;;;(1 1 2 2 2 3 3 3 )
-        numbers-only (remove-duplicates sorted-numbers)      ;;;(1 2 3)
-        counts (count-them numbers-only sorted-numbers)]     ;;;(5 2 3)
-    (find-all (nth (position (first (my-sort #'> counts)) counts) numbers-only)  lists)))
+(defn make-events
+  "makes consecutive events out of the pairs of pitches in its arg."
+  ([pitch-groupings] (make-events pitch-groupings 0))
+  ([pitch-groupings ontime]
 
-(defn count-them [singles numbers]
-  "returns the counts of its first arg in its second arg."
-  (if (null singles)()
-      (cons (count (first singles) numbers)
-            (count-them (rest singles) numbers))))
+      (if (nil? pitch-groupings) ()
+          (concat (list (make-event ontime (first pitch-groupings) 1))
+                  (make-events (rest pitch-groupings)(+ ontime 1000))))))
+
+(defn translate-into-events [output-pitch-lists]
+  "returns sontiguous events from its pitch-lists arg."
+  (make-events (apply concat output-pitch-lists)))
 
 (defn find-all [number lists]
   "returns all of the patterns associated by cdr with number."
-  (cond (null lists)()
+  (cond (nil? lists)()
         (= (second (first lists)) number)
         (cons (first lists)
               (find-all number (rest lists)))
         :else (find-all number (rest lists))))
 
-(defn my-sort [function lists]
-  "non-destructive sort function."
-  (loop for item in (sort (loop for array-2 in lists
-                                collect (list array-2))  function :key #'car)
-        collect (first item)))
+(defn count-them [singles numbers]
+  "returns the counts of its first arg in its second arg."
+  (if (nil? singles)()
+      (cons (count (filter #{(first singles)} numbers))
+            (count-them (rest singles) numbers))))
+
+(defn count-highest [lists]
+  "returns the highest occuring pattern in its arg."
+  (let [sorted-numbers (sort < (map second lists))
+        numbers-only (distinct sorted-numbers)      ;;;(1 2 3)
+        counts (count-them numbers-only sorted-numbers)]     ;;;(5 2 3)
+    (find-all (nth (position (first (sort > counts)) counts) numbers-only)  lists)))
+
+;; (defn my-sort [function lists]
+;;   "non-destructive sort function."
+;;   (loop for item in (sort (loop for array-2 in lists
+;;                                 collect (list array-2))  function :key #'car)
+;;         collect (first item)))
 
 (defn run-neural-net []
   "assumes patterns are in decimal form."
