@@ -10,6 +10,9 @@
                            (0.0 0.1 0.2 0.25 0.2) (0.25 0.2 0.1 0.2 0.25) (0.45 0.35 0.25 0.2 0.25) (0.0 0.1 0.2 0.25 0.2)
                            (0.0 0.0 0.1 0.2 0.25))))
 
+(def max1 (atom nil))
+(def max2 (atom nil))
+
 (def array-1 (atom (make-array Double/TYPE @number-of-inputs)))
 (def array-2 (atom (make-array Double/TYPE @number-of-inputs)))
 (def array-3 (atom (make-array Double/TYPE @number-of-inputs)))
@@ -30,8 +33,10 @@
 
 (def wup (atom (make-array Double/TYPE @number-of-inputs @number-of-outputs)))
 (def wdown (atom (make-array Double/TYPE @number-of-inputs @number-of-outputs)))
-(def *learned-categories* (atom ()))
-(def learning-cycle-counter 0)
+
+(def *learned-categories* (atom []))
+
+(def learning-cycle-counter (atom 0))
 (def maximum-index ())
 (def skipreset ())
 (def input (atom (make-array Double/TYPE @number-of-inputs)))
@@ -85,7 +90,7 @@
     (if (and
          (> n1 0.2)
          (not skipreset))
-      (if (> learning-cycle-counter 1)
+      (if (> @learning-cycle-counter 1)
         (if (> (aget array-8 (find-the-largest-output @array-8 @reset)) 0.25)
           (reset! res (* 3.0 (vector-l2-norm array-4 @number-of-inputs))))  ; was 3.0
         (reset! skipreset nil)))
@@ -93,10 +98,10 @@
     (if (> res (- 1.9 vigilance))  ;; 11/14/91 change
       (do
         (print (list "vigilance reset =" res "  learning cycle ="
-                     learning-cycle-counter))
+                     @learning-cycle-counter))
         (reset! maximum-index (find-the-largest-output @array-8 @reset))
-        (reset! reset (assoc reset maximum-index true))
-        (reset! (assoc reset-counter maximum-index 80)))
+        (aset @reset maximum-index true)
+        (aset @reset-counter maximum-index 80))
       (dotimes [output-number-index (- @number-of-outputs 1)]
         (reset! reset-counter (assoc reset-counter output-number-index (- (aget reset-counter output-number-index) 1)))
         (if (< (aget reset-counter output-number-index) 0)
@@ -136,7 +141,7 @@
         (reset! learning-cycle-counter 0)
         (zero-activations)
         (dotimes  [number (- length 1)]
-          (reset! input (assoc @input number (+ (pop input-pattern) (floating-point-random -0.08 0.08)))))))))
+          (aset @input number (+ (pop input-pattern) (floating-point-random -0.08 0.08))))))))
 
 (defn initialize-the-network []
   "initialize the network."
@@ -170,66 +175,66 @@
     test
     0.0))
 
-(defn update-f1-stm-arrays [&aux sum norm max1 max2]
-  "update f1 stm arrays."
-
+(defn update-f1-stm-arrays []
   ; calculate array-7 from array-5 input and backwards feed back:
   (map (fn [input-index]
          (let [total-sum
                (reduce (wdown-total-sum-fn input-index) (range 0 (- @number-of-outputs 1)))]
-           (reset! array-7 (assoc @array-7 input-index (+ (aget @array-5 input-index) total-sum)))))
+           (aset @array-7 input-index (+ (aget @array-5 input-index) total-sum))))
        (range 0 (- @number-of-inputs 1)))
 
   ; update array-6 using eq. 5
-  (reset! norm (+ (vector-l2-norm @array-7 @number-of-inputs) e))
-  (map (fn [input-index]
-         (reset! array-6 (assoc @array-6 input-index (/ (aget @array-7 input-index) norm))))
-       (range 0 (- @number-of-inputs 1)))
+  (let [norm (+ (vector-l2-norm @array-7 @number-of-inputs) e)]
+    (map (fn [input-index]
+           (aset @array-6 input-index (/ (aget @array-7 input-index) norm)))
+         (range 0 (- @number-of-inputs 1))))
 
   ; update array-5 using eq. 6:
-  (reset! norm (vector-l2-norm array-3 @number-of-inputs))
-  (map (fn [input-index]
-         (reset! array-5 (assoc @array-5 input-index (/ (aget @array-3 input-index) norm))))
-       (range 0 (- @number-of-inputs 1)))
+  (let [norm (vector-l2-norm array-3 @number-of-inputs)]
+    (map (fn [input-index]
+           (aset @array-5 input-index (/ (aget @array-3 input-index) norm)))
+         (range 0 (- @number-of-inputs 1)))
 
-  ; update array-3 using eq. 7:
-  (dotimes [input-index (- @number-of-inputs 1)]
-    (reset! array-3 (assoc @array-3 input-index (sigmoid-threshold-function (+ (aget @array-2 input-index) (* b (sigmoid-threshold-function (aget @array-6 input-index))))))))
+                                        ; update array-3 using eq. 7:
+    (dotimes [input-index (- @number-of-inputs 1)]
+      (aset @array-3 input-index (sigmoid-threshold-function (+ (aget @array-2 input-index) (* b (sigmoid-threshold-function (aget @array-6 input-index)))))))
 
-  ; update w using eq. 8:
-  (dotimes [input-index (- @number-of-inputs 1)]
-    (reset! array-2 (assoc @array-2 input-index) (/ (aget @array-1 input-index) norm)))
+                                        ; update w using eq. 8:
+    (dotimes [input-index (- @number-of-inputs 1)]
+      (aset @array-2 input-index (/ (aget @array-1 input-index) norm))))
 
   ; update array-2 using eq. 9:
-  (reset! norm (+ (vector-l2-norm array-1 @number-of-inputs) e))
-  (dotimes [input-number-index (- @number-of-inputs 1)]
-    (reset! array-2 (assoc array-2 input-number-index (/ (aget @array-1 input-number-index) norm))))
+  (let [norm (+ (vector-l2-norm array-1 @number-of-inputs) e)]
+    (dotimes [input-number-index (- @number-of-inputs 1)]
+      (aset @array-2 input-number-index (/ (aget @array-1 input-number-index) norm))))
 
   ; calculate reset array-4 from eq. 20:
-  (reset! max1 -1000.0 max2 -1000.0)
+  (reset! max1 -1000.0)
+  (reset! max2 -1000.0)
   (dotimes [input-number-index (- @number-of-inputs 1)]
-    (when (< max1 (aget array-5 input-number-index)) (reset! max1 (aget array-5 input-number-index)))
-    (when (< max2 (aget array-7 input-number-index)) (reset! max2 (aget array-7 input-number-index))))
-  (reset! max1 (+ max1 0.001))
-  (reset! max2 (+ max2 0.001))
+    (when (< @max1 (aget array-5 input-number-index)) (reset! max1 (aget array-5 input-number-index)))
+    (when (< @max2 (aget array-7 input-number-index)) (reset! max2 (aget array-7 input-number-index))))
+  (reset! max1 (+ @max1 0.001))
+  (reset! max2 (+ @max2 0.001))
   (dotimes [input-number-index (- @number-of-inputs 1)]
-        (reset! array-4
-                (assoc @array-4 input-number-index
-                       (- (/ (aget @array-5 input-number-index) max1) (/ (aget @array-7 input-number-index) max2))))))
+    (aset @array-4 input-number-index
+          (- (/ (aget @array-5 input-number-index) @max1) (/ (aget @array-7 input-number-index) @max2)))))
 
-(defn learn-the-patterns [number]
+(defn learn-the-patterns
   "cycles through all training patterns once."
+  [number]
   (map (fn [input-pattern]
          (set-learning-pattern input-pattern)
          (dotimes [n number]
-           (reset! learning-cycle-counter (+ 1 learning-cycle-counter))
+           (reset! learning-cycle-counter (+ 1 @learning-cycle-counter))
            (run-one-full-cycle))
          (reset! *learned-categories*
-                 (cons (list array-7 (find-the-largest-output @array-8 @reset))
-                       *learned-categories*))) @input-patterns))
+                 (cons (list @array-7 (find-the-largest-output @array-8 @reset))
+                       @*learned-categories*))) @input-patterns))
 
-(defn pair [one two]
+(defn pair
   "pairs the two args together."
+  [one two]
   (if (or
        (empty? one)
        (empty? two))
@@ -408,8 +413,8 @@
 (defn count-highest [lists]
   "returns the highest occuring pattern in its arg."
   (let [sorted-numbers (sort < (map second lists))
-        numbers-only (distinct sorted-numbers)      ;;;(1 2 3)
-        counts (count-them numbers-only sorted-numbers)]     ;;;(5 2 3)
+        numbers-only (distinct sorted-numbers)
+        counts (count-them numbers-only sorted-numbers)]
     (find-all
      (nth (position (first (sort > counts)) counts) numbers-only)  lists)))
 
