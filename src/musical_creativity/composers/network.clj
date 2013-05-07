@@ -318,18 +318,21 @@
                                         ; by function art2-postprocess:
             (reset! *learned-categories* nil))))))
 
-(def sum (atom 0.0))
-
-(defn update-f2-stm-storage []
+(defn update-f2-stm-storage
   "updates f2 stm storage."
-  (dotimes [output-number-index (- @number-of-outputs 1)]
-    (reset! sum 0.0)
-    (dotimes [input-number-index (- @number-of-inputs 1)]
-      (reset! sum (+ @sum (* (aget @array-7 input-number-index)
-                             (aget @wup input-number-index output-number-index)))))
-    (aset @array-8 output-number-index @sum)
-    (if (aget @reset output-number-index)
-      (aset @array-8 output-number-index -0.1))))
+  []
+  (loop [output-number-index 0]
+    (when (< output-number-index @number-of-outputs)
+      (loop [input-number-index 0
+             sum 0.0]
+        (if (< input-number-index @number-of-inputs)
+          (recur (+ 1 input-number-index)
+                 (+ sum (* (aget @array-7 input-number-index)
+                           (aget @wup input-number-index output-number-index))))
+          (aset @array-8 output-number-index sum)))
+
+      (when (aget @reset output-number-index) (aset @array-8 output-number-index -0.1))
+      (recur (+ 1 output-number-index)))))
 
 (defn update-weights []
   "updates the weights."
