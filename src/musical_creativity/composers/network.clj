@@ -363,28 +363,23 @@
 
 (defn translate-pitches [decimal-numbers]
   "helps transform decimal patterns into note patterns."
-  (if (nil? decimal-numbers)()
-      (let [test (nth (position (first decimal-numbers) decimals) pitches)]
-        (cons (if (nil? test) 0.69 test)
-            (translate-pitches (rest decimal-numbers))))))
+  (map (fn [decimal]
+         (or (nth pitches (position decimal decimals))
+             0.69))
+       decimal-numbers))
 
 (defn translate-to-pitches [decimal-lists]
   "transforms decimal patterns into note patterns."
-  (if (nil? decimal-lists)()
-      (cons (translate-pitches (first decimal-lists))
-            (translate-to-pitches (rest decimal-lists)))))
+  (mapcat #(translate-pitches %) decimal-lists))
 
 (defn translate-decimals [pitch-numbers]
   "changes pitches into 0.0 - 1.0 range decimals."
-  (if (nil? pitch-numbers)()
-      (cons (nth (position (first pitch-numbers) pitches) decimals)
-            (translate-decimals (rest pitch-numbers)))))
+  (mapcat (fn [pitch]
+            (nth decimals (position pitch pitches))) pitch-numbers))
 
 (defn translate-to-decimals [pitch-lists]
   "changes lists of pitches into lists of 0.0 - 1.0 range decimals."
-    (if (nil? pitch-lists)()
-      (cons (translate-decimals (first pitch-lists))
-            (translate-to-decimals (rest pitch-lists)))))
+  (mapcat #(translate-decimals %) pitch-lists))
 
 (defn make-event [ontime pitch channel]
   "creates an event based on args."
