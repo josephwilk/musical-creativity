@@ -4,7 +4,7 @@
 
 Experiments with models for computers generating music.
 
-##Example
+##Demos
 
 ```clojure
 (require '[musical-creativity.musician :as musician] :reload)
