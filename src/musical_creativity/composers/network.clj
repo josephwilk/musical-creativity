@@ -13,26 +13,26 @@
 (def max1 (atom nil))
 (def max2 (atom nil))
 
-(def array-1 (atom (make-array Double/TYPE @number-of-inputs)))
-(def array-2 (atom (make-array Double/TYPE @number-of-inputs)))
-(def array-3 (atom (make-array Double/TYPE @number-of-inputs)))
-(def array-4 (atom (make-array Double/TYPE @number-of-inputs)))
-(def array-5 (atom (make-array Double/TYPE @number-of-inputs)))
-(def array-6 (atom (make-array Double/TYPE @number-of-inputs)))
-(def array-7 (atom (make-array Double/TYPE @number-of-inputs)))
+(def array-1 (atom (double-array @number-of-inputs)))
+(def array-2 (atom (double-array @number-of-inputs)))
+(def array-3 (atom (double-array @number-of-inputs)))
+(def array-4 (atom (double-array @number-of-inputs)))
+(def array-5 (atom (double-array @number-of-inputs)))
+(def array-6 (atom (double-array @number-of-inputs)))
+(def array-7 (atom (double-array @number-of-inputs)))
 
-(def array-8 (atom (make-array Double/TYPE @number-of-outputs)))
+(def array-8 (atom (double-array @number-of-outputs)))
 
-(def resetval (atom (make-array Double/TYPE 1)))
-(def y (make-array Double/TYPE @number-of-outputs))
+(def resetval (atom (double-array 1)))
+(def y (double-array @number-of-outputs))
 (def reset (atom (boolean-array @number-of-outputs false)))
 
 (def reset-counter (atom (int-array @number-of-outputs)))
 
 (def number-of-categories (atom (int-array @number-of-outputs)))
 
-(def wup (atom (make-array Double/TYPE @number-of-inputs @number-of-outputs)))
-(def wdown (atom (make-array Double/TYPE @number-of-inputs @number-of-outputs)))
+(def wup   (atom (double-array @number-of-inputs @number-of-outputs)))
+(def wdown (atom (double-array @number-of-inputs @number-of-outputs)))
 
 (def *learned-categories* (atom []))
 
@@ -41,7 +41,7 @@
 
 (def skipreset (atom nil))
 
-(def input (atom (make-array Double/TYPE @number-of-inputs)))
+(def input (atom (double-array @number-of-inputs)))
 (def decimals '(0.0 0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75
                    0.8 0.85 0.9 0.95 1.0))
 (def pitches '(60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75  76 77 78 79 80))
@@ -95,7 +95,7 @@
          (> n1 0.2)
          (not skipreset))
       (if (> @learning-cycle-counter 1)
-        (if (> (aget array-8 (find-the-largest-output @array-8 @reset)) 0.25)
+        (if (> (aget @array-8 (find-the-largest-output @array-8 @reset)) 0.25)
           (reset! res (* 3.0 (vector-l2-norm @array-4 @number-of-inputs))))  ; was 3.0
         (reset! skipreset nil)))
     (aset @resetval 0 res)
@@ -165,8 +165,8 @@
   (let [maximum-index (find-the-largest-output @array-8 @reset)]
     (if (and
          (= index maximum-index)
-         (not (aget reset maximum-index))
-         (> (aget array-8 maximum-index) reset-threshold))
+         (not (aget @reset maximum-index))
+         (> (aget @array-8 maximum-index) @reset-threshold))
       d
       0.0)))
 
@@ -174,7 +174,7 @@
   (fn [output-index sum]
     (+ sum
        (* (check-array-value output-index)
-          (aget wdown output-index input-index)))))
+          (aget @wdown output-index input-index)))))
 
 (defn sigmoid-threshold-function [test]
   "threshold function."
@@ -184,23 +184,23 @@
 
 (defn update-f1-stm-arrays []
   ; calculate array-7 from array-5 input and backwards feed back:
-  (map (fn [input-index]
-         (let [total-sum
-               (reduce (wdown-total-sum-fn input-index) (range 0 (- @number-of-outputs 1)))]
-           (aset @array-7 input-index (+ (aget @array-5 input-index) total-sum))))
-       (range 0 (- @number-of-inputs 1)))
+  (doall (map (fn [input-index]
+                (let [total-sum
+                      (reduce (wdown-total-sum-fn input-index) (range 0 (- @number-of-outputs 1)))]
+                  (aset @array-7 input-index (+ (aget @array-5 input-index) total-sum))))
+              (range 0 (- @number-of-inputs 1))))
 
   ; update array-6 using eq. 5
   (let [norm (+ (vector-l2-norm @array-7 @number-of-inputs) e)]
-    (map (fn [input-index]
-           (aset @array-6 input-index (/ (aget @array-7 input-index) norm)))
-         (range 0 (- @number-of-inputs 1))))
+    (doall (map (fn [input-index]
+                  (aset @array-6 input-index (/ (aget @array-7 input-index) norm)))
+                (range 0 (- @number-of-inputs 1)))))
 
   ; update array-5 using eq. 6:
   (let [norm (vector-l2-norm @array-3 @number-of-inputs)]
-    (map (fn [input-index]
-           (aset @array-5 input-index (/ (aget @array-3 input-index) norm)))
-         (range 0 (- @number-of-inputs 1)))
+    (doall (map (fn [input-index]
+                  (aset @array-5 input-index (/ (aget @array-3 input-index) norm)))
+                (range 0 (- @number-of-inputs 1))))
 
                                         ; update array-3 using eq. 7:
     (dotimes [input-index (- @number-of-inputs 1)]
@@ -292,16 +292,16 @@
             (reset! number-of-inputs number-inputs)
             (reset! number-of-outputs number-outputs)
                                         ; array storage allocation:
-            (reset! input (make-array Double/TYPE @number-of-inputs))
-            (reset! array-1 (make-array Double/TYPE @number-of-inputs))
-            (reset! array-2 (make-array Double/TYPE @number-of-inputs))
-            (reset! array-3 (make-array Double/TYPE @number-of-inputs))
-            (reset! array-4 (make-array Double/TYPE @number-of-inputs))
-            (reset! array-5 (make-array Double/TYPE @number-of-inputs))
-            (reset! array-6 (make-array Double/TYPE @number-of-inputs))
-            (reset! array-7 (make-array Double/TYPE @number-of-inputs))
+            (reset! input (double-array @number-of-inputs))
+            (reset! array-1 (double-array @number-of-inputs))
+            (reset! array-2 (double-array @number-of-inputs))
+            (reset! array-3 (double-array @number-of-inputs))
+            (reset! array-4 (double-array @number-of-inputs))
+            (reset! array-5 (double-array @number-of-inputs))
+            (reset! array-6 (double-array @number-of-inputs))
+            (reset! array-7 (double-array @number-of-inputs))
 
-            (reset! resetval (make-array Double/TYPE 1))
+            (reset! resetval (double-array 1))
 
             (reset! array-8 (double-array @number-of-outputs))
 
@@ -311,8 +311,8 @@
 
             (reset! number-of-categories (int-array @number-of-outputs))
 
-            (reset! wup (make-array Double/TYPE @number-of-inputs @number-of-outputs))
-            (reset! wdown (make-array Double/TYPE @number-of-outputs @number-of-inputs))
+            (reset! wup (double-array @number-of-inputs @number-of-outputs))
+            (reset! wdown (double-array @number-of-outputs @number-of-inputs))
                                         ; global variable to remember input patterns and
                                         ; their associated output category code for plotting
                                         ; by function art2-postprocess:
