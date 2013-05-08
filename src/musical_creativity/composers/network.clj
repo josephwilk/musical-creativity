@@ -61,8 +61,39 @@
 (defn position [item list]
   (.indexOf list item))
 
+(defn floating-point-random
+  [low high]
+  (let [the-range (- high low)]
+    (+ (* (/ (rand-int 1000) 1000.0) the-range) low)))
+
+(defn pair
+  [one two]
+  (if (or
+       (empty? one)
+       (empty? two))
+    []
+    (cons (list (first one) (first two))
+          (pair (rest one) (rest two)))))
+
+(defn find-all
+  [number lists]
+  (filter #(= number (second %)) lists))
+
+(defn count-highest
+  "returns the highest occuring pattern in its arg."
+  [lists]
+  (let [sorted-numbers (sort < (map second lists))
+        numbers-only (distinct sorted-numbers)
+        counts (count-them numbers-only sorted-numbers)
+        highest-count (first (sort > counts))
+        highest-position (position highest-count counts)
+        highest-value (nth numbers-only highest-position)]
+    (find-all highest-value lists)))
+
+(defn count-them [singles numbers]
+  (map (fn [single] (count (filter #{single} numbers))) singles))
+
 (defn find-the-largest-output
-  "finds the largest output."
   [array reset]
   (let [array-with-indexes (map-indexed vector array)]
     (first (reduce (fn [[max-pos max-value] [new-position new-item]]
@@ -71,6 +102,39 @@
                           (not (nth reset new-position)))
                        [new-position new-item]
                        [max-pos max-value])) array-with-indexes))))
+
+(defn make-note-decimals [note-patterns]
+  (if (nil? note-patterns)()
+      (cons (map (fn [x] (* x 0.01)) (first note-patterns))
+            (make-note-decimals (rest note-patterns)))))
+
+(defn translate-pitches [decimal-numbers]
+  (map (fn [decimal]
+         (or (nth pitches (position decimal decimals))
+             0.69))
+       decimal-numbers))
+
+(defn translate-to-pitches [decimal-lists]
+  (mapcat #(translate-pitches %) decimal-lists))
+
+(defn translate-decimals [pitch-numbers]
+  (mapcat (fn [pitch]
+            (nth decimals (position pitch pitches))) pitch-numbers))
+
+(defn translate-to-decimals [pitch-lists]
+  (mapcat #(translate-decimals %) pitch-lists))
+
+(defn make-events
+  ([pitch-groupings] (make-events pitch-groupings 0))
+  ([pitch-groupings ontime]
+     (if (empty? pitch-groupings)
+       []
+       (concat (list (events/make-event ontime (first pitch-groupings) 1))
+               (make-events (rest pitch-groupings)(+ ontime 800))))))
+
+(defn translate-into-events [output-pitch-lists]
+  "returns sontiguous events from its pitch-lists arg."
+  (make-events output-pitch-lists))
 
 (defn vector-l2-norm
   "l2 norm of a vector."
@@ -86,7 +150,6 @@
     (+ (math/sqrt total-sum) 0.001)))
 
 (defn check-for-f2-reset []
-  "check for an f2 reset condition."
   (let [res 0.0
         n1 (+ (vector-l2-norm @array-7 @number-of-inputs) e)]
     (if (and
@@ -99,8 +162,7 @@
     (aset @resetval 0 res)
     (if (> res (- 1.9 vigilance))
       (do
-        (print (list "vigilance reset =" res "  learning cycle ="
-                     @learning-cycle-counter))
+        (println (str "vigilance reset: " res "  learning cycle: "  @learning-cycle-counter))
         (reset! maximum-index (find-the-largest-output @array-8 @reset))
         (aset @reset @maximum-index true)
         (aset @reset-counter @maximum-index 80))
@@ -111,27 +173,6 @@
             (if (aget @reset output-index)  (reset! skipreset true))
             (aset @reset output-index false))))))
   (reset! skipreset nil))
-
-(defn zero-activations []
-  "zero activations."
-  (dotimes [input-index (- @number-of-inputs 1)]
-    (aset @array-1 input-index 0.0)
-    (aset @array-2 input-index 0.0)
-    (aset @array-3 input-index 0.0)
-    (aset @array-4 input-index 0.0)
-    (aset @array-5 input-index 0.0)
-    (aset @array-6 input-index 0.0)
-    (aset @array-7 input-index 0.0))
-  (dotimes [output-index (- @number-of-outputs 1)]
-    (aset @array-8 output-index 0.0)
-    (aset @reset output-index true)
-    (aset @reset-counter output-index 0)))
-
-(defn floating-point-random
-  "floating point random numbers."
-  [low high]
-  (let [the-range (- high low)]
-    (+ (* (/ (rand-int 1000) 1000.0) the-range) low)))
 
 (defn set-learning-pattern
   "sets up a learning pattern in the input neurons."
@@ -146,15 +187,6 @@
          (map-indexed (fn [index item]
                         (aset @input index (+ item (floating-point-random -0.08 0.08))))
                       input-pattern))))))
-
-(defn initialize-the-network []
-  "initialize the network."
-  (zero-activations)
-  (dotimes [output-index (- @number-of-outputs 1)]
-    (dotimes [input-index (- @number-of-inputs 1)]
-      (aset @wup input-index output-index (floating-point-random 0.05 0.1))
-      (aset @wdown output-index input-index (floating-point-random 0.01 0.03)))
-    (aset @number-of-categories output-index 0)))
 
 (defn check-array-value
   "returns d if (aref y index) is the largest value in array array-8 and (aref array-8 index) has not been reset."
@@ -174,7 +206,6 @@
           (aget @wdown output-index input-index)))))
 
 (defn sigmoid-threshold-function [test]
-  "threshold function."
   (if (> test theta)
     test
     0.0))
@@ -236,65 +267,99 @@
   "cycles through all training patterns once."
   [number]
   (doall (map (fn [input-pattern]
-                 (set-learning-pattern input-pattern)
-                 (dotimes [n number]
-                   (reset! learning-cycle-counter (+ 1 @learning-cycle-counter))
-                   (run-one-full-cycle))
-                 (reset! *learned-categories*
-                         (cons (list @array-7 (find-the-largest-output @array-8 @reset))
-                               @*learned-categories*))) @input-patterns)))
+                (set-learning-pattern input-pattern)
+                (dotimes [n number]
+                  (reset! learning-cycle-counter (+ 1 @learning-cycle-counter))
+                  (run-one-full-cycle))
 
-(defn pair
-  "pairs the two args together."
-  [one two]
-  (if (or
-       (empty? one)
-       (empty? two))
-    []
-    (cons (list (first one) (first two))
-          (pair (rest one) (rest two)))))
+                (let [new-category (list @array-7 (find-the-largest-output @array-8 @reset))]
+                  (swap! *learned-categories* conj new-category)))
+              @input-patterns))
+  @*learned-categories*)
 
-(defn make-note-decimals [note-patterns]
-  "transforms note patterns into decimal patterns."
-  (if (nil? note-patterns)()
-      (cons (map (fn [x] (* x 0.01)) (first note-patterns))
-            (make-note-decimals (rest note-patterns)))))
+(defn update-f2-stm-storage []
+  (loop [output-index 0]
+    (when (< output-index @number-of-outputs)
+      (loop [input-index 0
+             sum 0.0]
+        (if (< input-index @number-of-inputs)
+          (recur (+ 1 input-index)
+                 (+ sum (* (aget @array-7 input-index)
+                           (aget @wup input-index output-index))))
+          (aset @array-8 output-index sum)))
 
-(defn firstn [number list]
-  "returns the first n of list."
- (if (< (count list) number)(firstn (- number 1) list)
-     (drop-last (- (count list) number) list)))
+      (when (aget @reset output-index) (aset @array-8 output-index -0.1))
+      (recur (+ 1 output-index)))))
+
+(defn update-weights []
+  (let [largest-output (find-the-largest-output @array-8 @reset)]
+    (if (> (check-array-value largest-output) 0.02)
+      (dotimes [increment (- @number-of-inputs 1)]
+
+        (aset @wdown largest-output increment
+              (+
+               (aget @wdown largest-output increment)
+               (* downlr d
+                  (- (aget @array-7 increment) (aget @wdown largest-output increment)))))
+
+        (aset @wup increment largest-output
+              (+
+               (aget @wup increment largest-output)
+               (* uplr d
+                  (- (aget @array-7 increment) (aget @wup increment largest-output)))))))))
+
+(defn competitive-learning-at-f2 []
+  (let [largest-output (find-the-largest-output @array-8 @reset)]
+    (if (> (aget @array-8 largest-output) reset-threshold)
+      (dotimes [output-index (- @number-of-outputs 1)]
+        (if-not (= output-index largest-output)
+          (aset @array-8 output-index 0.0))))))
+
+(defn run-one-full-cycle []
+  (update-f1-stm-arrays)
+  (check-for-f2-reset)
+  (competitive-learning-at-f2)
+  (update-f2-stm-storage)
+  (update-weights)
+  (competitive-learning-at-f2))
+
+(defn zero-activations []
+  (dotimes [input-index (- @number-of-inputs 1)]
+    (aset @array-1 input-index 0.0)
+    (aset @array-2 input-index 0.0)
+    (aset @array-3 input-index 0.0)
+    (aset @array-4 input-index 0.0)
+    (aset @array-5 input-index 0.0)
+    (aset @array-6 input-index 0.0)
+    (aset @array-7 input-index 0.0))
+  (dotimes [output-index (- @number-of-outputs 1)]
+    (aset @array-8 output-index 0.0)
+    (aset @reset output-index true)
+    (aset @reset-counter output-index 0)))
+
+(defn initialize-the-network []
+  (zero-activations)
+  (dotimes [output-index (- @number-of-outputs 1)]
+    (dotimes [input-index (- @number-of-inputs 1)]
+      (aset @wup input-index output-index (floating-point-random 0.05 0.1))
+      (aset @wdown output-index input-index (floating-point-random 0.01 0.03)))
+    (aset @number-of-categories output-index 0)))
 
 (defn initialize-network
-  "initializes the neural network."
   ([number-inputs number-outputs] (initialize-network number-inputs number-outputs nil))
   ([number-inputs number-outputs training-patterns]
-                                        ; check for specified training patterns:
+
       (if training-patterns
-                                        ; make sure the number of input neurons agrees with
-                                        ; the size of the training patterns:
         (if (= (count (first training-patterns)) number-inputs)
           (reset! @input-patterns training-patterns)
-          (print
-           (list
-            "error: bad input to initialize-network. number-inputs should have been"
-            (count (first training-patterns)))))
-                                        ; no specified training patterns: use the default set
-                                        ; defined in this package:
-        (if (not (= (count (first @input-patterns)) number-inputs))
-          (print
-           (list
-            "error: bad input to initialize-network. number-inputs should have been"
-            (count (first @input-patterns))))
-                                        ; specified number of input neurons agrees with
-                                        ; the size of the default training patterns defined
-                                        ; in this package; proceed with defining network data:
+          (println (str "error: bad input to initialize-network. number-inputs should have been" (count (first training-patterns)))))
+
+        (if-not (= (count (first @input-patterns)) number-inputs)
+          (println  (str "error: bad input to initialize-network. number-inputs should have been" (count (first @input-patterns))))
           (do
-                                        ; resets the network
-                                        ; define the network size:
             (reset! number-of-inputs number-inputs)
             (reset! number-of-outputs number-outputs)
-                                        ; array storage allocation:
+
             (reset! input (double-array @number-of-inputs))
             (reset! array-1 (double-array @number-of-inputs))
             (reset! array-2 (double-array @number-of-inputs))
@@ -316,128 +381,20 @@
 
             (reset! wup (make-array Double/TYPE @number-of-inputs @number-of-outputs))
             (reset! wdown (make-array Double/TYPE @number-of-outputs @number-of-inputs))
-                                        ; global variable to remember input patterns and
-                                        ; their associated output category code for plotting
-                                        ; by function art2-postprocess:
             (reset! *learned-categories* nil))))))
 
-(defn update-f2-stm-storage
-  "updates f2 stm storage."
-  []
-  (loop [output-index 0]
-    (when (< output-index @number-of-outputs)
-      (loop [input-index 0
-             sum 0.0]
-        (if (< input-index @number-of-inputs)
-          (recur (+ 1 input-index)
-                 (+ sum (* (aget @array-7 input-index)
-                           (aget @wup input-index output-index))))
-          (aset @array-8 output-index sum)))
-
-      (when (aget @reset output-index) (aset @array-8 output-index -0.1))
-      (recur (+ 1 output-index)))))
-
-(defn update-weights []
-  "updates the weights."
-  (let [largest-output (find-the-largest-output @array-8 @reset)]
-    (if (> (check-array-value largest-output) 0.02)
-      (dotimes [increment (- @number-of-inputs 1)]
-
-        (aset @wdown largest-output increment
-              (+
-               (aget @wdown largest-output increment)
-               (* downlr d
-                  (- (aget @array-7 increment) (aget @wdown largest-output increment)))))
-
-        (aset @wup increment largest-output
-              (+
-               (aget @wup increment largest-output)
-               (* uplr d
-                  (- (aget @array-7 increment) (aget @wup increment largest-output)))))))))
-
-(defn competitive-learning-at-f2 []
-  "competitive learning at slab f2."
-  (let [largest-output (find-the-largest-output @array-8 @reset)]
-    (if (> (aget @array-8 largest-output) reset-threshold)
-      (dotimes [output-index (- @number-of-outputs 1)]
-        (if-not (= output-index largest-output)
-          (aset @array-8 output-index 0.0))))))
-
-(defn translate-pitches [decimal-numbers]
-  "helps transform decimal patterns into note patterns."
-  (map (fn [decimal]
-         (or (nth pitches (position decimal decimals))
-             0.69))
-       decimal-numbers))
-
-(defn translate-to-pitches [decimal-lists]
-  "transforms decimal patterns into note patterns."
-  (mapcat #(translate-pitches %) decimal-lists))
-
-(defn translate-decimals [pitch-numbers]
-  "changes pitches into 0.0 - 1.0 range decimals."
-  (mapcat (fn [pitch]
-            (nth decimals (position pitch pitches))) pitch-numbers))
-
-(defn translate-to-decimals [pitch-lists]
-  "changes lists of pitches into lists of 0.0 - 1.0 range decimals."
-  (mapcat #(translate-decimals %) pitch-lists))
-
-(defn make-events
-  "makes consecutive events out of the pairs of pitches in its arg."
-  ([pitch-groupings] (make-events pitch-groupings 0))
-  ([pitch-groupings ontime]
-     (if (empty? pitch-groupings)
-       []
-       (concat (list (events/make-event ontime (first pitch-groupings) 1))
-               (make-events (rest pitch-groupings)(+ ontime 800))))))
-
-(defn translate-into-events [output-pitch-lists]
-  "returns sontiguous events from its pitch-lists arg."
-  (make-events output-pitch-lists))
-
-(defn find-all
-  "returns all of the patterns associated by cdr with number."
-  [number lists]
-  (filter #(= number (second %)) lists))
-
-(defn count-them [singles numbers]
-  "returns the counts of its first arg in its second arg."
-  (map (fn [single] (count (filter #{single} numbers))) singles))
-
-(defn count-highest
-  "returns the highest occuring pattern in its arg."
-  [lists]
-  (let [sorted-numbers (sort < (map second lists))
-        numbers-only (distinct sorted-numbers)
-        counts (count-them numbers-only sorted-numbers)
-        highest-count (first (sort > counts))
-        highest-position (position highest-count counts)
-        highest-value (nth numbers-only highest-position)]
-    (find-all highest-value lists)))
-
-(defn run-one-full-cycle []
-  "run one full cycle."
-  (update-f1-stm-arrays)
-  (check-for-f2-reset)
-  (competitive-learning-at-f2)
-  (update-f2-stm-storage)
-  (update-weights)
-  (competitive-learning-at-f2))
-
 (defn run-neural-net []
-  "assumes patterns are in decimal form."
   (initialize-network 5 5)
   (initialize-the-network)
-  (learn-the-patterns 50)
 
-  (print "Learned categories: ")
-  (pprint (map second @*learned-categories*))
+  (let [learned-categories (learn-the-patterns 50)
+        input-and-categories-pair (pair @input-patterns (map second learned-categories))
+        highest-5 (take 5 (count-highest input-and-categories-pair))]
 
-  (translate-to-pitches (map first
-                             (firstn 5
-                                     (count-highest
-                                      (pair @input-patterns (map second @*learned-categories*)))))))
+    (print "Learned categories: ")
+    (pprint (map second learned-categories))
+
+    (translate-to-pitches (map first highest-5))))
 
 (defn compose []
   (translate-into-events (run-neural-net)))
