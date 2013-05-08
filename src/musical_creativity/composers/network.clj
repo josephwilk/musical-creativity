@@ -30,7 +30,7 @@
 (def array-6 (atom (double-array @number-of-inputs)))
 (def array-7 (atom (double-array @number-of-inputs)))
 
-(def array-8 (atom (double-array @number-of-outputs)))
+(def output-array (atom (double-array @number-of-outputs)))
 
 (def resetval (atom (double-array 1)))
 (def y (double-array @number-of-outputs))
@@ -151,14 +151,14 @@
          (> n1 0.2)
          (not @skip-reset))
       (if (> @learning-cycle-counter 1)
-        (if (> (aget @array-8 (find-the-largest-output @array-8 @reset)) 0.25)
+        (when (> (aget @output-array (find-the-largest-output @output-array @reset)) 0.25)
           (reset! res (* 3.0 (l2-norm-of-a-vector @array-4 @number-of-inputs))))
         (reset! skip-reset false)))
     (aset @resetval 0 @res)
     (if (> @res (- 1.9 vigilance))
       (do
         (println (str "vigilance reset: " @res "  learning cycle: "  @learning-cycle-counter))
-        (reset! maximum-index (find-the-largest-output @array-8 @reset))
+        (reset! maximum-index (find-the-largest-output @output-array @reset))
         (aset @reset @maximum-index true)
         (aset @reset-counter @maximum-index 80))
       (dotimes [output-index (- @number-of-outputs 1)]
@@ -170,20 +170,20 @@
   (reset! skip-reset false))
 
 (defn check-array-value
-  "returns d if (aref y index) is the largest value in array array-8 and (aref array-8 index) has not been reset."
-  [index]
-  (let [maximum-index (find-the-largest-output @array-8 @reset)]
+  "returns d if (aref y index) is the largest value in array output-array and (aref output-array index) has not been reset."
+  [index array reset]
+  (let [maximum-index (find-the-largest-output array reset)]
     (if (and
          (= index maximum-index)
-         (not (aget @reset maximum-index))
-         (> (aget @array-8 maximum-index) reset-threshold))
+         (not (aget reset maximum-index))
+         (> (aget array maximum-index) reset-threshold))
       d
       0.0)))
 
 (defn- wdown-total-sum-fn [input-index]
   (fn [output-index sum]
     (+ sum
-       (* (check-array-value output-index)
+       (* (check-array-value output-index @output-array @reset)
           (aget @wdown output-index input-index)))))
 
 (defn sigmoid-threshold-function [test]
@@ -253,14 +253,15 @@
           (recur (+ 1 input-index)
                  (+ sum (* (aget @array-7 input-index)
                            (aget @wup input-index output-index))))
-          (aset @array-8 output-index sum)))
+          (aset @output-array output-index sum)))
 
-      (when (aget @reset output-index) (aset @array-8 output-index -0.1))
+      (when (aget @reset output-index)
+        (aset @output-array output-index -0.1))
       (recur (+ 1 output-index)))))
 
 (defn update-weights []
-  (let [largest-output (find-the-largest-output @array-8 @reset)]
-    (if (> (check-array-value largest-output) 0.02)
+  (let [largest-output (find-the-largest-output @output-array @reset)]
+    (if (> (check-array-value largest-output @output-array @reset) 0.02)
       (dotimes [increment (- @number-of-inputs 1)]
 
         (aset @wdown largest-output increment
@@ -276,11 +277,11 @@
                   (- (aget @array-7 increment) (aget @wup increment largest-output)))))))))
 
 (defn competitive-learning-at-f2 []
-  (let [largest-output (find-the-largest-output @array-8 @reset)]
-    (if (> (aget @array-8 largest-output) reset-threshold)
+  (let [largest-output (find-the-largest-output @output-array @reset)]
+    (if (> (aget @output-array largest-output) reset-threshold)
       (dotimes [output-index (- @number-of-outputs 1)]
         (if-not (= output-index largest-output)
-          (aset @array-8 output-index 0.0))))))
+          (aset @output-array output-index 0.0))))))
 
 (defn run-one-full-cycle []
   (update-f1-stm-arrays)
@@ -300,7 +301,7 @@
     (aset @array-6 input-index 0.0)
     (aset @array-7 input-index 0.0))
   (dotimes [output-index (- @number-of-outputs 1)]
-    (aset @array-8 output-index 0.0)
+    (aset @output-array output-index 0.0)
     (aset @reset output-index true)
     (aset @reset-counter output-index 0)))
 
@@ -325,7 +326,9 @@
       (reset! learning-cycle-counter (+ 1 @learning-cycle-counter))
       (run-one-full-cycle))
 
-    (let [new-category (list @array-7 (find-the-largest-output @array-8 @reset))]
+    (let [largest-output (find-the-largest-output @output-array @reset)
+          new-category (list @array-7 largest-output)]
+
       (swap! *learned-categories* conj new-category))))
 
 (defn learn-the-patterns
@@ -357,7 +360,7 @@
 
   (reset! resetval (double-array 1))
 
-  (reset! array-8 (double-array number-outputs))
+  (reset! output-array (double-array number-outputs))
 
   (reset! reset (boolean-array number-outputs false))
 
