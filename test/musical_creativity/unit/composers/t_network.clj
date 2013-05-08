@@ -31,3 +31,6 @@
 
 (fact "check array value"
   (check-array-value 2) => d)
+
+(fact "l2 norm of a vector"
+  (l2-norm-of-a-vector (double-array 5 0.0) 5) => 0.001)
