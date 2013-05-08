@@ -1,7 +1,8 @@
 (ns musical-creativity.composers.network
   (:require
    [clojure.math.numeric-tower :as math]
-   [clojure.pprint :refer :all]))
+   [clojure.pprint :refer :all]
+   [musical-creativity.events :as events]))
 
 (def number-of-outputs (atom 5))
 (def number-of-inputs (atom 5))
@@ -343,24 +344,23 @@
       (dotimes [increment (- @number-of-inputs 1)]
 
         (aset @wdown largest-output increment
-              (+ (aget @wdown largest-output increment)
-                 (* downlr d
-                    (- (aget @array-7 increment) (aget @wdown largest-output increment)))))
+              (+
+               (aget @wdown largest-output increment)
+               (* downlr d
+                  (- (aget @array-7 increment) (aget @wdown largest-output increment)))))
 
         (aset @wup increment largest-output
               (+
                (aget @wup increment largest-output)
-               (*
-                uplr
-                d
-                (- (aget @array-7 increment) (aget @wup increment largest-output)))))))))
+               (* uplr d
+                  (- (aget @array-7 increment) (aget @wup increment largest-output)))))))))
 
 (defn competitive-learning-at-f2 []
   "competitive learning at slab f2."
   (let [largest-output (find-the-largest-output @array-8 @reset)]
     (if (> (aget @array-8 largest-output) reset-threshold)
       (dotimes [output-index (- @number-of-outputs 1)]
-        (if (not (= output-index largest-output))
+        (if-not (= output-index largest-output)
           (aset @array-8 output-index 0.0))))))
 
 (defn translate-pitches [decimal-numbers]
@@ -383,19 +383,13 @@
   "changes lists of pitches into lists of 0.0 - 1.0 range decimals."
   (mapcat #(translate-decimals %) pitch-lists))
 
-(defn make-event [ontime pitch channel]
-  "creates an event based on args."
-  {:time ontime
-   :pitch pitch
-   :channel channel})
-
 (defn make-events
   "makes consecutive events out of the pairs of pitches in its arg."
   ([pitch-groupings] (make-events pitch-groupings 0))
   ([pitch-groupings ontime]
      (if (empty? pitch-groupings)
        []
-       (concat (list (make-event ontime (first pitch-groupings) 1))
+       (concat (list (events/make-event ontime (first pitch-groupings) 1))
                (make-events (rest pitch-groupings)(+ ontime 800))))))
 
 (defn translate-into-events [output-pitch-lists]
