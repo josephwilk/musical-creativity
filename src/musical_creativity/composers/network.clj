@@ -43,8 +43,6 @@
 (def wup   (atom (make-array Double/TYPE @number-of-inputs @number-of-outputs)))
 (def wdown (atom (make-array Double/TYPE @number-of-inputs @number-of-outputs)))
 
-(def *learned-categories* (atom []))
-
 (def learning-cycle-counter (atom 0))
 (def maximum-index (atom nil))
 
@@ -328,15 +326,14 @@
       (run-one-full-cycle))
 
     (let [largest-output (find-the-largest-output @output-array @reset)
-          new-category (list @array-7 largest-output)]
-
-      (swap! *learned-categories* conj new-category))))
+          new-category (list (vec @array-7) largest-output)]
+      new-category)))
 
 (defn learn-the-patterns
   "cycles through all training patterns once."
   [input-patterns number]
-  (doall (map (learn-fn number) input-patterns))
-  @*learned-categories*)
+  (doall
+    (map (learn-fn number) input-patterns)))
 
 (defn initialize-the-network []
   (zero-activations)
@@ -370,13 +367,11 @@
   (reset! number-of-categories (int-array number-outputs))
 
   (reset! wup (make-array Double/TYPE number-inputs number-outputs))
-  (reset! wdown (make-array Double/TYPE number-outputs number-inputs))
-  (reset! *learned-categories* nil))
+  (reset! wdown (make-array Double/TYPE number-outputs number-inputs)))
 
 (defn initialize-network
   ([number-inputs number-outputs] (initialize-network number-inputs number-outputs nil))
   ([number-inputs number-outputs training-patterns]
-
       (if training-patterns
         (if (= number-inputs (count (first training-patterns)))
           (reset! @input-patterns training-patterns)
