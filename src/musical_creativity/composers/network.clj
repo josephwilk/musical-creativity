@@ -11,9 +11,6 @@
                            (0.0 0.1 0.2 0.25 0.2) (0.25 0.2 0.1 0.2 0.25) (0.45 0.35 0.25 0.2 0.25) (0.0 0.1 0.2 0.25 0.2)
                            (0.0 0.0 0.1 0.2 0.25))))
 
-(def max1 (atom nil))
-(def max2 (atom nil))
-
 (def array-1 (atom (double-array @number-of-inputs)))
 (def array-2 (atom (double-array @number-of-inputs)))
 (def array-3 (atom (double-array @number-of-inputs)))
@@ -183,6 +180,19 @@
     test
     0.0))
 
+(defn find-maxes-in [a1 a2]
+  (loop [input-number-index 0
+         max1 -1000.0
+         max2 -1000.0]
+    (if (>= input-number-index @number-of-inputs)
+      [max1 max2]
+      (do
+        (let [ new-max1 (if (< max1 (aget a1 input-number-index)) (aget a1 input-number-index) max1)
+              new-max2 (if (< max2 (aget a2 input-number-index)) (aget a2 input-number-index) max1)]
+             (recur (+ 1 input-number-index)
+                    new-max1
+                    new-max2))))))
+
 (defn update-f1-stm-arrays []
   ; calculate array-7 from array-5 input and backwards feed back:
   (doall (map (fn [input-index]
@@ -216,17 +226,12 @@
     (dotimes [input-number-index (- @number-of-inputs 1)]
       (aset @array-2 input-number-index (/ (aget @array-1 input-number-index) norm))))
 
-  ; calculate reset array-4 from eq. 20:
-  (reset! max1 -1000.0)
-  (reset! max2 -1000.0)
-  (dotimes [input-number-index (- @number-of-inputs 1)]
-    (when (< @max1 (aget @array-5 input-number-index)) (reset! max1 (aget @array-5 input-number-index)))
-    (when (< @max2 (aget @array-7 input-number-index)) (reset! max2 (aget @array-7 input-number-index))))
-  (reset! max1 (+ @max1 0.001))
-  (reset! max2 (+ @max2 0.001))
-  (dotimes [input-number-index (- @number-of-inputs 1)]
-    (aset @array-4 input-number-index
-          (- (/ (aget @array-5 input-number-index) @max1) (/ (aget @array-7 input-number-index) @max2)))))
+  (let [[max1 max2] (find-maxes-in @array-5 @array-7)
+        max1 (+ max1 0.001)
+        max2 (+ max2 0.001)]
+    (dotimes [input-number-index (- @number-of-inputs 1)]
+      (aset @array-4 input-number-index
+            (- (/ (aget @array-5 input-number-index) max1) (/ (aget @array-7 input-number-index) max2))))))
 
 (declare run-one-full-cycle)
 
