@@ -21,7 +21,7 @@
 (def default-illegal-parallel-motions  '((7 7) (12 12) (19 19) (24 24)))
 (def default-illegal-double-skips      '((3 3) (3 4) (3 -3) (3 -4) (-3 -3) (-3 -4) (-3 3) (-3 4)
                                            (4 3) (4 4) (4 -3) (4 -4) (-4 -3) (-4 -4) (-4 3) (-4 4)))
-(def default-direct-fifths-and-octaves '((9 7) (8 7) (21 19) (20 19))))
+(def default-direct-fifths-and-octaves '((9 7) (8 7) (21 19) (20 19)))
 
 (def illegal-verticals         (atom []))
 (def illegal-parallel-motions  (atom []))
