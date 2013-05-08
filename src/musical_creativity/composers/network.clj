@@ -122,10 +122,8 @@
 (defn make-events
   ([pitch-groupings] (make-events pitch-groupings 0))
   ([pitch-groupings ontime]
-     (if (empty? pitch-groupings)
-       []
-       (concat (list (events/make-event ontime (first pitch-groupings) 1))
-               (make-events (rest pitch-groupings)(+ ontime 800))))))
+
+     (events/make pitch-groupings 0 800)))
 
 (defn translate-into-events [output-pitch-lists]
   (make-events output-pitch-lists))
@@ -395,11 +393,9 @@
   (let [learned-categories (learn-the-patterns input-patterns 50)
         input-and-categories-pair (map vector input-patterns (map second learned-categories))
         highest-5 (take 5 (count-highest input-and-categories-pair))]
-    (print "Learned categories: ")
-    (pprint (map second learned-categories))
     (println highest-5)
-
     (translate-to-pitches (map first highest-5))))
 
 (defn compose []
-  (translate-into-events (run-neural-net @input-patterns)))
+  (let [pitch-groupings (run-neural-net @input-patterns)]
+    (events/make pitch-groupings 0 800)))
