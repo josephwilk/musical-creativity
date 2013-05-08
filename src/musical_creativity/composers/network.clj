@@ -48,7 +48,7 @@
 (def learning-cycle-counter (atom 0))
 (def maximum-index (atom nil))
 
-(def skipreset (atom nil))
+(def skip-reset (atom false))
 
 (def input (atom (double-array @number-of-inputs)))
 (def decimals '(0.0 0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75
@@ -149,11 +149,11 @@
   (let [n1 (+ (l2-norm-of-a-vector @array-7 @number-of-inputs) e)]
     (if (and
          (> n1 0.2)
-         (not skipreset))
+         (not @skip-reset))
       (if (> @learning-cycle-counter 1)
         (if (> (aget @array-8 (find-the-largest-output @array-8 @reset)) 0.25)
           (reset! res (* 3.0 (l2-norm-of-a-vector @array-4 @number-of-inputs))))
-        (reset! skipreset false)))
+        (reset! skip-reset false)))
     (aset @resetval 0 @res)
     (if (> @res (- 1.9 vigilance))
       (do
@@ -165,9 +165,9 @@
         (aset @reset-counter output-index (- (aget @reset-counter output-index) 1))
         (when (< (aget @reset-counter output-index) 0)
           (when (aget @reset output-index)
-            (reset! skipreset true))
+            (reset! skip-reset true))
           (aset @reset output-index false)))))
-  (reset! skipreset false))
+  (reset! skip-reset false))
 
 (defn check-array-value
   "returns d if (aref y index) is the largest value in array array-8 and (aref array-8 index) has not been reset."
