@@ -130,29 +130,32 @@
 (defn translate-into-events [output-pitch-lists]
   (make-events output-pitch-lists))
 
+(defn total-sum [vector]
+  (let [vector-length (count vector)]
+    (loop [sum 0.0
+           length-index 0]
+      (if (>= length-index vector-length)
+        sum
+        (recur (+ sum (* (aget vector length-index)
+                         (aget vector length-index)))
+               (+ length-index 1) )))))
+
 (defn l2-norm-of-a-vector
-  [vector vector-length]
-  (let [total-sum
-        (loop [sum 0.0
-               length-index 0]
-          (if (>= length-index vector-length)
-            sum
-            (recur (+ sum (* (aget vector length-index)
-                             (aget vector length-index)))
-                   (+ vector-length 1) )))]
+  [vector]
+  (let [total-sum (total-sum vector)]
     (+ (math/sqrt total-sum) 0.001)))
 
 (def res (atom 0.0))
 
 (defn check-for-f2-reset []
   (reset! res 0.0)
-  (let [n1 (+ (l2-norm-of-a-vector @array-7 @number-of-inputs) e)]
+  (let [n1 (+ (l2-norm-of-a-vector @array-7) e)]
     (if (and
          (> n1 0.2)
          (not @skip-reset))
       (if (> @learning-cycle-counter 1)
         (when (> (aget @output-array (find-the-largest-output @output-array @reset)) 0.25)
-          (reset! res (* 3.0 (l2-norm-of-a-vector @array-4 @number-of-inputs))))
+          (reset! res (* 3.0 (l2-norm-of-a-vector @array-4))))
         (reset! skip-reset false)))
     (aset @resetval 0 @res)
     (if (> @res (- 1.9 vigilance))
@@ -199,7 +202,7 @@
       [max1 max2]
       (do
         (let [new-max1 (if (< max1 (aget a1 input-index)) (aget a1 input-index) max1)
-              new-max2 (if (< max2 (aget a2 input-index)) (aget a2 input-index) max1)]
+              new-max2 (if (< max2 (aget a2 input-index)) (aget a2 input-index) max2)]
              (recur (+ 1 input-index)
                     new-max1
                     new-max2))))))
@@ -211,12 +214,12 @@
                 (reduce (wdown-total-sum-fn input-index) (range 0 (- @number-of-outputs 1)))]
             (aset @array-7 input-index (+ (aget @array-5 input-index) total-sum))))
         (range 0 (- @number-of-inputs 1))))
-  (let [norm (+ (l2-norm-of-a-vector @array-7 @number-of-inputs) e)]
+  (let [norm (+ (l2-norm-of-a-vector @array-7) e)]
     (doall (map (fn [input-index]
                   (aset @array-6 input-index (/ (aget @array-7 input-index) norm)))
                 (range 0 (- @number-of-inputs 1)))))
 
-  (let [norm (l2-norm-of-a-vector @array-3 @number-of-inputs)]
+  (let [norm (l2-norm-of-a-vector @array-3)]
     (doall (map (fn [input-index]
                   (aset @array-5 input-index (/ (aget @array-3 input-index) norm)))
                 (range 0 (- @number-of-inputs 1))))
@@ -230,7 +233,7 @@
       (aset @array-2 input-index (/ (aget @array-1 input-index) norm))))
 
   ; update array-2 using eq. 9:
-  (let [norm (+ (l2-norm-of-a-vector @array-1 @number-of-inputs) e)]
+  (let [norm (+ (l2-norm-of-a-vector @array-1) e)]
     (dotimes [input-index (- @number-of-inputs 1)]
       (aset @array-2 input-index (/ (aget @array-1 input-index) norm))))
 
@@ -263,7 +266,6 @@
   (let [largest-output (find-the-largest-output @output-array @reset)]
     (if (> (check-array-value largest-output @output-array @reset) 0.02)
       (dotimes [increment (- @number-of-inputs 1)]
-
         (aset @wdown largest-output increment
               (+
                (aget @wdown largest-output increment)

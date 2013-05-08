@@ -47,7 +47,7 @@
   (check-array-value 0 (double-array 4 1.0) (boolean-array 4 false)) => d)
 
 (fact "l2 norm of a vector"
-  (l2-norm-of-a-vector (double-array 5 0.0) 5) => 0.001)
+  (l2-norm-of-a-vector (double-array 5 0.0)) => 0.001)
 
 (fact "sigmoid-threshold-function"
   (sigmoid-threshold-function 0.6302290114489392) =>  0.6302290114489392)
