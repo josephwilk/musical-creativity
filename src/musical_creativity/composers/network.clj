@@ -79,6 +79,9 @@
   [number lists]
   (filter #(= number (second %)) lists))
 
+(defn count-them [singles numbers]
+  (map (fn [single] (count (filter #{single} numbers))) singles))
+
 (defn count-highest
   "returns the highest occuring pattern in its arg."
   [lists]
@@ -89,9 +92,6 @@
         highest-position (position highest-count counts)
         highest-value (nth numbers-only highest-position)]
     (find-all highest-value lists)))
-
-(defn count-them [singles numbers]
-  (map (fn [single] (count (filter #{single} numbers))) singles))
 
 (defn find-the-largest-output
   [array reset]
@@ -174,20 +174,6 @@
             (aset @reset output-index false))))))
   (reset! skipreset nil))
 
-(defn set-learning-pattern
-  "sets up a learning pattern in the input neurons."
-  [input-pattern]
-  (let [length (count input-pattern)]
-    (if (not (= length @number-of-inputs))
-      (print (list "error in set-learning-pattern input:" input-pattern))
-      (do
-        (reset! learning-cycle-counter 0)
-        (zero-activations)
-        (doall
-         (map-indexed (fn [index item]
-                        (aset @input index (+ item (floating-point-random -0.08 0.08))))
-                      input-pattern))))))
-
 (defn check-array-value
   "returns d if (aref y index) is the largest value in array array-8 and (aref array-8 index) has not been reset."
   [index]
@@ -263,20 +249,6 @@
 
 (declare run-one-full-cycle)
 
-(defn learn-the-patterns
-  "cycles through all training patterns once."
-  [number]
-  (doall (map (fn [input-pattern]
-                (set-learning-pattern input-pattern)
-                (dotimes [n number]
-                  (reset! learning-cycle-counter (+ 1 @learning-cycle-counter))
-                  (run-one-full-cycle))
-
-                (let [new-category (list @array-7 (find-the-largest-output @array-8 @reset))]
-                  (swap! *learned-categories* conj new-category)))
-              @input-patterns))
-  @*learned-categories*)
-
 (defn update-f2-stm-storage []
   (loop [output-index 0]
     (when (< output-index @number-of-outputs)
@@ -336,6 +308,34 @@
     (aset @array-8 output-index 0.0)
     (aset @reset output-index true)
     (aset @reset-counter output-index 0)))
+
+(defn set-learning-pattern
+  "sets up a learning pattern in the input neurons."
+  [input-pattern]
+  (let [length (count input-pattern)]
+    (if (not (= length @number-of-inputs))
+      (print (list "error in set-learning-pattern input:" input-pattern))
+      (do
+        (reset! learning-cycle-counter 0)
+        (zero-activations)
+        (doall
+         (map-indexed (fn [index item]
+                        (aset @input index (+ item (floating-point-random -0.08 0.08))))
+                      input-pattern))))))
+
+(defn learn-the-patterns
+  "cycles through all training patterns once."
+  [number]
+  (doall (map (fn [input-pattern]
+                (set-learning-pattern input-pattern)
+                (dotimes [n number]
+                  (reset! learning-cycle-counter (+ 1 @learning-cycle-counter))
+                  (run-one-full-cycle))
+
+                (let [new-category (list @array-7 (find-the-largest-output @array-8 @reset))]
+                  (swap! *learned-categories* conj new-category)))
+              @input-patterns))
+  @*learned-categories*)
 
 (defn initialize-the-network []
   (zero-activations)
