@@ -145,17 +145,18 @@
   (let [total-sum (total-sum vector)]
     (+ (math/sqrt total-sum) 0.001)))
 
-(def res (atom 0.0))
+(defn calculate-ref [_]
+  (* 3.0 (l2-norm-of-a-vector @array-4)))
 
 (defn check-for-f2-reset []
-  (reset! res 0.0)
-  (let [n1 (+ (l2-norm-of-a-vector @array-7) e)]
+  (let [res (ref 0.0)
+        n1 (+ (l2-norm-of-a-vector @array-7) e)]
     (if (and
          (> n1 0.2)
          (not @skip-reset))
       (if (> @learning-cycle-counter 1)
         (when (> (aget @output-array (find-the-largest-output @output-array @reset)) 0.25)
-          (reset! res (* 3.0 (l2-norm-of-a-vector @array-4))))
+          (dosync (alter res calculate-ref)))
         (reset! skip-reset false)))
     (aset @resetval 0 @res)
     (if (> @res (- 1.9 vigilance))
@@ -169,8 +170,8 @@
         (when (< (aget @reset-counter output-index) 0)
           (when (aget @reset output-index)
             (reset! skip-reset true))
-          (aset @reset output-index false)))))
-  (reset! skip-reset false))
+          (aset @reset output-index false))))
+    (reset! skip-reset false)))
 
 (defn check-array-value
   "returns d if (aref y index) is the largest value in array output-array and (aref output-array index) has not been reset."
