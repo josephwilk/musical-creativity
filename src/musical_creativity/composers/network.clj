@@ -61,36 +61,21 @@
 (defn position [item list]
   (.indexOf list item))
 
-(defn floating-point-random
+(defn random-floating-point
   [low high]
   (let [the-range (- high low)]
     (+ (* (/ (rand-int 1000) 1000.0) the-range) low)))
-
-(defn pair
-  [one two]
-  (if (or
-       (empty? one)
-       (empty? two))
-    []
-    (cons (list (first one) (first two))
-          (pair (rest one) (rest two)))))
 
 (defn find-all
   [number lists]
   (filter #(= number (second %)) lists))
 
-(defn count-them [singles numbers]
-  (map (fn [single] (count (filter #{single} numbers))) singles))
-
 (defn count-highest
   "returns the highest occuring pattern in its arg."
   [lists]
-  (let [sorted-numbers (sort < (map second lists))
-        numbers-only (distinct sorted-numbers)
-        counts (count-them numbers-only sorted-numbers)
-        highest-count (first (sort > counts))
-        highest-position (position highest-count counts)
-        highest-value (nth numbers-only highest-position)]
+  (let [counts (frequencies (map second lists))
+        sorted-counts (sort #(> (second %1) (second %2)) counts)
+        highest-value (ffirst sorted-counts)]
     (find-all highest-value lists)))
 
 (defn find-the-largest-output
@@ -104,9 +89,9 @@
                        [max-pos max-value])) array-with-indexes))))
 
 (defn make-note-decimals [note-patterns]
-  (if (nil? note-patterns)()
-      (cons (map (fn [x] (* x 0.01)) (first note-patterns))
-            (make-note-decimals (rest note-patterns)))))
+  (map (fn [patterns]
+         (map #(* % 0.01)  patterns))
+       note-patterns))
 
 (defn translate-pitches [decimal-numbers]
   (map (fn [decimal]
@@ -115,14 +100,14 @@
        decimal-numbers))
 
 (defn translate-to-pitches [decimal-lists]
-  (mapcat #(translate-pitches %) decimal-lists))
+  (mapcat translate-pitches decimal-lists))
 
 (defn translate-decimals [pitch-numbers]
   (mapcat (fn [pitch]
             (nth decimals (position pitch pitches))) pitch-numbers))
 
 (defn translate-to-decimals [pitch-lists]
-  (mapcat #(translate-decimals %) pitch-lists))
+  (mapcat translate-decimals pitch-lists))
 
 (defn make-events
   ([pitch-groupings] (make-events pitch-groupings 0))
@@ -136,8 +121,7 @@
   "returns sontiguous events from its pitch-lists arg."
   (make-events output-pitch-lists))
 
-(defn vector-l2-norm
-  "l2 norm of a vector."
+(defn l2-norm-of-a-vector
   [vector vector-length]
   (let [total-sum
         (loop [sum 0.0
@@ -151,14 +135,14 @@
 
 (defn check-for-f2-reset []
   (let [res 0.0
-        n1 (+ (vector-l2-norm @array-7 @number-of-inputs) e)]
+        n1 (+ (l2-norm-of-a-vector @array-7 @number-of-inputs) e)]
     (if (and
          (> n1 0.2)
          (not skipreset))
       (if (> @learning-cycle-counter 1)
         (if (> (aget @array-8 (find-the-largest-output @array-8 @reset)) 0.25)
-          (reset! res (* 3.0 (vector-l2-norm @array-4 @number-of-inputs))))  ; was 3.0
-        (reset! skipreset nil)))
+          (reset! res (* 3.0 (l2-norm-of-a-vector @array-4 @number-of-inputs))))
+        (reset! skipreset false)))
     (aset @resetval 0 res)
     (if (> res (- 1.9 vigilance))
       (do
@@ -168,11 +152,10 @@
         (aset @reset-counter @maximum-index 80))
       (dotimes [output-index (- @number-of-outputs 1)]
         (aset @reset-counter output-index (- (aget @reset-counter output-index) 1))
-        (if (< (aget @reset-counter output-index) 0)
-          (do
-            (if (aget @reset output-index)  (reset! skipreset true))
-            (aset @reset output-index false))))))
-  (reset! skipreset nil))
+        (when (< (aget @reset-counter output-index) 0)
+          (when (aget @reset output-index)  (reset! skipreset true))
+          (aset @reset output-index false)))))
+  (reset! skipreset false))
 
 (defn check-array-value
   "returns d if (aref y index) is the largest value in array array-8 and (aref array-8 index) has not been reset."
@@ -216,12 +199,12 @@
                   (aset @array-7 input-index (+ (aget @array-5 input-index) total-sum))))
               (range 0 (- @number-of-inputs 1))))
 
-  (let [norm (+ (vector-l2-norm @array-7 @number-of-inputs) e)]
+  (let [norm (+ (l2-norm-of-a-vector @array-7 @number-of-inputs) e)]
     (doall (map (fn [input-index]
                   (aset @array-6 input-index (/ (aget @array-7 input-index) norm)))
                 (range 0 (- @number-of-inputs 1)))))
 
-  (let [norm (vector-l2-norm @array-3 @number-of-inputs)]
+  (let [norm (l2-norm-of-a-vector @array-3 @number-of-inputs)]
     (doall (map (fn [input-index]
                   (aset @array-5 input-index (/ (aget @array-3 input-index) norm)))
                 (range 0 (- @number-of-inputs 1))))
@@ -235,7 +218,7 @@
       (aset @array-2 input-index (/ (aget @array-1 input-index) norm))))
 
   ; update array-2 using eq. 9:
-  (let [norm (+ (vector-l2-norm @array-1 @number-of-inputs) e)]
+  (let [norm (+ (l2-norm-of-a-vector @array-1 @number-of-inputs) e)]
     (dotimes [input-index (- @number-of-inputs 1)]
       (aset @array-2 input-index (/ (aget @array-1 input-index) norm))))
 
@@ -320,12 +303,12 @@
         (zero-activations)
         (doall
          (map-indexed (fn [index item]
-                        (aset @input index (+ item (floating-point-random -0.08 0.08))))
+                        (aset @input index (+ item (random-floating-point -0.08 0.08))))
                       input-pattern))))))
 
 (defn learn-the-patterns
   "cycles through all training patterns once."
-  [number]
+  [input-patterns number]
   (doall (map (fn [input-pattern]
                 (set-learning-pattern input-pattern)
                 (dotimes [n number]
@@ -334,61 +317,63 @@
 
                 (let [new-category (list @array-7 (find-the-largest-output @array-8 @reset))]
                   (swap! *learned-categories* conj new-category)))
-              @input-patterns))
+              input-patterns))
   @*learned-categories*)
 
 (defn initialize-the-network []
   (zero-activations)
   (dotimes [output-index (- @number-of-outputs 1)]
     (dotimes [input-index (- @number-of-inputs 1)]
-      (aset @wup input-index output-index (floating-point-random 0.05 0.1))
-      (aset @wdown output-index input-index (floating-point-random 0.01 0.03)))
+      (aset @wup input-index output-index (random-floating-point 0.05 0.1))
+      (aset @wdown output-index input-index (random-floating-point 0.01 0.03)))
     (aset @number-of-categories output-index 0)))
+
+(defn reset-all! [number-inputs number-outputs]
+  (reset! number-of-inputs number-inputs)
+  (reset! number-of-outputs number-outputs)
+
+  (reset! input (double-array number-inputs))
+  (reset! array-1 (double-array number-inputs))
+  (reset! array-2 (double-array number-inputs))
+  (reset! array-3 (double-array number-inputs))
+  (reset! array-4 (double-array number-inputs))
+  (reset! array-5 (double-array number-inputs))
+  (reset! array-6 (double-array number-inputs))
+  (reset! array-7 (double-array number-inputs))
+
+  (reset! resetval (double-array 1))
+
+  (reset! array-8 (double-array number-outputs))
+
+  (reset! reset (boolean-array number-outputs false))
+
+  (reset! reset-counter (int-array number-outputs))
+
+  (reset! number-of-categories (int-array number-outputs))
+
+  (reset! wup (make-array Double/TYPE number-inputs number-outputs))
+  (reset! wdown (make-array Double/TYPE number-outputs number-inputs))
+  (reset! *learned-categories* nil))
 
 (defn initialize-network
   ([number-inputs number-outputs] (initialize-network number-inputs number-outputs nil))
   ([number-inputs number-outputs training-patterns]
 
       (if training-patterns
-        (if (= (count (first training-patterns)) number-inputs)
+        (if (= number-inputs (count (first training-patterns)))
           (reset! @input-patterns training-patterns)
           (println (str "error: bad input to initialize-network. number-inputs should have been" (count (first training-patterns)))))
 
-        (if-not (= (count (first @input-patterns)) number-inputs)
+        (if-not (= number-inputs (count (first @input-patterns)))
           (println  (str "error: bad input to initialize-network. number-inputs should have been" (count (first @input-patterns))))
-          (do
-            (reset! number-of-inputs number-inputs)
-            (reset! number-of-outputs number-outputs)
+          (reset-all! number-inputs number-outputs)))))
 
-            (reset! input (double-array @number-of-inputs))
-            (reset! array-1 (double-array @number-of-inputs))
-            (reset! array-2 (double-array @number-of-inputs))
-            (reset! array-3 (double-array @number-of-inputs))
-            (reset! array-4 (double-array @number-of-inputs))
-            (reset! array-5 (double-array @number-of-inputs))
-            (reset! array-6 (double-array @number-of-inputs))
-            (reset! array-7 (double-array @number-of-inputs))
-
-            (reset! resetval (double-array 1))
-
-            (reset! array-8 (double-array @number-of-outputs))
-
-            (reset! reset (boolean-array @number-of-outputs false))
-
-            (reset! reset-counter (int-array @number-of-outputs))
-
-            (reset! number-of-categories (int-array @number-of-outputs))
-
-            (reset! wup (make-array Double/TYPE @number-of-inputs @number-of-outputs))
-            (reset! wdown (make-array Double/TYPE @number-of-outputs @number-of-inputs))
-            (reset! *learned-categories* nil))))))
-
-(defn run-neural-net []
+(defn run-neural-net [input-patterns]
   (initialize-network 5 5)
   (initialize-the-network)
 
-  (let [learned-categories (learn-the-patterns 50)
-        input-and-categories-pair (pair @input-patterns (map second learned-categories))
+  (let [learned-categories (learn-the-patterns input-patterns 50)
+        input-and-categories-pair (map vector input-patterns (map second learned-categories))
         highest-5 (take 5 (count-highest input-and-categories-pair))]
 
     (print "Learned categories: ")
@@ -397,4 +382,4 @@
     (translate-to-pitches (map first highest-5))))
 
 (defn compose []
-  (translate-into-events (run-neural-net)))
+  (translate-into-events (run-neural-net @input-patterns)))

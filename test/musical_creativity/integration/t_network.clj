@@ -4,4 +4,4 @@
    [musical-creativity.composers.network :refer :all]))
 
 (fact "it should compose musical events"
-  (count (run-neural-net)) => 25)
+  (count (compose)) => 25)
