@@ -128,7 +128,6 @@
                (make-events (rest pitch-groupings)(+ ontime 800))))))
 
 (defn translate-into-events [output-pitch-lists]
-  "returns sontiguous events from its pitch-lists arg."
   (make-events output-pitch-lists))
 
 (defn l2-norm-of-a-vector
@@ -143,9 +142,11 @@
                    (+ vector-length 1) )))]
     (+ (math/sqrt total-sum) 0.001)))
 
+(def res (atom 0.0))
+
 (defn check-for-f2-reset []
-  (let [res 0.0
-        n1 (+ (l2-norm-of-a-vector @array-7 @number-of-inputs) e)]
+  (reset! res 0.0)
+  (let [n1 (+ (l2-norm-of-a-vector @array-7 @number-of-inputs) e)]
     (if (and
          (> n1 0.2)
          (not skipreset))
@@ -153,17 +154,18 @@
         (if (> (aget @array-8 (find-the-largest-output @array-8 @reset)) 0.25)
           (reset! res (* 3.0 (l2-norm-of-a-vector @array-4 @number-of-inputs))))
         (reset! skipreset false)))
-    (aset @resetval 0 res)
-    (if (> res (- 1.9 vigilance))
+    (aset @resetval 0 @res)
+    (if (> @res (- 1.9 vigilance))
       (do
-        (println (str "vigilance reset: " res "  learning cycle: "  @learning-cycle-counter))
+        (println (str "vigilance reset: " @res "  learning cycle: "  @learning-cycle-counter))
         (reset! maximum-index (find-the-largest-output @array-8 @reset))
         (aset @reset @maximum-index true)
         (aset @reset-counter @maximum-index 80))
       (dotimes [output-index (- @number-of-outputs 1)]
         (aset @reset-counter output-index (- (aget @reset-counter output-index) 1))
         (when (< (aget @reset-counter output-index) 0)
-          (when (aget @reset output-index)  (reset! skipreset true))
+          (when (aget @reset output-index)
+            (reset! skipreset true))
           (aset @reset output-index false)))))
   (reset! skipreset false))
 
@@ -203,12 +205,12 @@
                     new-max2))))))
 
 (defn update-f1-stm-arrays []
-  (doall (map (fn [input-index]
-                (let [total-sum
-                      (reduce (wdown-total-sum-fn input-index) (range 0 (- @number-of-outputs 1)))]
-                  (aset @array-7 input-index (+ (aget @array-5 input-index) total-sum))))
-              (range 0 (- @number-of-inputs 1))))
-
+  (doall
+   (map (fn [input-index]
+          (let [total-sum
+                (reduce (wdown-total-sum-fn input-index) (range 0 (- @number-of-outputs 1)))]
+            (aset @array-7 input-index (+ (aget @array-5 input-index) total-sum))))
+        (range 0 (- @number-of-inputs 1))))
   (let [norm (+ (l2-norm-of-a-vector @array-7 @number-of-inputs) e)]
     (doall (map (fn [input-index]
                   (aset @array-6 input-index (/ (aget @array-7 input-index) norm)))
@@ -306,7 +308,7 @@
   "sets up a learning pattern in the input neurons."
   [input-pattern]
   (let [length (count input-pattern)]
-    (if (not (= length @number-of-inputs))
+    (if-not (= length @number-of-inputs)
       (print (list "error in set-learning-pattern input:" input-pattern))
       (do
         (reset! learning-cycle-counter 0)
@@ -316,18 +318,20 @@
                         (aset @input index (+ item (random-floating-point -0.08 0.08))))
                       input-pattern))))))
 
+(defn learn-fn [number]
+  (fn [input-pattern]
+    (set-learning-pattern input-pattern)
+    (dotimes [n number]
+      (reset! learning-cycle-counter (+ 1 @learning-cycle-counter))
+      (run-one-full-cycle))
+
+    (let [new-category (list @array-7 (find-the-largest-output @array-8 @reset))]
+      (swap! *learned-categories* conj new-category))))
+
 (defn learn-the-patterns
   "cycles through all training patterns once."
   [input-patterns number]
-  (doall (map (fn [input-pattern]
-                (set-learning-pattern input-pattern)
-                (dotimes [n number]
-                  (reset! learning-cycle-counter (+ 1 @learning-cycle-counter))
-                  (run-one-full-cycle))
-
-                (let [new-category (list @array-7 (find-the-largest-output @array-8 @reset))]
-                  (swap! *learned-categories* conj new-category)))
-              input-patterns))
+  (doall (map (learn-fn number) input-patterns))
   @*learned-categories*)
 
 (defn initialize-the-network []
@@ -385,9 +389,9 @@
   (let [learned-categories (learn-the-patterns input-patterns 50)
         input-and-categories-pair (map vector input-patterns (map second learned-categories))
         highest-5 (take 5 (count-highest input-and-categories-pair))]
-
     (print "Learned categories: ")
     (pprint (map second learned-categories))
+    (println highest-5)
 
     (translate-to-pitches (map first highest-5))))
 
