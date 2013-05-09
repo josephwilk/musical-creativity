@@ -5,6 +5,8 @@
 
 (def *composer* 'bach)
 
+(def *composer-rules* (atom {}))
+
 (def *rules-storage* (atom ()))
 
 (def *mix-names* ())
@@ -51,7 +53,7 @@
 
 (defn implode [list]
 ;TODO: write me
-)
+  list)
 
 (defn explode [list]
   ;:TODO
@@ -62,11 +64,11 @@
 
 (defn my-push [stuff place-name]
   "A simple synonym for push."
-  (set place-name (cons stuff (eval place-name))))
+  (reset! place-name (cons stuff (eval place-name))))
 
 (defn make-name [db-name counter]
-  "Simple synonym for imploding the dtabase name and number."
-  (implode (cons db-name  (list '- counter))))
+  "Simple synonym for imploding the database name and number."
+  (symbol (str (name  db-name)  "-" counter)))
 
 (defn hyphenate [note-numbers]
   "Hyphenates the numbers in its arg."
@@ -155,7 +157,7 @@
 (defn get-rules1 [start-notes destination-notes name]
   "Does the grunt work for get-rules."
   (if (or (empty? (rest start-notes))(empty? (rest destination-notes)))
-    (reverse *rules-storage*)
+    (reverse @*rules-storage*)
     (do
       (reset! *rules-storage* (concat (reverse (get-rule (- (first destination-notes) (first start-notes))
                                                        (first start-notes) start-notes destination-notes name)) *rules-storage*))
@@ -321,37 +323,42 @@
   "Loads and makes proper objects out of the db-names arg."
   ([db-names] (create-complete-database db-names 1))
   ([db-names counter]
-     (if (empty? db-names) true
-         (do (let [beats (remove-nils (collect-beats (set-to-zero
-                                                      (sort-by-first-element (chorale/find-db (first db-names))))))
-                   name nil
-                   start true]
-               (loop [beats beats
-                      counter counter
-                      start true]
-                 (if (empty? beats)
-                   (println "DONE")
-                   (do
-                     (reset! name (make-name (first db-names) counter))
-                     (let [start-notes (get-onset-notes (first beats))
-                           destination-notes (get-onset-notes (second beats))
-                           events (first beats)]
-                       (set name
-                            (make-instance 'beat-it { :start-notes start-notes
-                                                     :destination-notes destination-notes
-                                                     :events events
-                                                     :voice-leading (first
-                                                                     (my-push (cons (get-rules start-notes destination-notes name)
-                                                                                    (list name (ffirst (sort-by-first-element events))))
-                                                                              (concat *composer* '- 'rules)))
-                                                     :speac ()})))
+     (if (empty? db-names)
+       true
+       (do (let [beats (remove-nils (collect-beats (set-to-zero
+                                                    (sort-by-first-element (chorale/find-db (first db-names))))))
+                 name nil
+                 start true]
+             (loop [name nil
+                    beats beats
+                    counter counter
+                    start true]
+               (if (empty? beats)
+                 (println "DONE")
+                 (let [name (make-name (first db-names) counter)
+                       start-notes (get-onset-notes (first beats))
+                       destination-notes (get-onset-notes (second beats))
+                       events (first beats)
+                       rules (cons (get-rules start-notes destination-notes name)
+                                   (list name (ffirst (sort-by-first-element events))))
+                       composer-id (str *composer* "-" rules)
 
-                     (put-beat-into-lexicon name)
-                     (my-push name (concat *composer* '- 'compose-beats))
-                     (when start (my-push name (concat *composer* '- 'start-beats)))
-                     (recur (rest beats) (+ 1 counter) nil)))))
+                       instance (make-instance 'beat-it {:start-notes start-notes
+                                                         :destination-notes destination-notes
+                                                         :events events
+                                                         :voice-leading (first rules)
+                                                         :speac ()})]
 
-                 (create-complete-database (rest db-names))))))
+                   (println composer-id)
+
+                                        ;(my-push rules composer-id)
+                                        ;(set name instance)
+
+                   (put-beat-into-lexicon instance)
+                   (my-push name (concat *composer* '- 'compose-beats))
+                   (when start (my-push name (concat *composer* '- 'start-beats)))
+                   (recur instance (rest beats) (+ 1 counter) nil)))))
+           (create-complete-database (rest db-names))))))
 
 
 ;(create-complete-database chorale/bach-chorales-in-databases)
