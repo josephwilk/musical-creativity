@@ -32,6 +32,10 @@
 
 (declare get-rule)
 
+;TODO: write
+(defn my-remove [list]
+  list)
+
 (defn position [thing list]
   (let [index (.indexOf list thing)]
     (when (>= index 0) index)))
@@ -42,6 +46,10 @@
 (defn implode []
 ;TODO: write me
 )
+
+(defn explode [list]
+  ;:TODO
+  list)
 
 (defn make-instance [_ attributes]
   attributes)
@@ -557,22 +565,33 @@
 
 (defn positions [number list]
   "Shows the positions of number in list."
-  (let [position ()]
-    (loop until (empty? (member number list))
-          do (setf position (position number list))
-          collect position
-          do (setf list  (substitute 'x number list
-                                     :end (+ 1 position))))))
+  (loop [positions []
+         number number
+         list list]
+    (if (empty? (member number list))
+      positions
+      (let [position (position number list)]
+        (recur (conj positions position)
+               (+ 1 number)
+               (replace 'x number list))))))
 
 (defn find-closest [number list]
   "finds the closest number in list to number."
-  (let [test (loop for item in list
-                   collect (math/abs (- number item)))]
-    (nth (choose-one (positions (first (my-sort '< test)) test)) list)))
+  (let [test (map (fn [item] (math/abs (- number item))) list)]
+    (nth (choose-one (positions (first (sort < test)) test)) list)))
 
 (defn find-best-on-time [on-times]
   "Finds the best ontime."
   (find-closest (+ (/ (- (my-last on-times)(first on-times)) 2)(first on-times)) on-times))
+
+(defn remove-region [begin-time end-time events]
+  "Removes the region boardered by begin and end times."
+  (cond (empty? events)()
+        (and (>= (ffirst events) begin-time)
+             (< (ffirst events) end-time))
+        (remove-region begin-time end-time (rest events))
+        :else (cons (first events)
+                (remove-region begin-time end-time (rest events)))))
 
 (defn discover-cadence [missing-cadence-locations ordered-events]
   "Discovers an appropriate cadence."
@@ -583,39 +602,6 @@
     (sort-by-first-element
              (concat (resolve (get-region best-location-for-new-cadence (+ best-location-for-new-cadence 1000) relevant-events))
                      (remove-region best-location-for-new-cadence (+ best-location-for-new-cadence 1000) ordered-events))))))
-
-(defn discover-cadences [missing-cadence-locations ordered-events]
-  "Makes an appropriate cadence possible."
-  (if (empty? missing-cadence-locations) ordered-events
-      (discover-cadences (rest missing-cadence-locations)
-                     (discover-cadence (first missing-cadence-locations) ordered-events))))
-
-(defn find-cadence-start-times [ordered-events]
-  "Finds the cadence start times."
-  (let [distance-to-cadence (distance-to-cadence ordered-events)]
-    (cond ((empty? ordered-events)())
-          ((empty? distance-to-cadence)
-           (find-cadence-start-times (rest ordered-events)))
-          (t (cons distance-to-cadence
-                   (find-cadence-start-times (clear-to distance-to-cadence ordered-events)))))))
-
-(defn clear-to [distance-to-cadence ordered-events]
-  "Clears the events up to the cadence."
-  (cond ((empty?  ordered-events)())
-        ((<= (ffirst  ordered-events) distance-to-cadence)
-         (clear-to distance-to-cadence (rest ordered-events)))
-        (t (cons (first ordered-events)
-                 (clear-to distance-to-cadence (rest ordered-events))))))
-
-(defn distance-to-cadence [ordered-events]
-  "Returns the distance tocadence of the arg."
-  (let [quarter-note-distance (find-1000s ordered-events)
-        half-note-distance (find-2000s ordered-events)]
-    (cond ((and (empty? quarter-note-distance)(empty? half-note-distance)) ())
-          ((empty? quarter-note-distance) half-note-distance)
-          ((empty? half-note-distance) quarter-note-distance)
-          (t (if (> quarter-note-distance half-note-distance) half-note-distance
-                 quarter-note-distance)))))
 
 (defn find-1000s
   "Returns the ontime if the ordered events are all duration 1000."
@@ -637,101 +623,138 @@
            start-time
            :else (find-1000s (rest ordered-events)))))
 
-(defn find-2000s [ordered-events &optional (start-time (ffirst ordered-events))]
+(defn find-2000s
   "Returns events of 2000 duration."
-  (cond (empty? ordered-events)()
-        (and (let [channel-1-event (first (get-channel 1 ordered-events))]
-               (and (= (third channel-1-event) 2000)
-                    (= start-time (first channel-1-event))))
-             (let [channel-1-event (first (get-channel 2 ordered-events))]
-               (and (= (third channel-1-event) 2000)
-                    (= start-time (first channel-1-event))))
-             (let [channel-1-event (first (get-channel 3 ordered-events))]
-               (and (= (third channel-1-event) 2000)
-                    (= start-time (first channel-1-event))))
-             (let [channel-1-event (first (get-channel 4 ordered-events))]
-               (and (= (third channel-1-event) 2000)
-                    (= start-time (first channel-1-event)))))
-        start-time
-        :else (find-2000s (rest ordered-events))))
+  ([ordered-events] (find-2000s ordered-events (ffirst ordered-events)))
+  ([ordered-events start-time]
+      (cond (empty? ordered-events)()
+            (and (let [channel-1-event (first (get-channel 1 ordered-events))]
+                   (and (= (third channel-1-event) 2000)
+                        (= start-time (first channel-1-event))))
+                 (let [channel-1-event (first (get-channel 2 ordered-events))]
+                   (and (= (third channel-1-event) 2000)
+                        (= start-time (first channel-1-event))))
+                 (let [channel-1-event (first (get-channel 3 ordered-events))]
+                   (and (= (third channel-1-event) 2000)
+                        (= start-time (first channel-1-event))))
+                 (let [channel-1-event (first (get-channel 4 ordered-events))]
+                   (and (= (third channel-1-event) 2000)
+                        (= start-time (first channel-1-event)))))
+            start-time
+            :else (find-2000s (rest ordered-events)))))
+
+
+(defn discover-cadences [missing-cadence-locations ordered-events]
+  "Makes an appropriate cadence possible."
+  (if (empty? missing-cadence-locations) ordered-events
+      (discover-cadences (rest missing-cadence-locations)
+                     (discover-cadence (first missing-cadence-locations) ordered-events))))
+
+(defn distance-to-cadence [ordered-events]
+  "Returns the distance tocadence of the arg."
+  (let [quarter-note-distance (find-1000s ordered-events)
+        half-note-distance (find-2000s ordered-events)]
+    (cond (and (empty? quarter-note-distance)(empty? half-note-distance)) ()
+          (empty? quarter-note-distance) half-note-distance
+          (empty? half-note-distance) quarter-note-distance
+          :else (if (> quarter-note-distance half-note-distance) half-note-distance
+                quarter-note-distance))))
+
+(defn clear-to [distance-to-cadence ordered-events]
+  "Clears the events up to the cadence."
+  (cond (empty?  ordered-events)()
+        (<= (ffirst  ordered-events) distance-to-cadence)
+        (clear-to distance-to-cadence (rest ordered-events))
+        :else (cons (first ordered-events)
+                (clear-to distance-to-cadence (rest ordered-events)))))
+
+(defn find-cadence-start-times [ordered-events]
+  "Finds the cadence start times."
+  (let [distance-to-cadence (distance-to-cadence ordered-events)]
+    (cond (empty? ordered-events)()
+          (empty? distance-to-cadence)
+          (find-cadence-start-times (rest ordered-events))
+          :else (cons distance-to-cadence
+                  (find-cadence-start-times (clear-to distance-to-cadence ordered-events))))))
 
 (defn transpose [amt events]
   "Transposes the events according to its first arg."
-  (loop for event in events
-        collect (if (not (zerop (second event)))
-                  (concat (list (first event))(list (+ (second event) amt))(drop  2 event))
-                  event)))
-
-(defn get-beat-length [events]
-  "this is used in re-time for setting the new time!
-   requires that the first in events be sorted to current time!"
-  (let [time (ffirst events)]
-    (first (sort > (loop for event in events
-                              collect (get-note-timing event time))))))
+  (filter (fn [event]
+            (not (= 0 (second event)))
+            (concat (list (first event))(list (+ (second event) amt))(drop  2 event)))))
 
 (defn get-note-timing [event time]
   "grunt work for get-beat-length"
   (- (+ (first event)(third event)) time))
 
+(defn get-beat-length [events]
+  "this is used in re-time for setting the new time!
+   requires that the first in events be sorted to current time!"
+  (let [time (ffirst events)]
+    (first (sort > (map (fn [event] (get-note-timing event time)) events)))))
+
 (defn match-them [chord full-chord allowance]
   "Matches the chord with the list of pitches within the allowance."
-  (cond (empty? chord) t
+  (cond (empty? chord) true
         (and (not (member (first chord) full-chord))
-             (zerop allowance))
+             (= 0 allowance))
         ()
         (not (member (first chord) full-chord))
-        (match-them (rest chord) full-chord (1- allowance))
+        (match-them (rest chord) full-chord (- allowance 1))
         :else (match-them (rest chord) full-chord allowance)))
-
-(defn remove-region [begin-time end-time events]
-  "Removes the region boardered by begin and end times."
-  (cond (empty? events)()
-        (and (>= (ffirst events) begin-time)
-             (< (ffirst events) end-time))
-        (remove-region begin-time end-time (rest events))
-        :else (cons (first events)
-                (remove-region begin-time end-time (rest events)))))
-
-(defn resolve [beat &optional (on-time (ffirst beat))]
-  "Resolves the beat if necessary."
-  (cond (empty? beat)()
-        (= (third (first beat)) 1000)
-        (cons (first beat)
-              (resolve (rest beat) on-time))
-        :else (let [test (get-on-beat (get-channel (fourth (first beat)) beat) on-time)]
-            (cons (if (>= (third (first test)) 1000)(first test)
-                      (concat (take 2 (first test)) '(1000) (drop 3 (first test))))
-                  (resolve (remove-all (get-channel (fourth (first beat)) beat) beat) on-time)))))
 
 (defn remove-all [stuff other-stuff]
   "Removes all of the stuff from the other-stuff."
-  (loop when (empty? stuff) return other-stuff
-        do (setf other-stuff (remove (first stuff) other-stuff :test 'equal))
-        do (setf stuff (rest stuff))))
+  (loop [stuff stuff
+         other-stuff other-stuff]
+    (if (empty? stuff)
+      other-stuff
+      (recur (rest stuff)
+             (remove (first stuff) other-stuff)))))
 
-(defn match-harmony [one two]
-  "Checks to see if its args match mod-12."
-  (match-them (sort < one)
-              (apply #'append
-                     (loop for note in two
-                           collect (project-octaves note)))
-              (floor (/ (count one) 4))))
-
-(defn project-octaves [note]
-  "Projects its arg through a series of octaves."
-  (let [base-note (reduce-it note 20)]
-    (loop until (> base-note 120)
-          collect (setf base-note (+ base-note 12)))))
+(defn resolve
+  "Resolves the beat if necessary."
+  ([beat] (resolve beat (ffirst beat)))
+  ([beat on-time]
+      (cond (empty? beat)()
+            (= (third (first beat)) 1000)
+            (cons (first beat)
+                  (resolve (rest beat) on-time))
+            :else (let [test (get-on-beat (get-channel (fourth (first beat)) beat) on-time)]
+                    (cons (if (>= (third (first test)) 1000)(first test)
+                              (concat (take 2 (first test)) '(1000) (drop 3 (first test))))
+                          (resolve (remove-all (get-channel (fourth (first beat)) beat) beat) on-time))))))
 
 (defn reduce-it [note base]
   "Reduces its first arg mod12 below its second arg."
   (if (< note base) note (reduce-it (- note 12) base)))
 
+(defn project-octaves [note]
+  "Projects its arg through a series of octaves."
+  (let [base-note (reduce-it note 20)]
+    (map #(+ % 12)  (range base-note 120))))
+
+(defn match-harmony [one two]
+  "Checks to see if its args match mod-12."
+  (match-them (sort < one)
+              (apply concat
+                     (map (fn [note]
+                            (project-octaves note)) two))
+              (math/floor (/ (count one) 4))))
+
 (defn all-members [list target]
   "Checks to see if its first arg members are present in second arg."
-  (cond (empty? list) t
+  (cond (empty? list) true
         (not (member (first list) target)) ()
         :else (all-members (rest list) target)))
+
+(defn get-all-events-with-start-time-of [start-time events]
+  "As its name suggests."
+  (cond (empty? events)()
+        (= (ffirst events) start-time)
+        (cons (first events)
+              (get-all-events-with-start-time-of start-time (rest events)))
+        :else (get-all-events-with-start-time-of start-time (rest events))))
 
 (defn get-last-beat-events [events]
   "As its name suggests."
@@ -741,22 +764,6 @@
              (thousandp (third (first last-beat))))
       last-beat)))
 
-(defn get-all-events-with-start-time-of [start-time events]
-  "As its name suggests."
-  (cond ((empty? events)())
-        ((= (ffirst events) start-time)
-         (cons (first events)
-               (get-all-events-with-start-time-of start-time (rest events))))
-        (t (get-all-events-with-start-time-of start-time (rest events)))))
-
-(defn incf-beat [beat]
-  "Increments the beat number."
-  (implode (list (get-db-name beat) '- (+ 1 (my-last (explode beat))))))
-
-(defn get-db-name [lexicon]
-  "Returns the database name."
-  (implode (get-db-n (explode lexicon))))
-
 (defn get-db-n [exploded-lexicon]
   "Checks for dashes in the db-name."
   (cond (= (first exploded-lexicon) '-)
@@ -765,65 +772,61 @@
         :else (cons (first exploded-lexicon)
                     (get-db-n (rest exploded-lexicon)))))
 
+(defn get-db-name [lexicon]
+  "Returns the database name."
+  (implode (get-db-n (explode lexicon))))
+
+(defn incf-beat [beat]
+  "Increments the beat number."
+  (implode (list (get-db-name beat) '- (+ 1 (my-last (explode beat))))))
+
 (defn match-bach-tonic [the-events]
   "Returns true if the events are tonic."
   (let [events (get-last-beat-events (break-into-beats the-events))]
     (and (not (empty? events))
-         (and (all-members (map second events) (apply concat
-                                                      (loop for note in '(60 64 67)
-                                                            collect (project-octaves note))))(match-harmony (my-sort #'< (map second events)) '(60 64 67))
+         (and (all-members (map second events) (apply concat (map (fn [note] (project-octaves note)) '(60 64 67))))
+              (match-harmony (sort < (map second events)) '(60 64 67))
                                                             (match-harmony (sort > (map second events)) '(60 64 67))))))
 
-(defn find-events-duration [events &optional (duration 0)]
+(defn find-events-duration
   "Returns the events duration."
-  (cond (empty? events duration)
-        (= (fourth (first events)) 1)
-        (find-events-duration (rest events) (+ duration (third (first events))))
-        :else (find-events-duration (rest events) duration)))
+  ([events] (find-events-duration events 0))
+  ([events duration]
+     (cond (empty? events)
+           duration
+           (= (fourth (first events)) 1)
+           (find-events-duration (rest events) (+ duration (third (first events))))
+           :else (find-events-duration (rest events) duration))))
 
-(defn re-time [event-lists &optional (current-time 0)]
+(defn re-time
   "Re-times the beats to fit together."
-  (if (empty? event-lists)()
-      (cons (loop for event in (set-to-zero (first event-lists))
-                  collect (cons (+ (first event) current-time) (rest event)))
-            (re-time (rest event-lists) (+ current-time
-                                           (get-beat-length
-                                            (first event-lists)))))))
+  ([event-lists] (re-time event-lists 0))
+  ([event-lists current-time]
+      (if (empty? event-lists)()
+          (cons (map (fn [event]
+                       (cons (+ (first event) current-time) (rest event))) (set-to-zero (first event-lists)))
+                (re-time (rest event-lists) (+ current-time
+                                               (get-beat-length
+                                                (first event-lists))))))))
+
+(defn highest-lowest-notes [events]
+  "Returns the highest and lowest pitches of its arg."
+  (list (first (sort > (map (fn [event] (second event)) (get-channel 1 events))))
+        (first (sort < (map (fn [event] (second event)) (let [test (get-channel 4 events)]
+                                                          (if (empty? test)(get-channel 2 events) test)))))))
+
+(defn put-it-in-the-middle [extremes]
+  "Gets the average."
+  (math/round (/ (+ (second extremes)(first extremes)) 2)))
 
 (defn transpose-to-bach-range [events]
   "As its name suggests."
   (let [high-low (highest-lowest-notes events)
         intervals-off (list (- 83 (first high-low))
                             (- 40 (second high-low)))
-        (middle (put-it-in-the-middle intervals-off))]
+        middle (put-it-in-the-middle intervals-off)]
         (do
           (transpose middle events))))
-
-(defn put-it-in-the-middle [extremes]
-  "Gets the average."
-  (round (/ (+ (second extremes)(first extremes)) 2)))
-
-(defn highest-lowest-notes [events]
-  "Returns the highest and lowest pitches of its arg."
-  (list (first (sort > (loop for event in (get-channel 1 events)
-                                  collect (second event))))
-        (first (sort < (loop for event in (let [test (get-channel 4 events)]
-                                                 (if (empty? test)(get-channel 2 events) test))
-                                  collect (second event))))))
-
-(defn cadence-collapse [events]
-  "Ensures the final chord will not have offbeats."
-  (apply #'append (collapse (collect-beats (sort-by-first-element  events)))))
-
-(defn collapse [beats]
-  "Collapses the final cadence."
-  (cond (empty? beats)()
-        (and (= (count (first beats)) 4)
-             (= (third (first (first beats))) 2000)
-         (cons (make-1000s (first beats))
-               (collapse (reset (rest beats) 1000))))
-        :else (cons (first beats)
-                (collapse (rest beats)))))
 
 (defn make-1000s [beat]
   "Makes all of the beat's durations into 1000s."
@@ -832,21 +835,38 @@
 (defn reset [beats subtraction]
   "Resets the beats appropriately."
   (if (empty? beats)()
-      (cons (loop for event in (first beats)
-                  collect (concat (list (- (first event) subtraction)) (rest event)))
+      (cons (map (fn [event] (concat (list (- (first event) subtraction)) (rest event)) ) (first beats))
             (reset (rest beats) subtraction))))
 
-(defn delay-for-upbeat [events]
-  "Delays the upbeat."
-  (reset-events-to events 3000))
+(defn collapse [beats]
+  "Collapses the final cadence."
+  (cond (empty? beats)
+        ()
+        (and (= (count (first beats)) 4)
+             (= (third (first (first beats))) 2000))
+        (cons (make-1000s (first beats))
+              (collapse (reset (rest beats) 1000)))
+        :else (cons (first beats)
+                    (collapse (rest beats)))))
+
+(defn cadence-collapse [events]
+  "Ensures the final chord will not have offbeats."
+  (apply concat (collapse (collect-beats (sort-by-first-element  events)))))
 
 (defn reset-events-to [events begin-time]
   "Resets the events for the delayed beat."
   (map (fn [event] (cons (+ begin-time (first event))(rest event))) (set-to-zero events)))
 
-(defn check-mt [events]
-  "Returns the major tonic."
-  (get-tonic events))
+(defn delay-for-upbeat [events]
+  "Delays the upbeat."
+  (reset-events-to events 3000))
+
+(defn all [first second]
+  "Tests for presence of all of first arg in second arg."
+  (cond (empty? first) true
+        (member (first first) second)
+        (all (rest first) second)
+        :else ()))
 
 (defn get-tonic  [events]
   "Returns the tonic."
@@ -854,25 +874,21 @@
                 '(0 4 7))
            (all (create-pitch-class-set (get-pitches events))
                 '(0 3 7)))
-       (zerop (first (create-pitch-class-set (get-pitches (get-channel 4 (sort-by-first-element  events))))))))
+       (= 0 (first (create-pitch-class-set (get-pitches (get-channel 4 (sort-by-first-element  events))))))))
 
-(defn all [first second]
-  "Tests for presence of all of first arg in second arg."
-  (cond (empty? first) t
-        (member (first first) second)
-        (all (rest first) second)
-        :else ()))
+(defn check-mt [events]
+  "Returns the major tonic."
+  (get-tonic events))
 
 (defn ensure-necessary-cadences [ordered-events]
   "Ensures the cadences are proper."
   (let [cadence-start-times (find-cadence-start-times ordered-events)]
-    (Discover-cadences (get-long-phrases (if (not (zerop (first cadence-start-times))) (cons 0 cadence-start-times) cadence-start-times))
-                   ordered-events)))
+    (discover-cadences (get-long-phrases (if (not (= 0 (first cadence-start-times))) (cons 0 cadence-start-times) cadence-start-times))
+                       ordered-events)))
 
 (defn check-for-parallel [events]
   "Checks for parallel motion."
-  (let [sorted-pitches-by-beat (loop for beat in (collect-beats (take 30 (sort-by-first-element events)))
-                                     collect (get-pitches (get-on-beat beat (ffirst beat))))]
+  (let [sorted-pitches-by-beat (map (fn [beat] (get-pitches (get-on-beat beat (ffirst beat)))) (collect-beats (take 30 (sort-by-first-element events))))]
     (and (= (count (first sorted-pitches-by-beat)) 4)
          (= (count (second sorted-pitches-by-beat)) 4)
          (or (and (> (- (first (first sorted-pitches-by-beat))
@@ -906,11 +922,10 @@
   "Matches minor tonics."
   (let [events (get-last-beat-events (break-into-beats the-events))]
     (and (not (empty? events))
-         (and (all-members (mapcar #'second events) (apply #'append
-                                                           (loop for note in '(60 63 67)
-                                                                 collect (project-octaves note))))
-              (match-harmony (my-sort #'< (mapcar #'second events)) '(60 63 67))
-              (match-harmony (my-sort #'> (mapcar #'second events)) '(60 63 67))))))
+         (and (all-members (map second events) (apply concat
+                                                           (map (fn [note] (project-octaves note)) '(60 63 67))))
+              (match-harmony (sort < (map second events)) '(60 63 67))
+              (match-harmony (sort > (map second events)) '(60 63 67))))))
 
 (defn compose-b
   "The real horse for compose-bach."
@@ -921,35 +936,45 @@
      (reset! *events*
              (let [current-beat
                    (find-triad-beginning)]
-               (if (match-tonic-minor (take 4 (events (eval current-beat))))
+               (if (match-tonic-minor (take 4 (:events (eval current-beat))))
                  (reset! *tonic* 'minor)(reset! *tonic* 'major))
                (apply concat
                       (re-time
                        (concat
-                        (loop until (or (reset! *early-exit?* (empty? (destination-notes (eval current-beat))))
-                                        (if (and (> counter 36)
-                                                 (if (= *tonic* 'minor)
-                                                   (and (> (find-events-duration (events (eval current-beat))) *beat-size*)
-                                                        (match-tonic-minor (events (eval current-beat))))
-                                                   (and (> (find-events-duration (events (eval current-beat))) *beat-size*)
-                                                        (match-bach-tonic (events (eval current-beat))))))
-                                          (do (reset! *end* t) t)))
-                              do (push current-beat *history*)
-                              collect (events (eval current-beat))
-                              do (reset! *previous-beat* current-beat)
-                              do (reset! current-beat
-                                         (choose-one
-                                          (let [beat-choices (beats (eval (make-lexicon-name (destination-notes (eval current-beat)))))]
-                                            (if (empty? (rest beat-choices)) beat-choices (my-remove (list *previous-beat* (incf-beat *previous-beat*)) beat-choices)))))
-                              do (incf counter))
-                        (do (push current-beat *history*)
-                            (list (events
-                                   (eval current-beat)))))))))
-     (if (and (empty? *early-exit?*)(= *composer* 'bach))
-                                        ;(reset! *events* (transpose-to-bach-range *events*))
-       *events* (reset! *events* ()))
+                        (loop [events []
+                               counter counter
+                               current-beat current-beat]
+                          (if  (or (reset! *early-exit?* (empty? (:destination-notes (eval current-beat))))
+                                  (if (and (> counter 36)
+                                           (if (= *tonic* 'minor)
+                                             (and (> (find-events-duration (events (eval current-beat))) *beat-size*)
+                                                  (match-tonic-minor (events (eval current-beat))))
+                                             (and (> (find-events-duration (events (eval current-beat))) *beat-size*)
+                                                  (match-bach-tonic (events (eval current-beat))))))
+                                    (do
+                                      (reset! *end* true)
+                                      true)))
+
+                            events
+                            (let [new-events (:events (eval current-beat))]
+                              (swap! *history* conj current-beat)
+                              (reset! *previous-beat* current-beat)
+                              (recur new-events
+                                     (+ 1 counter)
+                                     (choose-one
+                                      (let [beat-choices (beats (eval (make-lexicon-name (:destination-notes (eval current-beat)))))]
+                                        (if (empty? (rest beat-choices)) beat-choices (my-remove (list *previous-beat* (incf-beat *previous-beat*)) beat-choices))))))))
+                        (do
+                          (swap! *history* conj current-beat)
+                          (list (:events (eval current-beat)))))))))
+
+     (if (and (empty? *early-exit?*)
+              (= *composer* 'bach))
+       *events*
+       (reset! *events* ()))
      (reset! *history* (reverse *history*))
-     (if *end* (push (list (+ 1 *compose-number*) *history*) *histories*))))
+     (if *end*
+       (swap! *history* conj (list (+ 1 *compose-number*))))))
 
 (defn compose-bach
   "The top-level compose function."
@@ -966,13 +991,13 @@
           (check-for-parallel *events*)
           (empty? *end*))
     (compose-bach)
-    (do (reset! *save-events* *events*)(reset! *events* (ensure-necessary-cadences (sort-by-first-element *events*)))
+    (do (reset! *save-events* *events*) (reset! *events* (ensure-necessary-cadences (sort-by-first-element *events*)))
            (if (not (check-mt (get-on-beat *events* (ffirst *events*))))
              (reset! *events* (delay-for-upbeat *events*)))
            (if (and (empty? *early-exit?*)(= *composer* 'bach))
              (reset! *events*
                    (cadence-collapse (transpose-to-bach-range *events*)))(reset! *events* ()))
-           t)))
+           true)))
 
 (defn compose []
   (compose-bach))
