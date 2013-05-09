@@ -1,6 +1,7 @@
 (ns musical-creativity.composers.chorale
   (:require
    [clojure.math.numeric-tower :as math]))
+   [data.chorale :as chorale]))
 
 (def *composer* 'bach)
 (def *rules-storage* ())
