@@ -1,4 +1,6 @@
-(ns musical-creativity.composers.chorale)
+(ns musical-creativity.composers.chorale
+  (:require
+   [clojure.math.numeric-tower :as math]))
 
 (def *composer* 'bach)
 (def *rules-storage* ())
@@ -41,9 +43,15 @@
 (load-file "data/chorale/jsb12.clj")
 (load-file "data/chorale/jsb13.clj")
 
+(declare get-rule)
+
 (defn implode []
 ;TODO: write me
 )
+
+(defn my-push [stuff place-name]
+  "A simple synonym for push."
+  (set place-name (cons stuff (eval place-name))))
 
 (defn make-name [db-name counter]
   "Simple synonym for imploding the dtabase name and number."
@@ -113,6 +121,117 @@
       (cons (list (fourth (first events))(+ (ffirst events)(third (first events))))
             (plot-timings (rest events)))))
 
+(defn make-lists-equal [lists]
+  "Ensures the two lists are equal in length."
+  (cond
+   (> (count (first lists)) (count (second lists)))
+   (list (take (count (second lists)) (first lists)) (second lists))
+   (> (count (second lists)) (count (first lists)))
+   (list (first lists) (take (count (first lists)) (second lists)))
+   :else
+   lists))
+
+(defn reduce-interval [interval]
+  "Reduces the interval mod 12."
+  (cond
+   (<= (math/abs interval) 12)
+   interval
+   (< interval 0)
+   (reduce-interval (+ interval 12))
+        :else
+        (reduce-interval (- interval 12))))
+
+(defn get-rules1 [start-notes destination-notes name]
+  "Does the grunt work for get-rules."
+  (if (or (empty? (rest start-notes))(empty? (rest destination-notes)))
+    (reverse *rules-storage*)
+    (do
+      (reset! *rules-storage* (concat (reverse (get-rule (- (first destination-notes) (first start-notes))
+                                                       (first start-notes) start-notes destination-notes name)) *rules-storage*))
+      (get-rules1 (rest start-notes) (rest destination-notes) name))))
+
+
+(defn get-rule [voice start-note start-notes destination-notes name]
+  "Gets the rule between first two args."
+  (if (or (empty? (rest start-notes))(empty? destination-notes))()
+      (cons (list (reduce-interval (- (second start-notes) start-note))
+                  voice
+                  (- (second destination-notes) (second start-notes))
+                  name)
+            (get-rule voice start-note (rest start-notes)(rest destination-notes) name))))
+
+(defn get-rules [start-notes destination-notes name]
+  "Gets the intervals between adjacent sets of the two args."
+  (reset! *rules-storage* ())
+  (let [test (make-lists-equal (list start-notes destination-notes))]
+    (get-rules1 (first test)(second test) name)))
+
+(defn boundp [thing]
+  (nil? thing))
+
+;TOOD: WHAT?
+(defn mix [list]
+  list)
+
+(defn swap-unless-includes [reference data]
+  (when-not (some #{data} @reference)
+    (swap! reference conj data)))
+
+(def beats
+  (atom []))
+
+(defn find-beat [name]
+  (eval name))
+
+(defn exist-lexicon [lexicon-name]
+  "Sees if the lexicon exists."
+  (boundp lexicon-name))
+
+(defn make-lexicon-name
+  "Creates the appropriate lexicon name for the object."
+  ([note-numbers] (make-lexicon-name note-numbers *mix-names*))
+  ([note-numbers names]
+     (cond
+      (empty? *mix*)
+      (implode (cons *composer* (cons '- (hyphenate note-numbers))))
+      (empty? names)
+      (implode (cons *composer* (cons '- (hyphenate note-numbers))))
+      (boundp (implode (cons (first names) (cons '- (hyphenate note-numbers)))))
+      (implode (cons (first names) (cons '- (hyphenate note-numbers))))
+      :else
+      (make-lexicon-name note-numbers (mix (rest names))))))
+
+(defn put-beat-into-lexicon [beat-name]
+  "Puts the beat arg into the appropriate lexicon."
+  (let [lexicon-name (make-lexicon-name (:start-notes (find-beat beat-name)))]
+    (if (and (exist-lexicon lexicon-name)
+             (not (member beat-name (beats (eval lexicon-name)))))
+      (reset! (beats (eval lexicon-name)) (cons beat-name (beats (eval lexicon-name))))
+      (do (set lexicon-name
+                  (make-instance 'lexicon :beats (list beat-name)))
+             (swap-unless-includes lexicon-name *lexicons*)))))
+
+(defn return-beat
+  "Returns the beat number of the initiating event."
+  ([channel-events] (return-beat channel-events (ffirst channel-events)))
+  ([channel-events start-time]
+     (cond (empty? channel-events) nil
+           (and (thousandp (ffirst channel-events))
+                (not (= start-time (ffirst channel-events))))
+           (/ (- (ffirst channel-events) start-time) 1000)
+           :else (return-beat (rest channel-events)
+                          start-time))))
+
+(defn create-pc-set [pitches]
+  "Creates a full PC set."
+  (if (empty? pitches) ()
+      (cons (mod (first pitches) 12)
+            (create-pc-set (rest pitches)))))
+
+(defn create-pitch-class-set [pitches]
+  "Sorts and gets a full pc-set."
+  (sort < (distinct (create-pc-set pitches))))
+
 (defn get-channel-numbers-from-events
   "simply gets the channel numbers from the music"
   ([events] (get-channel-numbers-from-events events []))
@@ -146,6 +265,8 @@
         (find-alignment point (first channels))
         (find-alignment-in-all-channels point (rest channels))
         :else ()))
+
+
 
 ;TODO: confusing form on cond
 (defn all-together [channel channels]
@@ -182,6 +303,9 @@
         (cons test
               (collect-beats reduced-test)))))
 
+(defn make-instance [_ attributes]
+  attributes)
+
 (defn create-complete-database
   "Loads and makes proper objects out of the db-names arg."
   ([db-names] (create-complete-database db-names 1))
@@ -203,14 +327,14 @@
                            destination-notes (get-onset-notes (second beats))
                            events (first beats)]
                        (set name
-                            (make-instance 'beat-it :start-notes start-notes
-                                           :destination-notes destination-notes
-                                           :events events
-                                           :voice-leading (first
-                                                           (my-push (cons (get-rules start-notes destination-notes name)
-                                                                          (list name (ffirst (sort-by-first-element events))))
-                                                                    (concat *composer* '- 'rules)))
-                                           :speac ())))
+                            (make-instance 'beat-it { :start-notes start-notes
+                                                     :destination-notes destination-notes
+                                                     :events events
+                                                     :voice-leading (first
+                                                                     (my-push (cons (get-rules start-notes destination-notes name)
+                                                                                    (list name (ffirst (sort-by-first-element events))))
+                                                                              (concat *composer* '- 'rules)))
+                                                     :speac ()})))
 
                      (put-beat-into-lexicon name)
                      (my-push name (concat *composer* '- 'compose-beats))
@@ -218,89 +342,6 @@
                      (recur (rest beats) (+ 1 counter) nil)))))
 
                  (create-complete-database (rest db-names))))))
-
-(defn get-rules [start-notes destination-notes name]
-  "Gets the intervals between adjacent sets of the two args."
-  (reset! *rules-storage* ())
-  (let [test (make-lists-equal (list start-notes destination-notes))]
-    (get-rules1 (first test)(second test) name)))
-
-(defn get-rules1 [start-notes destination-notes name]
-  "Does the grunt work for get-rules."
-  (if (or (empty? (rest start-notes))(empty? (rest destination-notes)))
-    (reverse *rules-storage*)
-    (do
-      (reset! *rules-storage* (concat (reverse (get-rule (- (first destination-notes) (first start-notes))
-                                                       (first start-notes) start-notes destination-notes name)) *rules-storage*))
-      (get-rules1 (rest start-notes) (rest destination-notes) name))))
-
-(defn get-rule [voice start-note start-notes destination-notes name]
-  "Gets the rule between first two args."
-  (if (or (empty? (rest start-notes))(empty? destination-notes))()
-      (cons (list (reduce-interval (- (second start-notes) start-note))
-                  voice
-                  (- (second destination-notes) (second start-notes))
-                  name)
-            (get-rule voice start-note (rest start-notes)(rest destination-notes) name))))
-
-(defn reduce-interval [interval]
-  "Reduces the interval mod 12."
-  (cond ((<= (abs interval) 12) interval)
-        ((minusp interval)(reduce-interval (+ interval 12)))
-        (t (reduce-interval (- interval 12)))))
-
-(defn make-lists-equal [lists]
-  "Ensures the two lists are equal in length."
-  (cond ((> (count (first lists))(count (second lists)))
-         (list (firstn (count (second lists)) (first lists))(second lists)))
-        ((> (count (second lists))(count (first lists)))
-         (list (first lists)(firstn (count (first lists)) (second lists))))
-        (t lists)))
-
-(defn make-lexicon-name [note-numbers &optional (names *mix-names*)]
-  "Creates the appropriate lexicon name for the object."
-  (cond ((empty? *mix*)(implode (cons *composer* (cons '- (hyphenate note-numbers)))))
-        ((empty? names)(implode (cons *composer* (cons '- (hyphenate note-numbers)))))
-        ((boundp (implode (cons (first names) (cons '- (hyphenate note-numbers)))))
-         (implode (cons (first names) (cons '- (hyphenate note-numbers)))))
-        (t (make-lexicon-name note-numbers (mix (rest names))))))
-
-(defn put-beat-into-lexicon [beat-name]
-  "Puts the beat arg into the appropriate lexicon."
-  (let [lexicon-name (make-lexicon-name (start-notes (eval beat-name)))]
-    (if (and (exist-lexicon lexicon-name)
-             (not (member beat-name (beats (eval lexicon-name)) :test #'equal)))
-      (setf (beats (eval lexicon-name)) (cons beat-name (beats (eval lexicon-name))))
-      (do (set lexicon-name
-                  (make-instance 'lexicon :beats (list beat-name)))
-             (pushnew lexicon-name *lexicons*)))))
-
-(defn exist-lexicon [lexicon-name]
-  "Sees if the lexicon exists."
-  (boundp lexicon-name))
-
-(defn return-beat [channel-events &optional (start-time (ffirst channel-events))]
-  "Returns the beat number of the initiating event."
-  (cond ((empty? channel-events) nil)
-        ((and (thousandp (ffirst channel-events))
-              (not (= start-time (ffirst channel-events))))
-         (/ (- (ffirst channel-events) start-time) 1000))
-        (t (return-beat (rest channel-events)
-                        start-time))))
-
-(defn create-pitch-class-set [pitches]
-  "Sorts and gets a full pc-set."
-  (my-sort #'< (remove-duplicates (create-pc-set pitches))))
-
-(defn create-pc-set [pitches]
-  "Creates a full PC set."
-  (if (empty? pitches) ()
-      (cons (mod (first pitches) 12)
-            (create-pc-set (rest pitches)))))
-
-(defn my-push [stuff place-name]
-  "A simple synonym for push."
-  (set place-name (cons stuff (eval place-name))))
 
 (def bach-chorales-in-databases
 ;;;1
@@ -384,13 +425,9 @@ b43800b
 
 (create-complete-database bach-chorales-in-databases)
 
-;;;;;
-#|? (COMPOSE-BACH)
-T|#
-;;;;;
-
-(defn compose-bach []
+(defn compose-bach
   "The top-level compose function."
+  []
   (compose-b)
   (if (or (empty? *events*)
           (< (let [it (my-last (sort-by-first-element *events*))]
