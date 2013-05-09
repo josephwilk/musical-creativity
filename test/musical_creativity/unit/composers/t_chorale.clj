@@ -26,8 +26,12 @@
 (fact "all together"
   (all-together '((1 1000) (1 2000) (1 2500) (1 3000)) '((1000) (2000))) => 1000)
 
-
 (fact "find triad beginning"
   ;b43500b-14
+  (create-complete-database chorale/bach-chorales-in-databases)
   (find-triad-beginning) => nil)
+
+(fact "make name"
+  (make-name :b206b 1) => 'b206b-1)
+
 
