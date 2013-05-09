@@ -1,6 +1,6 @@
 (ns musical-creativity.composers.chorale
   (:require
-   [clojure.math.numeric-tower :as math]))
+   [clojure.math.numeric-tower :as math]
    [data.chorale :as chorale]))
 
 (def *composer* 'bach)
@@ -30,25 +30,21 @@
 (def *beats* 4)
 (def bach-form [])
 
-(load-file "data/chorale/jsb1.clj")
-(load-file "data/chorale/jsb2.clj")
-(load-file "data/chorale/jsb3.clj")
-(load-file "data/chorale/jsb4.clj")
-(load-file "data/chorale/jsb5.clj")
-(load-file "data/chorale/jsb6.clj")
-(load-file "data/chorale/jsb7.clj")
-(load-file "data/chorale/jsb8.clj")
-(load-file "data/chorale/jsb9.clj")
-(load-file "data/chorale/jsb10.clj")
-(load-file "data/chorale/jsb11.clj")
-(load-file "data/chorale/jsb12.clj")
-(load-file "data/chorale/jsb13.clj")
-
 (declare get-rule)
+
+(defn position [thing list]
+  (let [index (.indexOf list thing)]
+    (when (>= index 0) index)))
+
+(defn choose-one [list]
+  (nth list (rand-int 0 (- (count list) 1))))
 
 (defn implode []
 ;TODO: write me
 )
+
+(defn make-instance [_ attributes]
+  attributes)
 
 (defn my-push [stuff place-name]
   "A simple synonym for push."
@@ -267,8 +263,6 @@
         (find-alignment-in-all-channels point (rest channels))
         :else ()))
 
-
-
 ;TODO: confusing form on cond
 (defn all-together [channel channels]
   "Returns the appropriate channel timing."
@@ -303,9 +297,6 @@
             reduced-test (drop (count test) events)]
         (cons test
               (collect-beats reduced-test)))))
-
-(defn make-instance [_ attributes]
-  attributes)
 
 (defn create-complete-database
   "Loads and makes proper objects out of the db-names arg."
@@ -344,171 +335,53 @@
 
                  (create-complete-database (rest db-names))))))
 
-(def bach-chorales-in-databases
-;;;1
-'(b206b b306b b408b b507b b606b
-b707b b907b b107b b1306b b1605b b1805b b2007b ;b2011b
-b2406bs b2506 b2806b b3006b b3206b b3604 b3706 b3907
-b4003 b4006 b4008 b4311 bnotsure
 
-;;;2
-b4407b b4606b b4705b b4803b
-b4807b b5505b b5708b b6005b b6206b b6402 b6408b ;b6502b
-b6507b b6606b
+;(create-complete-database chorale/bach-chorales-in-databases)
 
+(defn on-beat [events ontime]
+  "Returns t if the events conform to ontime."
+  (cond (empty? events) true
+        (and (thousandp (ffirst events))(= (ffirst events) ontime))
+        (on-beat (rest events) ontime)
+        :else ()))
 
-b6707b
-;b7007b
-b7011b b7305b b7408b
+(defn get-on-beat [events ontime]
+  "Returns the on beat from the events."
+  (cond (empty? events) ()
+        (and (thousandp (ffirst events))(= (ffirst events) ontime))
+        (cons (first events)
+              (get-on-beat (rest events) ontime))
+        :else ()))
 
-;;;3
-b7706b b7807b b8008b b8107b b8305b b8405b b8506b b8606b b8707
-b8807b b10207b b10306b b8906b b9005b b9106b b9209b b9307b b9408b b9606b
-b9906b b10406b b10806b b11007b b11106b b11300b b11407b b11606b b11909b
-b12006b ;b12206b
+(defn get-pitches [events]
+  "Gets the pitches from its arg."
+  (map #(second %) events))
 
-;;;4
-b12206b b12506b b12606b b12705b b13306b b13506b b13906b b15105
-b15301b b15305b b15309b b15403b b15408b b15505b b15606b b15705b b15804b
-b15206b b16406b
+(defn project
+  "Projects the pc-set through its inversions."
+  ([set] (project set (count set) 0))
+  ([set length times]
+      (if (= length times)()
+          (cons set
+                (project (concat (rest set)(list (+ 12 (first set)))) length (+ 1 times))))))
 
-;;;5
-b16506b b16606b b16806n b16907b b17405b b17606b b17807b b18007b b18305b
-b18400b b18707b b18806b b19406b b19412b b19705b b19707b b19701b b22602b
-b22701b b22707b
+(defn get-interval [set]
+  "Returns the intervals between set members."
+  (if (empty? (rest set))
+    () (cons (- (second set)(first set))
+             (get-interval (rest set)))))
 
-;;;6
-b22711b b22902b b24403b b24410b b24415b b24417b b24425b b24432b b24434b
-b24440b b2444b b24446b b24454b b24462b b24511b b24515b b24517b b24522b
-b24526b b24527b b24537b b24530b b24812b b24828b b24833b b24846b b24853b
-b24859b b25200b b25300b
+(defn get-intervals [sets]
+  "Returns the intervals in the sets."
+  (if  (empty? sets)()
+       (cons (math/abs (apply #'+ (get-interval (first sets))))
+             (get-intervals (rest sets)))))
 
-;;;7
-b25400b b25500b b25600b b25700b b25800b b25900b b26000b b26100b b26200b
-b26300b b26400b b26500b b26600b b26700b b26800b b26900b b27000b b27100b
-b27200b b27300b b27400b b27500b b27600b b27700b b27800b b27900b b28000b
-b28100b b28300b b28400b
-
-;;;8
-b28500b b28600b b28700b b28800b b28900b b29000b b29100b b29200b b29300b
-b29400b b29600b b29700b b29800b b29900b b30000b b30100b b30200b b30300b
-b30400b b30500b
-
-;;;9
-b30600b b30700b b30800b b30900b b31000b b31100b b31200b b31300b b31400b
-b31500b b31600b b31700b b31800b b31900b b32100b b32200b b32800b b32900b
-b3300b b33100b b33200b b33300b b33400b b33500b b33600b b33700b b33800b
-b33900b b34000b b34100b
-
-;;;10
-b34200b b34500b b34600b b34700b b34800b b34900b b35000b b35100b b35200b
-b35300b b35400b b35500b b35600b b35700b b35800b b35900b b36000b b36100b
-b36200b b36300b
-
-;;;11
-b36400b b36500b b36600b b36700b b36800b b36900b b37000b b37100b b37200b
-b37300b b37400b b37500b b37600b b37700b b37800n b37900b b38000b b38100b
-b38200b b38300b b38400b b38500b b38600b b38700b b38800b b38900b b39000b
-b39100b b39200b b39300b
-
-;;;12
-b39400b b39500b b39600b b39700b b39800b b39900b b40000b b40100b b40200b
-b40300b b40400b b40500b b40600b b40700b b40800b b40900b b41000b b41100b
-b41200b b41300b b41400b b41500b b42600b b41700b b41800b b41900b b42000b
-b42100b b42200b b42300b
-
-;;;13
-b42400b b42500b b42600bb b42700b b42800b b42900b b43000b b43100b b43200b
-b43300b b43400b b43500b b43600b
-;b43700b
-b43800b
-))
-
-(create-complete-database bach-chorales-in-databases)
-
-(defn compose-bach
-  "The top-level compose function."
-  []
-  (compose-b)
-  (if (or (empty? *events*)
-          (< (let [it (my-last (sort-by-first-element *events*))]
-               (+ (first it)(third it)))
-             15000)
-          (> (let [it (my-last (sort-by-first-element *events*))]
-               (+ (first it)(third it)))
-             200000)
-          (not (wait-for-cadence *events*))
-          (check-for-parallel *events*)
-          (empty? *end*))
-    (compose-bach)
-    (do (reset! *save-events* *events*)(reset! *events* (ensure-necessary-cadences (sort-by-first-element *events*)))
-           (if (not (check-mt (get-on-beat *events* (ffirst *events*))))
-             (reset! *events* (delay-for-upbeat *events*)))
-           (if (and (empty? *early-exit?*)(= *composer* 'bach))
-             (reset! *events*
-                   (cadence-collapse (transpose-to-bach-range *events*)))(reset! *events* ()))
-           t)))
-
-(defn compose-b
-  "The real horse for compose-bach."
-  ([] (compose-b 0))
-  ([counter]
-     (reset! *end* ())
-     (reset! *history* ())
-     (reset! *events*
-             (let [current-beat
-                   (find-triad-beginning)]
-               (if (match-tonic-minor (firstn 4 (events (eval current-beat))))
-                 (reset! *tonic* 'minor)(reset! *tonic* 'major))
-               (apply #'append
-                      (re-time
-                       (append
-                        (loop until (or (reset! *early-exit?* (empty? (destination-notes (eval current-beat))))
-                                        (if (and (> counter 36)
-                                                 (if (= *tonic* 'minor)
-                                                   (and (> (find-events-duration (events (eval current-beat))) *beat-size*)
-                                                        (match-tonic-minor (events (eval current-beat))))
-                                                   (and (> (find-events-duration (events (eval current-beat))) *beat-size*)
-                                                        (match-bach-tonic (events (eval current-beat))))))
-                                          (do (reset! *end* t) t)))
-                              do (push current-beat *history*)
-                              collect (events (eval current-beat))
-                              do (reset! *previous-beat* current-beat)
-                              do (reset! current-beat
-                                         (choose-one
-                                          (let [beat-choices (beats (eval (make-lexicon-name (destination-notes (eval current-beat)))))]
-                                            (if (empty? (rest beat-choices)) beat-choices (my-remove (list *previous-beat* (incf-beat *previous-beat*)) beat-choices)))))
-                              do (incf counter))
-                        (do (push current-beat *history*)
-                            (list (events
-                                   (eval current-beat)))))))))
-     (if (and (empty? *early-exit?*)(= *composer* 'bach))
-                                        ;(reset! *events* (transpose-to-bach-range *events*))
-       *events* (reset! *events* ()))
-     (reset! *history* (reverse *history*))
-     (if *end* (push (list (+ 1 *compose-number*) *history*) *histories*))))
-
-(defn find-triad-beginning []
-  "Returns the db with a triad beginning."
-  (let [test (choose-one (eval (first (eval *composer*))))
-        on-beat (get-on-beat (events (eval test))(ffirst (events (eval test))))
-        pcs (create-pitch-class-set (get-pitches on-beat))]
-      (if (and (triad? on-beat)
-               (or (members-all '(0 4 8) pcs)
-                   (members-all '(0 4 7) pcs)
-                   (members-all '(0 5 8) pcs)
-                   (members-all '(2 7 11) pcs))
-               (<= (third (first (events (eval test)))) 1000)
-               (= (count (events (eval test))) 4))
-        test
-        (find-triad-beginning))))
-
-(defn members-all [arrows target]
-  "Checks to see if arrows are all in target."
-  (cond ((empty? arrows) t)
-        ((member (first arrows) target)
-         (members-all (rest arrows) target))
-        (t ())))
+(defn get-smallest-set [set]
+  "Returns the set with the smallest outer boundaries."
+  (let [projected-sets (project set)
+        set-differentials (get-intervals projected-sets)]
+    (nth (position (first (sort < set-differentials)) set-differentials) projected-sets)))
 
 (defn triad? [events]
   "Checks to see if the events are a triad."
@@ -519,60 +392,27 @@ b43800b
          (and (> (- (third pitch-classes)(second pitch-classes)) 2)
               (< (- (third pitch-classes)(second pitch-classes)) 5)))))
 
-(defn get-smallest-set [set]
-  "Returns the set with the smallest outer boundaries."
-  (let [projected-sets (project set)
-        set-differentials (get-intervals projected-sets)]
-    (nth (position (first (my-sort #'< set-differentials)) set-differentials) projected-sets)))
+(defn members-all [arrows target]
+  "Checks to see if arrows are all in target."
+  (cond (empty? arrows) true
+        (member (first arrows) target)
+        (members-all (rest arrows) target)
+        :else ()))
 
-(defn project
-  "Projects the pc-set through its inversions."
-  ([set] (project set (count set) 0))
-  ([set length times]
-      (if (= length times)()
-          (cons set
-                (project (concat (rest set)(list (+ 12 (first set)))) length (+ 1 times))))))
-
-(defn get-intervals [sets]
-  "Returns the intervals in the sets."
-  (if  (empty? sets)()
-       (cons (abs (apply #'+ (get-interval (first sets))))
-             (get-intervals (rest sets)))))
-
-(defn get-interval [set]
-  "Returns the intervals between set members."
-  (if (empty? (rest set))
-    () (cons (- (second set)(first set))
-             (get-interval (rest set)))))
-
-(defn match-tonic-minor [the-events]
-  "Matches minor tonics."
-  (let [events (get-last-beat-events (break-into-beats the-events))]
-    (and (not (empty? events))
-         (and (all-members (mapcar #'second events) (apply #'append
-                                                           (loop for note in '(60 63 67)
-                                                                 collect (project-octaves note))))
-              (match-harmony (my-sort #'< (mapcar #'second events)) '(60 63 67))
-              (match-harmony (my-sort #'> (mapcar #'second events)) '(60 63 67))))))
-
-(defn break-into-beats [events]
-  "Breaks events into beat-sized groupings."
-  (sort-by-first-element (apply #'append (chop-into-bites (sort-by-first-element events)))))
-
-(defn chop-into-bites [events]
-  "Chops beats into groupings."
-  (cond ((empty? events)())
-        ((and (= (third (first events)) 1000)
-              (thousandp (ffirst events)))
-         (cons (list (first events))
-               (chop-into-bites (rest events))))
-        ((> (third (first events)) 1000)
-         (cons (chop (first events))
-               (chop-into-bites (concat (remainder (first events))(rest events)))))
-        (t (cons (get-full-beat (get-channel (fourth (first events)) events))
-                 (chop-into-bites (concat (remainders (get-channel (fourth (first events)) events))
-                                          (concat (remove-full-beat (get-channel (fourth (first events)) events))
-                                                  (get-other-channels (fourth (first events)) events))))))))
+(defn find-triad-beginning []
+  "Returns the db with a triad beginning."
+  (let [test (choose-one (eval (first (eval *composer*))))
+        on-beat (get-on-beat (:events (eval test))(ffirst (:events (eval test))))
+        pcs (create-pitch-class-set (get-pitches on-beat))]
+      (if (and (triad? on-beat)
+               (or (members-all '(0 4 8) pcs)
+                   (members-all '(0 4 7) pcs)
+                   (members-all '(0 5 8) pcs)
+                   (members-all '(2 7 11) pcs))
+               (<= (third (first (:events (eval test)))) 1000)
+               (= (count (:events (eval test))) 4))
+        test
+        (find-triad-beginning))))
 
 (defn chop
   "Chops beats over 1000 into beat-sized pieces."
@@ -582,79 +422,157 @@ b43800b
           (cons (concat (list begin-time)
                         (list (second event))
                         '(1000)
-                        (nthcdr 3 event))
+                        (drop 3 event))
                 (chop event (+ begin-time 1000)(- duration 1000))))))
 
 (defn remainder
   "Returns the remainder of the beat."
   ([event] (remainder (first event) (third event)))
   ([event begin-time duration]
-      (cond ((empty? event)())
-            ((= duration 1000)())
-            ((< duration 1000) (list (concat (list begin-time)
-                                             (list (second event))
-                                             (list duration)
-                                             (nthcdr 3 event))))
-            (t (remainder event (+ begin-time 1000)(- duration 1000))))))
+     (cond (empty? event)()
+           (= duration 1000)()
+           (< duration 1000) (list (concat (list begin-time)
+                                           (list (second event))
+                                           (list duration)
+                                           (drop  3 event)))
+           :else (remainder event (+ begin-time 1000)(- duration 1000)))))
 
-(defn get-full-beat [events &optional (begin-time (ffirst events))(duration 0)]
+(defn get-full-beat
   "Returns one full beat of the music."
-  (cond ((empty? events)())
-        ((= (+ duration (third (first events))) 1000)
-         (list (first events)))
-        ((> (+ duration (third (first events))) 1000)
-         (list (concat (firstn 2 (first events))
-                       (list (- 1000 duration))
-                       (nthcdr 3 (first events)))))
-        (t (cons (first events)
-                 (get-full-beat (rest events)
-                                (+ begin-time (third (first events)))
-                                (+ (third (first events)) duration))))))
+  ([events] (get-full-beat events (ffirst events) 0))
+  ([events begin-time duration]
+     (cond (empty? events)()
+           (= (+ duration (third (first events))) 1000)
+           (list (first events))
+           (> (+ duration (third (first events))) 1000)
+           (list (concat (take 2 (first events))
+                         (list (- 1000 duration))
+                         (drop  3 (first events))))
+           :else (cons (first events)
+                   (get-full-beat (rest events)
+                                  (+ begin-time (third (first events)))
+                                  (+ (third (first events)) duration))))))
 
-(defn remainders [events &optional (begin-time (ffirst events))(duration 0)]
+(defn get-channel [n music]
+  "Gets the nth channel of the music."
+  (cond (empty? music)()
+        (= (fourth (first music)) n)
+        (cons (first music)(get-channel n (rest music)))
+        :else (get-channel n (rest music))))
+
+(defn remainders
   "Returns remainders of beats."
-  (cond ((empty? events)())
-        ((= (+ duration (third (first events))) 1000)
-         ())
-        ((> (+ duration (third (first events))) 1000)
-         (list (concat (list (+ begin-time (- 1000 duration)))
-                       (list (second (first events)))
-                       (list (- (third (first events)) (- 1000 duration)))
-                       (nthcdr 3 (first events)))))
-        (t (remainders (rest events)
-                       (+ begin-time (third (first events)))
-                       (+ (third (first events)) duration)))))
+  ([events] (remainders events (ffirst events) 0))
+  ([events begin-time duration]
 
-(defn remove-full-beat [events &optional (begin-time (ffirst events))(duration 0)]
+      (cond (empty? events)()
+            (= (+ duration (third (first events))) 1000)
+            ()
+            (> (+ duration (third (first events))) 1000)
+            (list (concat (list (+ begin-time (- 1000 duration)))
+                          (list (second (first events)))
+                          (list (- (third (first events)) (- 1000 duration)))
+                          (drop  3 (first events))))
+            :else (remainders (rest events)
+                              (+ begin-time (third (first events)))
+                              (+ (third (first events)) duration)))))
+
+(defn remove-full-beat
   "Removes one full beat from the events arg."
-  (cond ((empty? events)())
-        ((>= (+ duration (third (first events))) 1000)
-         (rest events))
-        (t (remove-full-beat (rest events)
-                             (+ begin-time (third (first events)))
-                             (+ (third (first events)) duration)))))
+  ([events]  (remove-full-beat (ffirst events) 0))
+  ([events begin-time duration]
+
+     (cond (empty? events)()
+           (>= (+ duration (third (first events))) 1000)
+           (rest events)
+           :else (remove-full-beat (rest events)
+                               (+ begin-time (third (first events)))
+                               (+ (third (first events)) duration)))))
 
 (defn get-other-channels [channel-not-to-get events]
   "Returns all but the first arg channeled events."
-  (cond ((empty? events)())
-        ((= (fourth (first events)) channel-not-to-get)
-         (get-other-channels channel-not-to-get (rest events)))
-        (t (cons (first events)
-                 (get-other-channels channel-not-to-get (rest events))))))
+  (cond (empty? events)()
+        (= (fourth (first events)) channel-not-to-get)
+        (get-other-channels channel-not-to-get (rest events))
+        :else (cons (first events)
+                (get-other-channels channel-not-to-get (rest events)))))
+
+(defn chop-into-bites [events]
+  "Chops beats into groupings."
+  (cond (empty? events)()
+        (and (= (third (first events)) 1000)
+             (thousandp (ffirst events)))
+        (cons (list (first events))
+              (chop-into-bites (rest events)))
+        (> (third (first events)) 1000)
+        (cons (chop (first events))
+              (chop-into-bites (concat (remainder (first events))(rest events))))
+        :else (cons (get-full-beat (get-channel (fourth (first events)) events))
+                (chop-into-bites (concat (remainders (get-channel (fourth (first events)) events))
+                                         (concat (remove-full-beat (get-channel (fourth (first events)) events))
+                                                 (get-other-channels (fourth (first events)) events)))))))
+
+(defn break-into-beats [events]
+  "Breaks events into beat-sized groupings."
+  (sort-by-first-element (apply concat (chop-into-bites (sort-by-first-element events)))))
 
 (defn get-long-phrases [distances]
   "Returns phrases of greater than 120000 duration."
-  (cond ((empty? (rest distances))())
-        ((> (- (second distances)(first distances)) 12000)
-         (cons (firstn 2 distances)
-               (get-long-phrases (rest distances))))
-        (t (get-long-phrases (rest distances)))))
+  (cond (empty? (rest distances))()
+        (> (- (second distances)(first distances)) 12000)
+        (cons (take 2 distances)
+              (get-long-phrases (rest distances)))
+        :else (get-long-phrases (rest distances))))
 
-(defn discover-cadences [missing-cadence-locations ordered-events]
-  "Makes an appropriate cadence possible."
-  (if (empty? missing-cadence-locations) ordered-events
-      (discover-cadences (rest missing-cadence-locations)
-                     (discover-cadence (first missing-cadence-locations) ordered-events))))
+(defn get-region [begin-time end-time events]
+  "Returns the region boardered by begin and end times."
+  (cond (empty? events)()
+        (and (>= (ffirst events) begin-time)
+             (< (ffirst events) end-time))
+        (cons (first events)
+              (get-region begin-time end-time (rest events)))
+        :else (get-region begin-time end-time (rest events))))
+
+(defn not-beyond [channel-events]
+  "Returns events beyond the initial ontime."
+  (if (not (> (apply + (map third channel-events)) 1000)) true))
+
+(defn not-beyond-1000
+  "Returns t if the beat does not contain events beyond the incept time."
+  ([beat] (not-beyond-1000 beat 1))
+  ([beat channel]
+      (cond (= channel 5) true
+            (not-beyond (get-channel channel beat))
+            (not-beyond-1000 beat (+ channel 1))
+            :else ())))
+
+(defn find-cadence-place [ordered-events]
+  "Returns the best place for a first cadence."
+  (let [beats (collect-beats ordered-events)]
+    (map (fn [beat] (ffirst beat))
+         (filter (fn [beat]
+                   (and (on-beat (take 4 beat)(ffirst beat))
+                        (triad? (take 4 beat))
+                        (not-beyond-1000 beat))) beats))))
+
+(defn positions [number list]
+  "Shows the positions of number in list."
+  (let [position ()]
+    (loop until (empty? (member number list))
+          do (setf position (position number list))
+          collect position
+          do (setf list  (substitute 'x number list
+                                     :end (+ 1 position))))))
+
+(defn find-closest [number list]
+  "finds the closest number in list to number."
+  (let [test (loop for item in list
+                   collect (math/abs (- number item)))]
+    (nth (choose-one (positions (first (my-sort '< test)) test)) list)))
+
+(defn find-best-on-time [on-times]
+  "Finds the best ontime."
+  (find-closest (+ (/ (- (my-last on-times)(first on-times)) 2)(first on-times)) on-times))
 
 (defn discover-cadence [missing-cadence-locations ordered-events]
   "Discovers an appropriate cadence."
@@ -665,6 +583,12 @@ b43800b
     (sort-by-first-element
              (concat (resolve (get-region best-location-for-new-cadence (+ best-location-for-new-cadence 1000) relevant-events))
                      (remove-region best-location-for-new-cadence (+ best-location-for-new-cadence 1000) ordered-events))))))
+
+(defn discover-cadences [missing-cadence-locations ordered-events]
+  "Makes an appropriate cadence possible."
+  (if (empty? missing-cadence-locations) ordered-events
+      (discover-cadences (rest missing-cadence-locations)
+                     (discover-cadence (first missing-cadence-locations) ordered-events))))
 
 (defn find-cadence-start-times [ordered-events]
   "Finds the cadence start times."
@@ -693,54 +617,56 @@ b43800b
           (t (if (> quarter-note-distance half-note-distance) half-note-distance
                  quarter-note-distance)))))
 
-(defn find-1000s [ordered-events &optional (start-time (ffirst ordered-events))]
+(defn find-1000s
   "Returns the ontime if the ordered events are all duration 1000."
-  (cond ((empty? ordered-events)())
-        ((and (let [channel-1-event (first (get-channel 1 ordered-events))]
-                (and (= (third channel-1-event) 1000)
-                     (= start-time (first channel-1-event))))
-              (let [channel-1-event (first (get-channel 2 ordered-events))]
-                (and (= (third channel-1-event) 1000)
-                     (= start-time (first channel-1-event))))
-              (let [channel-1-event (first (get-channel 3 ordered-events))]
-                (and (= (third channel-1-event) 1000)
-                     (= start-time (first channel-1-event))))
-              (let [channel-1-event (first (get-channel 4 ordered-events))]
-                (and (= (third channel-1-event) 1000)
-                     (= start-time (first channel-1-event)))))
-         start-time)
-        (t (find-1000s (rest ordered-events)))))
+  ([ordered-events] (find-1000s ordered-events (ffirst ordered-events)))
+  ([ordered-events start-time]
+     (cond (empty? ordered-events)()
+           (and (let [channel-1-event (first (get-channel 1 ordered-events))]
+                  (and (= (third channel-1-event) 1000)
+                       (= start-time (first channel-1-event))))
+                (let [channel-1-event (first (get-channel 2 ordered-events))]
+                  (and (= (third channel-1-event) 1000)
+                       (= start-time (first channel-1-event))))
+                (let [channel-1-event (first (get-channel 3 ordered-events))]
+                  (and (= (third channel-1-event) 1000)
+                       (= start-time (first channel-1-event))))
+                (let [channel-1-event (first (get-channel 4 ordered-events))]
+                  (and (= (third channel-1-event) 1000)
+                       (= start-time (first channel-1-event)))))
+           start-time
+           :else (find-1000s (rest ordered-events)))))
 
 (defn find-2000s [ordered-events &optional (start-time (ffirst ordered-events))]
   "Returns events of 2000 duration."
-  (cond ((empty? ordered-events)())
-        ((and (let [channel-1-event (first (get-channel 1 ordered-events))]
-                (and (= (third channel-1-event) 2000)
-                     (= start-time (first channel-1-event))))
-              (let [channel-1-event (first (get-channel 2 ordered-events))]
-                (and (= (third channel-1-event) 2000)
-                     (= start-time (first channel-1-event))))
-              (let [channel-1-event (first (get-channel 3 ordered-events))]
-                (and (= (third channel-1-event) 2000)
-                     (= start-time (first channel-1-event))))
-              (let [channel-1-event (first (get-channel 4 ordered-events))]
-                (and (= (third channel-1-event) 2000)
-                     (= start-time (first channel-1-event)))))
-         start-time)
-        (t (find-2000s (rest ordered-events)))))
+  (cond (empty? ordered-events)()
+        (and (let [channel-1-event (first (get-channel 1 ordered-events))]
+               (and (= (third channel-1-event) 2000)
+                    (= start-time (first channel-1-event))))
+             (let [channel-1-event (first (get-channel 2 ordered-events))]
+               (and (= (third channel-1-event) 2000)
+                    (= start-time (first channel-1-event))))
+             (let [channel-1-event (first (get-channel 3 ordered-events))]
+               (and (= (third channel-1-event) 2000)
+                    (= start-time (first channel-1-event))))
+             (let [channel-1-event (first (get-channel 4 ordered-events))]
+               (and (= (third channel-1-event) 2000)
+                    (= start-time (first channel-1-event)))))
+        start-time
+        :else (find-2000s (rest ordered-events))))
 
 (defn transpose [amt events]
   "Transposes the events according to its first arg."
   (loop for event in events
         collect (if (not (zerop (second event)))
-                  (concat (list (first event))(list (+ (second event) amt))(nthcdr 2 event))
+                  (concat (list (first event))(list (+ (second event) amt))(drop  2 event))
                   event)))
 
 (defn get-beat-length [events]
   "this is used in re-time for setting the new time!
    requires that the first in events be sorted to current time!"
   (let [time (ffirst events)]
-    (first (my-sort #'> (loop for event in events
+    (first (sort > (loop for event in events
                               collect (get-note-timing event time))))))
 
 (defn get-note-timing [event time]
@@ -749,101 +675,39 @@ b43800b
 
 (defn match-them [chord full-chord allowance]
   "Matches the chord with the list of pitches within the allowance."
-  (cond ((empty? chord) t)
-        ((and (not (member (first chord) full-chord))
-              (zerop allowance))
-         ())
-        ((not (member (first chord) full-chord))
-         (match-them (rest chord) full-chord (1- allowance)))
-        (t (match-them (rest chord) full-chord allowance))))
+  (cond (empty? chord) t
+        (and (not (member (first chord) full-chord))
+             (zerop allowance))
+        ()
+        (not (member (first chord) full-chord))
+        (match-them (rest chord) full-chord (1- allowance))
+        :else (match-them (rest chord) full-chord allowance)))
 
 (defn remove-region [begin-time end-time events]
   "Removes the region boardered by begin and end times."
-  (cond ((empty? events)())
-        ((and (>= (ffirst events) begin-time)
-              (< (ffirst events) end-time))
-         (remove-region begin-time end-time (rest events)))
-        (t (cons (first events)
-                 (remove-region begin-time end-time (rest events))))))
-
-(defn get-region [begin-time end-time events]
-  "Returns the region boardered by begin and end times."
-  (cond ((empty? events)())
-        ((and (>= (ffirst events) begin-time)
-              (< (ffirst events) end-time))
-         (cons (first events)
-               (get-region begin-time end-time (rest events))))
-        (t (get-region begin-time end-time (rest events)))))
+  (cond (empty? events)()
+        (and (>= (ffirst events) begin-time)
+             (< (ffirst events) end-time))
+        (remove-region begin-time end-time (rest events))
+        :else (cons (first events)
+                (remove-region begin-time end-time (rest events)))))
 
 (defn resolve [beat &optional (on-time (ffirst beat))]
   "Resolves the beat if necessary."
-  (cond ((empty? beat)())
-        ((= (third (first beat)) 1000)
-         (cons (first beat)
-               (resolve (rest beat) on-time)))
-        (t (let [test (get-on-beat (get-channel (fourth (first beat)) beat) on-time)]
-             (cons (if (>= (third (first test)) 1000)(first test)
-                       (concat (firstn 2 (first test)) '(1000) (nthcdr 3 (first test))))
-                   (resolve (remove-all (get-channel (fourth (first beat)) beat) beat) on-time))))))
-
-(defn find-best-on-time [on-times]
-  "Finds the best ontime."
-  (find-closest (+ (/ (- (my-last on-times)(first on-times)) 2)(first on-times)) on-times))
-
-(defn find-cadence-place [ordered-events]
-  "Returns the best place for a first cadence."
-  (let [beats (collect-beats ordered-events)]
-    (loop for beat in beats
-          if (and (on-beat (firstn 4 beat)(ffirst beat))
-                  (triad? (firstn 4 beat))
-                  (not-beyond-1000 beat))
-          collect (ffirst beat))))
-
-(defn not-beyond-1000 [beat &optional (channel 1)]
-  "Returns t if the beat does not contain events beyond the incept time."
-  (cond ((= channel 5) t)
-        ((not-beyond (get-channel channel beat))
-         (not-beyond-1000 beat (+ channel 1)))
-        (t ())))
-
-(defn not-beyond [channel-events]
-  "Returns events beyond the initial ontime."
-  (if (not (> (apply #'+ (mapcar #'third channel-events)) 1000)) t))
-
-(defn on-beat [events ontime]
-  "Returns t if the events conform to ontime."
-  (cond ((empty? events) t)
-        ((and (thousandp (ffirst events))(= (ffirst events) ontime))
-         (on-beat (rest events) ontime))
-        (t ())))
-
-(defn find-closest [number list]
-  "finds the closest number in list to number."
-  (let [test (loop for item in list
-                   collect (abs (- number item)))]
-    (nth (choose-one (positions (first (my-sort '< test)) test)) list)))
-
-(defn positions [number list]
-  "Shows the positions of number in list."
-  (let [position ()]
-    (loop until (empty? (member number list))
-          do (setf position (position number list))
-          collect position
-          do (setf list  (substitute 'x number list
-                                     :end (+ 1 position))))))
+  (cond (empty? beat)()
+        (= (third (first beat)) 1000)
+        (cons (first beat)
+              (resolve (rest beat) on-time))
+        :else (let [test (get-on-beat (get-channel (fourth (first beat)) beat) on-time)]
+            (cons (if (>= (third (first test)) 1000)(first test)
+                      (concat (take 2 (first test)) '(1000) (drop 3 (first test))))
+                  (resolve (remove-all (get-channel (fourth (first beat)) beat) beat) on-time)))))
 
 (defn remove-all [stuff other-stuff]
   "Removes all of the stuff from the other-stuff."
   (loop when (empty? stuff) return other-stuff
         do (setf other-stuff (remove (first stuff) other-stuff :test 'equal))
         do (setf stuff (rest stuff))))
-
-(defn get-channel [n music]
-  "Gets the nth channel of the music."
-  (cond ((empty? music)())
-        ((= (fourth (first music)) n)
-         (cons (first music)(get-channel n (cdr music))))
-        (t (get-channel n (cdr music)))))
 
 (defn match-harmony [one two]
   "Checks to see if its args match mod-12."
@@ -865,9 +729,9 @@ b43800b
 
 (defn all-members [list target]
   "Checks to see if its first arg members are present in second arg."
-  (cond ((empty? list) t)
-        ((not (member (first list) target)) ())
-        (t (all-members (rest list) target))))
+  (cond (empty? list) t
+        (not (member (first list) target)) ()
+        :else (all-members (rest list) target)))
 
 (defn get-last-beat-events [events]
   "As its name suggests."
@@ -884,11 +748,6 @@ b43800b
          (cons (first events)
                (get-all-events-with-start-time-of start-time (rest events))))
         (t (get-all-events-with-start-time-of start-time (rest events)))))
-
-(defn get-pitches [events]
-  "Gets the pitches from its arg."
-  (loop for event in events
-        collect (second event)))
 
 (defn incf-beat [beat]
   "Increments the beat number."
@@ -910,10 +769,10 @@ b43800b
   "Returns true if the events are tonic."
   (let [events (get-last-beat-events (break-into-beats the-events))]
     (and (not (empty? events))
-         (and (all-members (mapcar #'second events) (apply #'append
-                                                           (loop for note in '(60 64 67)
-                                                                 collect (project-octaves note))))(match-harmony (my-sort #'< (mapcar #'second events)) '(60 64 67))
-              (match-harmony (my-sort #'> (mapcar #'second events)) '(60 64 67))))))
+         (and (all-members (map second events) (apply concat
+                                                      (loop for note in '(60 64 67)
+                                                            collect (project-octaves note))))(match-harmony (my-sort #'< (map second events)) '(60 64 67))
+                                                            (match-harmony (sort > (map second events)) '(60 64 67))))))
 
 (defn find-events-duration [events &optional (duration 0)]
   "Returns the events duration."
@@ -968,13 +827,13 @@ b43800b
 
 (defn make-1000s [beat]
   "Makes all of the beat's durations into 1000s."
-  (map (fn [event] (concat (firstn 2 event) '(1000) (drop 3 event))) beat))
+  (map (fn [event] (concat (take 2 event) '(1000) (drop 3 event))) beat))
 
 (defn reset [beats subtraction]
   "Resets the beats appropriately."
   (if (empty? beats)()
       (cons (loop for event in (first beats)
-                  collect (concat (list (- (first event) subtraction)) (cdr event)))
+                  collect (concat (list (- (first event) subtraction)) (rest event)))
             (reset (rest beats) subtraction))))
 
 (defn delay-for-upbeat [events]
@@ -984,14 +843,6 @@ b43800b
 (defn reset-events-to [events begin-time]
   "Resets the events for the delayed beat."
   (map (fn [event] (cons (+ begin-time (first event))(rest event))) (set-to-zero events)))
-
-(defn get-on-beat [events ontime]
-  "Returns the on beat from the events."
-  (cond (empty? events) ()
-        (and (thousandp (ffirst events))(= (ffirst events) ontime))
-        (cons (first events)
-              (get-on-beat (rest events) ontime))
-        :else ()))
 
 (defn check-mt [events]
   "Returns the major tonic."
@@ -1012,7 +863,6 @@ b43800b
         (all (rest first) second)
         :else ()))
 
-
 (defn ensure-necessary-cadences [ordered-events]
   "Ensures the cadences are proper."
   (let [cadence-start-times (find-cadence-start-times ordered-events)]
@@ -1021,7 +871,7 @@ b43800b
 
 (defn check-for-parallel [events]
   "Checks for parallel motion."
-  (let [sorted-pitches-by-beat (loop for beat in (collect-beats (firstn 30 (sort-by-first-element events)))
+  (let [sorted-pitches-by-beat (loop for beat in (collect-beats (take 30 (sort-by-first-element events)))
                                      collect (get-pitches (get-on-beat beat (ffirst beat))))]
     (and (= (count (first sorted-pitches-by-beat)) 4)
          (= (count (second sorted-pitches-by-beat)) 4)
@@ -1051,3 +901,78 @@ b43800b
            true
            (> (third (first events)) 1000) ()
            :else (wait-for-cadence (rest events) start-time))))
+
+(defn match-tonic-minor [the-events]
+  "Matches minor tonics."
+  (let [events (get-last-beat-events (break-into-beats the-events))]
+    (and (not (empty? events))
+         (and (all-members (mapcar #'second events) (apply #'append
+                                                           (loop for note in '(60 63 67)
+                                                                 collect (project-octaves note))))
+              (match-harmony (my-sort #'< (mapcar #'second events)) '(60 63 67))
+              (match-harmony (my-sort #'> (mapcar #'second events)) '(60 63 67))))))
+
+(defn compose-b
+  "The real horse for compose-bach."
+  ([] (compose-b 0))
+  ([counter]
+     (reset! *end* ())
+     (reset! *history* ())
+     (reset! *events*
+             (let [current-beat
+                   (find-triad-beginning)]
+               (if (match-tonic-minor (take 4 (events (eval current-beat))))
+                 (reset! *tonic* 'minor)(reset! *tonic* 'major))
+               (apply concat
+                      (re-time
+                       (concat
+                        (loop until (or (reset! *early-exit?* (empty? (destination-notes (eval current-beat))))
+                                        (if (and (> counter 36)
+                                                 (if (= *tonic* 'minor)
+                                                   (and (> (find-events-duration (events (eval current-beat))) *beat-size*)
+                                                        (match-tonic-minor (events (eval current-beat))))
+                                                   (and (> (find-events-duration (events (eval current-beat))) *beat-size*)
+                                                        (match-bach-tonic (events (eval current-beat))))))
+                                          (do (reset! *end* t) t)))
+                              do (push current-beat *history*)
+                              collect (events (eval current-beat))
+                              do (reset! *previous-beat* current-beat)
+                              do (reset! current-beat
+                                         (choose-one
+                                          (let [beat-choices (beats (eval (make-lexicon-name (destination-notes (eval current-beat)))))]
+                                            (if (empty? (rest beat-choices)) beat-choices (my-remove (list *previous-beat* (incf-beat *previous-beat*)) beat-choices)))))
+                              do (incf counter))
+                        (do (push current-beat *history*)
+                            (list (events
+                                   (eval current-beat)))))))))
+     (if (and (empty? *early-exit?*)(= *composer* 'bach))
+                                        ;(reset! *events* (transpose-to-bach-range *events*))
+       *events* (reset! *events* ()))
+     (reset! *history* (reverse *history*))
+     (if *end* (push (list (+ 1 *compose-number*) *history*) *histories*))))
+
+(defn compose-bach
+  "The top-level compose function."
+  []
+  (compose-b)
+  (if (or (empty? *events*)
+          (< (let [it (my-last (sort-by-first-element *events*))]
+               (+ (first it)(third it)))
+             15000)
+          (> (let [it (my-last (sort-by-first-element *events*))]
+               (+ (first it)(third it)))
+             200000)
+          (not (wait-for-cadence *events*))
+          (check-for-parallel *events*)
+          (empty? *end*))
+    (compose-bach)
+    (do (reset! *save-events* *events*)(reset! *events* (ensure-necessary-cadences (sort-by-first-element *events*)))
+           (if (not (check-mt (get-on-beat *events* (ffirst *events*))))
+             (reset! *events* (delay-for-upbeat *events*)))
+           (if (and (empty? *early-exit?*)(= *composer* 'bach))
+             (reset! *events*
+                   (cadence-collapse (transpose-to-bach-range *events*)))(reset! *events* ()))
+           t)))
+
+(defn compose []
+  (compose-bach))
