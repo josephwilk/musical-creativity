@@ -14,6 +14,20 @@
    [data.chorale.jsb12 :refer :all]
    [data.chorale.jsb13 :refer :all]))
 
+(def bach-dbs '(data.chorale.jsb1 data.chorale.jsb2 data.chorale.jsb3 data.chorale.jsb4
+                                  data.chorale.jsb5 data.chorale.jsb6 data.chorale.jsb7 data.chorale.jsb8
+                                  data.chorale.jsb9 data.chorale.jsb10 data.chorale.jsb11 data.chorale.jsb12
+                                  data.chorale.jsb13))
+
+(defn find-db-ns [db-name]
+  (first (filter #(resolve (symbol (str % "/" db-name))) bach-dbs)))
+
+(defn find-db [db-name]
+  (-> (str (find-db-ns db-name) "/" db-name)
+      symbol
+      resolve
+      var-get))
+
 (def bach-chorales-in-databases
 ;1
 '(b206b b306b b408b b507b b606b

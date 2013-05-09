@@ -4,7 +4,9 @@
    [data.chorale :as chorale]))
 
 (def *composer* 'bach)
-(def *rules-storage* ())
+
+(def *rules-storage* (atom ()))
+
 (def *mix-names* ())
 (def *mix* ())
 (def *lexicons* ())
@@ -14,15 +16,19 @@
 (def bach-tonics ())
 (def bach-compose-beats ())
 (def bach-rules ())
-(def *end* ())
-(def *history* ())
-(def *events* ())
-(def *tonic* 'major)
-(def *early-exit?* ())
-(def *end* ())
+
+(def *end* (atom ()))
+(def *history* (atom ()))
+(def *events* (atom ()))
+(def *tonic* (atom 'major))
+(def *early-exit?* (atom ()))
+(def *end* (atom ()))
+
 (def *compose-number* 0)
 (def *histories* ())
-(def *previous-beat* ())
+
+(def *previous-beat* (atom ()))
+
 (def *save-events* ())
 (def *beat-size* 1000)
 
@@ -41,9 +47,9 @@
     (when (>= index 0) index)))
 
 (defn choose-one [list]
-  (nth list (rand-int 0 (- (count list) 1))))
+  (nth list (rand-int (count list))))
 
-(defn implode []
+(defn implode [list]
 ;TODO: write me
 )
 
@@ -265,21 +271,26 @@
 
 (defn find-alignment-in-all-channels [point channels]
   "run this on the channels of the channel-point-lists"
-  (cond (empty? channels) point
-        (empty? point) point
-        (find-alignment point (first channels))
-        (find-alignment-in-all-channels point (rest channels))
-        :else ()))
+  (cond
+   (empty? channels)
+   point
+   (nil? point)
+   point
+   (find-alignment point (first channels))
+   (find-alignment-in-all-channels point (rest channels))
+   :else
+   ()))
 
-;TODO: confusing form on cond
 (defn all-together [channel channels]
   "Returns the appropriate channel timing."
   (cond
    (empty? channel)
    (second (my-last (my-last channels)))
-   ;(find-alignment-in-all-channels (second (first channel)) channels)
+   (find-alignment-in-all-channels (second (first channel)) channels)
+   (find-alignment-in-all-channels (second (first channel)) channels)
    :else
    (all-together (rest channel) channels)))
+
 
 (defn first-place-where-all-together [events]
   "This looks ahead to get the first time they end together"
@@ -310,10 +321,9 @@
   "Loads and makes proper objects out of the db-names arg."
   ([db-names] (create-complete-database db-names 1))
   ([db-names counter]
-
      (if (empty? db-names) true
          (do (let [beats (remove-nils (collect-beats (set-to-zero
-                                                       (sort-by-first-element (eval (first db-names))))))
+                                                      (sort-by-first-element (chorale/find-db (first db-names))))))
                    name nil
                    start true]
                (loop [beats beats
@@ -409,6 +419,9 @@
 
 (defn find-triad-beginning []
   "Returns the db with a triad beginning."
+
+  (println (eval *composer*))
+
   (let [test (choose-one (eval (first (eval *composer*))))
         on-beat (get-on-beat (:events (eval test))(ffirst (:events (eval test))))
         pcs (create-pitch-class-set (get-pitches on-beat))]
@@ -593,6 +606,28 @@
         :else (cons (first events)
                 (remove-region begin-time end-time (rest events)))))
 
+(defn remove-all [stuff other-stuff]
+  "Removes all of the stuff from the other-stuff."
+  (loop [stuff stuff
+         other-stuff other-stuff]
+    (if (empty? stuff)
+      other-stuff
+      (recur (rest stuff)
+             (remove (first stuff) other-stuff)))))
+
+(defn resolve-it
+  "Resolves the beat if necessary."
+  ([beat] (resolve-it beat (ffirst beat)))
+  ([beat on-time]
+      (cond (empty? beat)()
+            (= (third (first beat)) 1000)
+            (cons (first beat)
+                  (resolve-it (rest beat) on-time))
+            :else (let [test (get-on-beat (get-channel (fourth (first beat)) beat) on-time)]
+                    (cons (if (>= (third (first test)) 1000)(first test)
+                              (concat (take 2 (first test)) '(1000) (drop 3 (first test))))
+                          (resolve-it (remove-all (get-channel (fourth (first beat)) beat) beat) on-time))))))
+
 (defn discover-cadence [missing-cadence-locations ordered-events]
   "Discovers an appropriate cadence."
   (let [relevant-events (get-region (first missing-cadence-locations)(second missing-cadence-locations) ordered-events)
@@ -600,8 +635,8 @@
         best-location-for-new-cadence (if places-for-cadence (find-best-on-time places-for-cadence) nil)]
     (if (empty? best-location-for-new-cadence) ordered-events
     (sort-by-first-element
-             (concat (resolve (get-region best-location-for-new-cadence (+ best-location-for-new-cadence 1000) relevant-events))
-                     (remove-region best-location-for-new-cadence (+ best-location-for-new-cadence 1000) ordered-events))))))
+     (concat (resolve-it (get-region best-location-for-new-cadence (+ best-location-for-new-cadence 1000) relevant-events))
+             (remove-region best-location-for-new-cadence (+ best-location-for-new-cadence 1000) ordered-events))))))
 
 (defn find-1000s
   "Returns the ontime if the ordered events are all duration 1000."
@@ -702,28 +737,6 @@
         (not (member (first chord) full-chord))
         (match-them (rest chord) full-chord (- allowance 1))
         :else (match-them (rest chord) full-chord allowance)))
-
-(defn remove-all [stuff other-stuff]
-  "Removes all of the stuff from the other-stuff."
-  (loop [stuff stuff
-         other-stuff other-stuff]
-    (if (empty? stuff)
-      other-stuff
-      (recur (rest stuff)
-             (remove (first stuff) other-stuff)))))
-
-(defn resolve
-  "Resolves the beat if necessary."
-  ([beat] (resolve beat (ffirst beat)))
-  ([beat on-time]
-      (cond (empty? beat)()
-            (= (third (first beat)) 1000)
-            (cons (first beat)
-                  (resolve (rest beat) on-time))
-            :else (let [test (get-on-beat (get-channel (fourth (first beat)) beat) on-time)]
-                    (cons (if (>= (third (first test)) 1000)(first test)
-                              (concat (take 2 (first test)) '(1000) (drop 3 (first test))))
-                          (resolve (remove-all (get-channel (fourth (first beat)) beat) beat) on-time))))))
 
 (defn reduce-it [note base]
   "Reduces its first arg mod12 below its second arg."
@@ -1000,4 +1013,5 @@
            true)))
 
 (defn compose []
+  (create-complete-database chorale/bach-chorales-in-databases)
   (compose-bach))
