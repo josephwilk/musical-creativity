@@ -91,7 +91,7 @@
     (map #(second %) onbeat-events)))
 
 (defn sort-by-first-element [lists]
-  (sort (fn [[x & _] [y & _]] (> x y))  lists))
+  (sort (fn [[x & _] [y & _]] (< x y))  lists))
 
 (defn set-to-zero
   "Sets the events to zero."
