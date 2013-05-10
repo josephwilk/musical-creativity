@@ -58,9 +58,8 @@
 (defn implode [list]
   (str/join "" list))
 
-(defn explode [list]
-  ;:TODO
-  list)
+(defn explode [atom]
+  (vec atom))
 
 (defn make-instance [_ attributes]
   attributes)
