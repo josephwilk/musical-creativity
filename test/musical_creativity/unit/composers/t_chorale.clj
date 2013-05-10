@@ -26,12 +26,19 @@
 (fact "all together"
   (all-together '((1 1000) (1 2000) (1 2500) (1 3000)) '((1000) (2000))) => 1000)
 
-(fact "find triad beginning"
+(future-fact "find triad beginning"
   ;b43500b-14
-  (create-complete-database chorale/bach-chorales-in-databases)
   (find-triad-beginning) => nil)
 
 (fact "make name"
   (make-name :b206b 1) => 'b206b-1)
+
+(fact "put beat into lexicon"
+  (reset! *lexicon-store* {})
+  (reset! *beats-store* {'b206b-1 {:start-notes [57 60 69 76]}})
+
+  (put-beat-into-lexicon 'b206b-1) => :bach-57-60-69-76
+
+  @*lexicon-store* => {:bach-57-60-69-76 {:beats '(b206b-1)}})
 
 

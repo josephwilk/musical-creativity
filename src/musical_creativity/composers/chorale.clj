@@ -1,17 +1,21 @@
 (ns musical-creativity.composers.chorale
   (:require
    [clojure.math.numeric-tower :as math]
-   [data.chorale :as chorale]))
+   [data.chorale :as chorale]
+   [clojure.string :as str]))
 
 (def *composer* 'bach)
-
 (def *composer-rules* (atom {}))
+(def *beats-store* (atom {}))
+(def *lexicon-store* (atom {}))
+
+(def *lexicons* (atom []))
 
 (def *rules-storage* (atom ()))
 
 (def *mix-names* ())
 (def *mix* ())
-(def *lexicons* ())
+
 (def bach-dominants-tonics ())
 (def bach-start-beats ())
 (def bach-dominants ())
@@ -52,8 +56,7 @@
   (nth list (rand-int (count list))))
 
 (defn implode [list]
-;TODO: write me
-  list)
+  (str/join "" list))
 
 (defn explode [list]
   ;:TODO
@@ -194,11 +197,14 @@
   (atom []))
 
 (defn find-beat [name]
-  (eval name))
+  (@*beats-store* name))
+
+(defn find-in-lexicon [name]
+  (@*lexicon-store* name))
 
 (defn exist-lexicon [lexicon-name]
   "Sees if the lexicon exists."
-  (boundp lexicon-name))
+  (contains? @*lexicon-store* lexicon-name))
 
 (defn make-lexicon-name
   "Creates the appropriate lexicon name for the object."
@@ -214,15 +220,23 @@
       :else
       (make-lexicon-name note-numbers (mix (rest names))))))
 
-(defn put-beat-into-lexicon [beat-name]
+(defn put-beat-into-lexicon
   "Puts the beat arg into the appropriate lexicon."
-  (let [lexicon-name (make-lexicon-name (:start-notes (find-beat beat-name)))]
+  [beat-name]
+  (let [beat (find-beat beat-name)
+        lexicon-name (keyword (make-lexicon-name (:start-notes beat)))]
+
     (if (and (exist-lexicon lexicon-name)
-             (not (member beat-name (beats (eval lexicon-name)))))
-      (reset! (beats (eval lexicon-name)) (cons beat-name (beats (eval lexicon-name))))
-      (do (set lexicon-name
-                  (make-instance 'lexicon :beats (list beat-name)))
-             (swap-unless-includes lexicon-name *lexicons*)))))
+             (not (member beat-name (:beats (find-in-lexicon lexicon-name)))))
+
+      (let [beats-name (cons beat-name (:beats (find-in-lexicon lexicon-name)))]
+        (swap! *lexicon-store* assoc @*lexicon-store* lexicon-name beat-name)
+        lexicon-name)
+      (do
+        ;(set lexicon-name (make-instance 'lexicon :beats (list beat-name)))
+        (swap! *lexicon-store* assoc lexicon-name (make-instance 'lexicon {:beats (list beat-name)}))
+        (swap-unless-includes *lexicons* lexicon-name)
+        lexicon-name))))
 
 (defn return-beat
   "Returns the beat number of the initiating event."
@@ -329,35 +343,39 @@
                                                     (sort-by-first-element (chorale/find-db (first db-names))))))
                  name nil
                  start true]
-             (loop [name nil
-                    beats beats
+             (loop [beats beats
                     counter counter
                     start true]
-               (if (empty? beats)
-                 (println "DONE")
+               (when-not (empty? beats)
                  (let [name (make-name (first db-names) counter)
                        start-notes (get-onset-notes (first beats))
                        destination-notes (get-onset-notes (second beats))
                        events (first beats)
                        rules (cons (get-rules start-notes destination-notes name)
                                    (list name (ffirst (sort-by-first-element events))))
-                       composer-id (str *composer* "-" rules)
+                       composer-id (str *composer* "-" (str (second rules) "-" (nth rules 2)))
 
                        instance (make-instance 'beat-it {:start-notes start-notes
                                                          :destination-notes destination-notes
                                                          :events events
                                                          :voice-leading (first rules)
                                                          :speac ()})]
+                   (swap! *composer-rules* assoc @*composer-rules* composer-id rules)
+                   ;(my-push rules composer-id)
+                   ;(set name instance)
+                   (swap! *beats-store* assoc @*beats-store* name instance)
 
-                   (println composer-id)
+                   (put-beat-into-lexicon name)
 
-                                        ;(my-push rules composer-id)
-                                        ;(set name instance)
+                   ;TODO: WTF
+                   ;(my-push name (concat *composer* '-'compose-beats))
 
-                   (put-beat-into-lexicon instance)
-                   (my-push name (concat *composer* '- 'compose-beats))
-                   (when start (my-push name (concat *composer* '- 'start-beats)))
-                   (recur instance (rest beats) (+ 1 counter) nil)))))
+                   ;TODO: WTF
+                   ;(when start (my-push name (concat *composer* '- 'start-beats)))
+
+                   (print ".")
+                   (flush)
+                   (recur (rest beats) (+ 1 counter) nil)))))
            (create-complete-database (rest db-names))))))
 
 
