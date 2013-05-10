@@ -331,47 +331,45 @@
   ([db-names counter]
      (if (empty? db-names)
        true
-       (do (let [beats (remove-nils (collect-beats (set-to-zero
-                                                    (sort-by-first-element (chorale/find-db (first db-names))))))
-                 name nil
-                 start true]
-             (loop [beats beats
-                    counter counter
-                    start true]
-               (when-not (empty? beats)
-                 (let [name (make-name (first db-names) counter)
-                       start-notes (get-onset-notes (first beats))
-                       destination-notes (get-onset-notes (second beats))
-                       events (first beats)
-                       rules (cons (get-rules start-notes destination-notes name)
-                                   (list name (ffirst (sort-by-first-element events))))
-                       composer-id (str *composer* "-" (str (second rules) "-" (nth rules 2)))
+       (do
+         (let [beats (remove-nils (collect-beats (set-to-zero
+                                                  (sort-by-first-element (chorale/find-db (first db-names))))))
+               name nil
+               start true]
+           (loop [beats beats
+                  counter counter
+                  start true]
+             (when-not (empty? beats)
+               (let [name (make-name (first db-names) counter)
+                     start-notes (get-onset-notes (first beats))
+                     destination-notes (get-onset-notes (second beats))
+                     events (first beats)
+                     rules (cons (get-rules start-notes destination-notes name)
+                                 (list name (ffirst (sort-by-first-element events))))
+                     composer-id (str *composer* "-" (str (second rules) "-" (nth rules 2)))
 
-                       instance (make-instance 'beat-it {:start-notes start-notes
-                                                         :destination-notes destination-notes
-                                                         :events events
-                                                         :voice-leading (first rules)
-                                                         :speac ()})]
-                   (swap! *composer-rules* assoc @*composer-rules* composer-id rules)
-                   ;(my-push rules composer-id)
-                   ;(set name instance)
-                   (swap! *beats-store* assoc @*beats-store* name instance)
+                     instance (make-instance 'beat-it {:start-notes start-notes
+                                                       :destination-notes destination-notes
+                                                       :events events
+                                                       :voice-leading (first rules)
+                                                       :speac ()})]
+                 (swap! *composer-rules* assoc @*composer-rules* composer-id rules)
+                                        ;(my-push rules composer-id)
+                                        ;(set name instance)
+                 (swap! *beats-store* assoc @*beats-store* name instance)
 
-                   (put-beat-into-lexicon name)
+                 (put-beat-into-lexicon name)
 
-                   ;TODO: WTF
-                   ;(my-push name (concat *composer* '-'compose-beats))
+                                        ;TODO: WTF
+                                        ;(my-push name (concat *composer* '-'compose-beats))
 
-                   ;TODO: WTF
-                   ;(when start (my-push name (concat *composer* '- 'start-beats)))
+                                        ;TODO: WTF
+                                        ;(when start (my-push name (concat *composer* '- 'start-beats)))
 
-                   (print ".")
-                   (flush)
-                   (recur (rest beats) (+ 1 counter) nil)))))
-           (create-complete-database (rest db-names))))))
-
-
-;(create-complete-database chorale/bach-chorales-in-databases)
+                 (print ".")
+                 (flush)
+                 (recur (rest beats) (+ 1 counter) nil)))))
+         (create-complete-database (rest db-names))))))
 
 (defn on-beat [events ontime]
   "Returns t if the events conform to ontime."
