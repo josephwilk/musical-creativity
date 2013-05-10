@@ -61,7 +61,7 @@
 (defn explode [atom]
   (vec atom))
 
-(defn make-instance [_ attributes]
+(defn make-instance [type attributes]
   attributes)
 
 (defn my-push [stuff place-name]
@@ -313,7 +313,6 @@
         :else (collect-by-timing timing (rest events))))
 
 (defn collect-beats [events]
-  "(collect-beats (sortcar #'< b4003))"
   (if (empty? events)()
       (let [test (collect-by-timing (first-place-where-all-together events) events)
             reduced-test (drop (count test) events)]
