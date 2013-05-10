@@ -345,8 +345,10 @@
      (if (empty? db-names)
        true
        (do
-         (let [beats (remove-nils (collect-beats (set-to-zero
-                                                  (sort-by-first-element (chorale/find-db (first db-names))))))
+         (let [beats (remove-nils
+                      (collect-beats
+                       (set-to-zero
+                        (sort-by-first-element (chorale/find-db (first db-names))))))
                name nil
                start true]
            (loop [beats beats
@@ -439,7 +441,7 @@
   (println (eval *composer*))
 
   (let [test (choose-one (eval (first (eval *composer*))))
-        on-beat (get-on-beat (:events (eval test))(ffirst (:events (eval test))))
+        on-beat (get-on-beat (:events (eval test)) (ffirst (:events (eval test))))
         pcs (create-pitch-class-set (get-pitches on-beat))]
       (if (and (triad? on-beat)
                (or (members-all '(0 4 8) pcs)
