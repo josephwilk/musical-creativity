@@ -80,11 +80,13 @@
                 (list (first note-numbers) '-))
               (hyphenate (rest note-numbers)))))
 
-(defn get-onset-notes [events]
+(defn get-onset-notes
   "Gets the onset pitches for its arg."
-  (let [onbeat (ffirst events)]
-    (map #(second %)
-         (filter (fn [event] (when (= (first event) onbeat))) events))))
+  [events]
+  (let [onbeat (ffirst events)
+        onbeat-events (filter (fn [event]
+                                (= (first event) onbeat)) events)]
+    (map #(second %) onbeat-events)))
 
 (defn sort-by-first-element [lists]
   (sort (fn [[x & _] [y & _]] (> x y))  lists))
