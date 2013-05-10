@@ -156,7 +156,7 @@
     (reverse @*rules-storage*)
     (do
       (reset! *rules-storage* (concat (reverse (get-rule (- (first destination-notes) (first start-notes))
-                                                       (first start-notes) start-notes destination-notes name)) *rules-storage*))
+                                                         (first start-notes) start-notes destination-notes name)) @*rules-storage*))
       (get-rules1 (rest start-notes) (rest destination-notes) name))))
 
 
