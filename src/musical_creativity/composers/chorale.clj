@@ -46,9 +46,12 @@
 
 (declare get-rule)
 
-;TODO: write
-(defn my-remove [list]
-  list)
+(defn my-remove [objects-to-be-remove list-of-objects]
+  (if (empty? objects-to-be-remove)
+    list-of-objects
+    (my-remove (rest objects-to-be-remove)
+               (remove (first objects-to-be-remove)
+                       list-of-objects))))
 
 (defn position [thing list]
   (let [index (.indexOf list thing)]
