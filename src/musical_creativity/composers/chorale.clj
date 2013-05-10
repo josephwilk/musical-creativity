@@ -217,11 +217,11 @@
              (not (member beat-name (:beats (find-in-lexicon lexicon-name)))))
 
       (let [beats-name (cons beat-name (:beats (find-in-lexicon lexicon-name)))]
-        (swap! *lexicon-store* assoc @*lexicon-store* lexicon-name beat-name)
+        (reset! *lexicon-store* (assoc @*lexicon-store* lexicon-name beat-name))
         lexicon-name)
       (do
         ;(set lexicon-name (make-instance 'lexicon :beats (list beat-name)))
-        (swap! *lexicon-store* assoc lexicon-name (make-instance 'lexicon {:beats (list beat-name)}))
+        (reset! *lexicon-store* (assoc lexicon-name (make-instance 'lexicon {:beats (list beat-name)})))
         (swap-unless-includes *lexicons* lexicon-name)
         lexicon-name))))
 
@@ -328,7 +328,7 @@
         composer-id (str *composer* "-" (str (second rules) "-" (nth rules 2)))]
 
     ;(my-push rules composer-id)
-    (swap! *composer-rules* assoc @*composer-rules* composer-id rules)
+    (reset! *composer-rules* (assoc @*composer-rules* composer-id rules))
 
     (make-instance 'beat-it {:start-notes start-notes
                             :destination-notes destination-notes
