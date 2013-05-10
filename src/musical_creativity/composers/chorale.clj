@@ -103,7 +103,7 @@
   "Returns th atom last of the list."
   (first (last list)))
 
-(defn thousandp [number]
+(defn a-thousand? [number]
   "Returns the number under 1000."
   (if (= 0 (mod number 1000)) true))
 
@@ -234,7 +234,7 @@
   ([channel-events] (return-beat channel-events (ffirst channel-events)))
   ([channel-events start-time]
      (cond (empty? channel-events) nil
-           (and (thousandp (ffirst channel-events))
+           (and (a-thousand? (ffirst channel-events))
                 (not (= start-time (ffirst channel-events))))
            (/ (- (ffirst channel-events) start-time) 1000)
            :else (return-beat (rest channel-events)
@@ -271,7 +271,7 @@
   "? (find-alignment 1000 '((4 1000) (4 1000) (4 5000)))
    t this finds the timing point in the channel"
   (cond (empty? channel)()
-        (and (thousandp point)
+        (and (a-thousand? point)
              (filter #(= point (first %)) (map reverse channel)))
         true
         :else (find-alignment point (rest channel))))
@@ -373,14 +373,14 @@
 (defn on-beat [events ontime]
   "Returns t if the events conform to ontime."
   (cond (empty? events) true
-        (and (thousandp (ffirst events))(= (ffirst events) ontime))
+        (and (a-thousand? (ffirst events))(= (ffirst events) ontime))
         (on-beat (rest events) ontime)
         :else ()))
 
 (defn get-on-beat [events ontime]
   "Returns the on beat from the events."
   (cond (empty? events) ()
-        (and (thousandp (ffirst events))(= (ffirst events) ontime))
+        (and (a-thousand? (ffirst events))(= (ffirst events) ontime))
         (cons (first events)
               (get-on-beat (rest events) ontime))
         :else ()))
@@ -536,7 +536,7 @@
   "Chops beats into groupings."
   (cond (empty? events)()
         (and (= (third (first events)) 1000)
-             (thousandp (ffirst events)))
+             (a-thousand? (ffirst events)))
         (cons (list (first events))
               (chop-into-bites (rest events)))
         (> (third (first events)) 1000)
@@ -788,7 +788,7 @@
   (let [begin-time (first (my-last (sort-by-first-element events)))
         last-beat (get-all-events-with-start-time-of begin-time events)]
     (if (and (= (count last-beat) 4)
-             (thousandp (third (first last-beat))))
+             (a-thousand? (third (first last-beat))))
       last-beat)))
 
 (defn get-db-n [exploded-lexicon]
