@@ -189,7 +189,7 @@
 (defn find-in-lexicon [name]
   (@*lexicon-store* name))
 
-(defn exist-lexicon [lexicon-name]
+(defn lexicon-contains? [lexicon-name]
   "Sees if the lexicon exists."
   (contains? @*lexicon-store* lexicon-name))
 
@@ -213,7 +213,7 @@
   (let [beat (find-beat beat-name)
         lexicon-name (keyword (make-lexicon-name (:start-notes beat)))]
 
-    (if (and (exist-lexicon lexicon-name)
+    (if (and (lexicon-contains? lexicon-name)
              (not (member beat-name (:beats (find-in-lexicon lexicon-name)))))
 
       (let [beats-name (cons beat-name (:beats (find-in-lexicon lexicon-name)))]
