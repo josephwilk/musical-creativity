@@ -223,7 +223,7 @@
         lexicon-name)
       (do
         ;(set lexicon-name (make-instance 'lexicon :beats (list beat-name)))
-        (reset! *lexicon-store* (assoc lexicon-name (make-instance 'lexicon {:beats (list beat-name)})))
+        (reset! *lexicon-store* (assoc @*lexicon-store* lexicon-name (make-instance 'lexicon {:beats (list beat-name)})))
         (swap-unless-includes *lexicons* lexicon-name)
         lexicon-name))))
 
