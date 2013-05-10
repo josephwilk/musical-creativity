@@ -42,3 +42,10 @@
   @*lexicon-store* => {:bach-57-60-69-76 {:beats '(b206b-1)}})
 
 
+(fact "create complete database"
+  (reset! *beats-store* {})
+
+  (create-complete-database ['b206b]) => true
+
+  (keys ('b206b-1 @*beats-store*)) => '(:start-notes :destination-notes :events :voice-leading :speac)
+  (count (:events  ('b206b-1 @*beats-store*))) => 204)

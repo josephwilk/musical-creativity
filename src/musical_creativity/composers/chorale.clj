@@ -355,7 +355,7 @@
                      instance (make-beat name beats)]
 
                  ;(set name instance)
-                 (swap! *beats-store* assoc @*beats-store* name instance)
+                 (reset! *beats-store* (assoc @*beats-store* name instance))
 
                  (put-beat-into-lexicon name)
 
