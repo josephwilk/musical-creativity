@@ -120,16 +120,8 @@
       list
       (recur value (rest list)))))
 
-(defn remove-nils [stuff]
-  "Removes the nils from the stuff."
-  (cond
-   (empty? stuff)
-   nil
-   (empty? (first stuff))
-   (remove-nils (rest stuff))
-   :else
-   (cons (first stuff)
-         (remove-nils (rest stuff)))))
+(defn remove-nils [list]
+  (remove #(nil? %) list))
 
 (defn plot-timings [events]
   "Plots out the times of each beat."
