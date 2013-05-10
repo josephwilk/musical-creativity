@@ -470,7 +470,7 @@
 
 (defn remainder
   "Returns the remainder of the beat."
-  ([event] (remainder (first event) (third event)))
+  ([event] (remainder event (first event) (third event)))
   ([event begin-time duration]
      (cond (empty? event)()
            (= duration 1000)()
@@ -522,15 +522,17 @@
 
 (defn remove-full-beat
   "Removes one full beat from the events arg."
-  ([events]  (remove-full-beat (ffirst events) 0))
+  ([events]  (remove-full-beat events (ffirst events) 0))
   ([events begin-time duration]
-
-     (cond (empty? events)()
-           (>= (+ duration (third (first events))) 1000)
-           (rest events)
-           :else (remove-full-beat (rest events)
-                               (+ begin-time (third (first events)))
-                               (+ (third (first events)) duration)))))
+     (cond
+      (empty? events)
+      ()
+      (>= (+ duration (third (first events))) 1000)
+      (rest events)
+      :else
+      (remove-full-beat (rest events)
+                        (+ begin-time (third (first events)))
+                        (+ (third (first events)) duration)))))
 
 (defn get-other-channels [channel-not-to-get events]
   "Returns all but the first arg channeled events."
