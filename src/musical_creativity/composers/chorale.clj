@@ -320,6 +320,23 @@
         (cons test
               (collect-beats reduced-test)))))
 
+(defn make-beat [name beats]
+  (let [start-notes (get-onset-notes (first beats))
+        destination-notes (get-onset-notes (second beats))
+        events (first beats)
+        rules (cons (get-rules start-notes destination-notes name)
+                    (list name (ffirst (sort-by-first-element events))))
+        composer-id (str *composer* "-" (str (second rules) "-" (nth rules 2)))]
+
+    ;(my-push rules composer-id)
+    (swap! *composer-rules* assoc @*composer-rules* composer-id rules)
+
+    (make-instance 'beat-it {:start-notes start-notes
+                            :destination-notes destination-notes
+                            :events events
+                            :voice-leading (first rules)
+                            :speac ()})))
+
 (defn create-complete-database
   "Loads and makes proper objects out of the db-names arg."
   ([db-names] (create-complete-database db-names 1))
@@ -336,21 +353,9 @@
                   start true]
              (when-not (empty? beats)
                (let [name (make-name (first db-names) counter)
-                     start-notes (get-onset-notes (first beats))
-                     destination-notes (get-onset-notes (second beats))
-                     events (first beats)
-                     rules (cons (get-rules start-notes destination-notes name)
-                                 (list name (ffirst (sort-by-first-element events))))
-                     composer-id (str *composer* "-" (str (second rules) "-" (nth rules 2)))
+                     instance (make-beat name beats)]
 
-                     instance (make-instance 'beat-it {:start-notes start-notes
-                                                       :destination-notes destination-notes
-                                                       :events events
-                                                       :voice-leading (first rules)
-                                                       :speac ()})]
-                 (swap! *composer-rules* assoc @*composer-rules* composer-id rules)
-                                        ;(my-push rules composer-id)
-                                        ;(set name instance)
+                 ;(set name instance)
                  (swap! *beats-store* assoc @*beats-store* name instance)
 
                  (put-beat-into-lexicon name)
@@ -361,7 +366,7 @@
                                         ;TODO: WTF
                                         ;(when start (my-push name (concat *composer* '- 'start-beats)))
 
-                 (print ".")
+                 (print (str " " name " "))
                  (flush)
                  (recur (rest beats) (+ 1 counter) nil)))))
          (create-complete-database (rest db-names))))))
