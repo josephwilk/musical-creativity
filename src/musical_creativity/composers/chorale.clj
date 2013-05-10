@@ -437,9 +437,6 @@
 
 (defn find-triad-beginning []
   "Returns the db with a triad beginning."
-
-  (println (eval *composer*))
-
   (let [test (choose-one (eval (first (eval *composer*))))
         on-beat (get-on-beat (:events (eval test)) (ffirst (:events (eval test))))
         pcs (create-pitch-class-set (get-pitches on-beat))]
