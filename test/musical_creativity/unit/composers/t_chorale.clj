@@ -26,9 +26,16 @@
 (fact "all together"
   (all-together '((1 1000) (1 2000) (1 2500) (1 3000)) '((1000) (2000))) => 1000)
 
-(future-fact "find triad beginning"
-  ;b43500b-14
-  (find-triad-beginning) => nil)
+(fact "triad?"
+  (triad? '((111000 40 500 4 96) (111000 55 500 3 96) (111000 64 1000 2 96) (111000 72 1000 1 96))) => true)
+
+(fact "find triad beginning"
+  (reset! *lexicon-store* {})
+  (reset! *beats-store* {})
+
+  (create-complete-database ['b43500b])
+
+  (find-triad-beginning) => 'b43500b-14)
 
 (fact "make name"
   (make-name :b206b 1) => 'b206b-1)
@@ -49,3 +56,13 @@
 
   (keys ('b206b-1 @*beats-store*)) => '(:start-notes :destination-notes :events :voice-leading :speac)
   (count (:events  ('b206b-1 @*beats-store*))) => 204)
+
+(fact "collect beats"
+  (collect-beats '((0 57 1000 4 96) (0 60 1000 3 96))) => '(((0 57 1000 4 96) (0 60 1000 3 96))))
+
+(fact "get onset notes from events"
+  (get-onset-notes '((0 57 1000 4 96) (0 60 1000 3 96) (0 69 1000 2 96) (0 76 1000 1 96)))
+  => '(57 60 69 76))
+
+(fact "get smallest set"
+  (get-smallest-set '(0 4 7)) => '(0 4 7))
