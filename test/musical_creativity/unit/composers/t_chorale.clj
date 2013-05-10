@@ -17,6 +17,13 @@
    [data.chorale.jsb13 :refer :all]
    [musical-creativity.composers.chorale :refer :all]))
 
+(namespace-state-changes (before :facts (do
+                                          (reset! *beats-store* {})
+                                          (reset! *lexicon-store* {})
+                                          (reset! bach-start-beats [])
+                                          (reset! bach-rules [])
+                                          (reset! bach-compose-beats []))))
+
 (fact "find alignemnt in channels"
   (find-alignment-in-all-channels 1000 '(((2 1000) (2 2000) (2 2500)))) => 1000)
 
@@ -30,18 +37,13 @@
   (triad? '((111000 40 500 4 96) (111000 55 500 3 96) (111000 64 1000 2 96) (111000 72 1000 1 96))) => true)
 
 (fact "find triad beginning"
-  (reset! *lexicon-store* {})
-  (reset! *beats-store* {})
-
   (create-complete-database '(b43500b))
-
   (find-triad-beginning) => 'b43500b-14)
 
 (fact "make name"
   (make-name :b206b 1) => 'b206b-1)
 
 (fact "put beat into lexicon"
-  (reset! *lexicon-store* {})
   (reset! *beats-store* {'b206b-1 {:start-notes [57 60 69 76]}})
 
   (put-beat-into-lexicon 'b206b-1) => :bach-57-60-69-76
@@ -50,15 +52,21 @@
 
 
 (fact "create complete database"
-  (reset! *beats-store* {})
-
   (create-complete-database ['b206b]) => true
 
   (keys ('b206b-1 @*beats-store*)) => '(:start-notes :destination-notes :events :voice-leading :speac)
-  (count (:events  ('b206b-1 @*beats-store*))) => 204)
+  (count (:events  ('b206b-1 @*beats-store*))) => 4)
 
 (fact "collect beats"
-  (collect-beats '((0 57 1000 4 96) (0 60 1000 3 96))) => '(((0 57 1000 4 96) (0 60 1000 3 96))))
+  (first (collect-beats b206b)) => '([0 57 1000 4 96] [0 60 1000 3 96] [0 69 1000 2 96] [0 76 1000 1 96])
+  (second (collect-beats b206b)) => '([1000 59 1000 4 96] [1000 62 1000 3 96] [1000 67 1000 2 96] [1000 79 1000 1 96]))
+
+(fact "collect by timing"
+  (collect-by-timing 1000 '((0 57 1000 4 96) (1000 60 1000 3 96))) => '((0 57 1000 4 96)))
+
+(fact "first place where all together"
+  (first-place-where-all-together '((0 57 1000 4 96) (0 60 1000 3 96) (0 69 1000 2 96))) => 1000)
+
 
 (fact "get onset notes from events"
   (get-onset-notes '((0 57 1000 4 96) (0 60 1000 3 96) (0 69 1000 2 96) (0 76 1000 1 96)))
@@ -77,3 +85,7 @@
 (fact "set to zero"
   (set-to-zero '((31000 60 1000 4 96) (31000 67 1000 3 96) (31000 72 1000 2 96) (31000 76 1000 1 96)))
   => '((0 60 1000 4 96) (0 67 1000 3 96) (0 72 1000 2 96) (0 76 1000 1 96)))
+
+(fact "get rules"
+  (get-rules '(57 60 69 76) '(59 62 67 79) 'b206b-1)
+  => '((3 2 2 b206b-1) (12 2 -2 b206b-1) (7 2 3 b206b-1) (9 2 -2 b206b-1) (4 2 3 b206b-1) (7 -2 3 b206b-1)))

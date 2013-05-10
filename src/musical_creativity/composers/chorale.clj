@@ -5,7 +5,7 @@
    [clojure.string :as str]))
 
 (def *composer* 'bach)
-(def *composer-rules* (atom {}))
+
 (def *beats-store* (atom {}))
 (def *lexicon-store* (atom {}))
 
@@ -17,11 +17,13 @@
 (def *mix* ())
 
 (def bach-dominants-tonics ())
-(def bach-start-beats ())
+
 (def bach-dominants ())
 (def bach-tonics ())
+
+(def bach-start-beats (atom ()))
 (def bach-compose-beats (atom ()))
-(def bach-rules ())
+(def bach-rules (atom ()))
 
 (def *end* (atom ()))
 (def *history* (atom ()))
@@ -308,17 +310,20 @@
 
 (defn collect-by-timing [timing events]
   "Collects the events accoring to timing."
-  (cond (empty? events)()
-        (<= (+ (first (first events))(fourth (first events))) timing)
-        (cons (first events)
-              (collect-by-timing timing (rest events)))
-        :else (collect-by-timing timing (rest events))))
+  (filter (fn [event]
+            (<= (+ (first event) (fourth event)) timing))
+          events))
 
 (defn collect-beats [events]
   (if (empty? events)()
       (let [test (collect-by-timing (first-place-where-all-together events) events)
             reduced-test (drop (count test) events)]
         (cons test
+   (if (empty? events)
+    ()
+    (let [test (collect-by-timing (first-place-where-all-together events) events)
+          reduced-test (drop (count test) events)]
+      (cons test
               (collect-beats reduced-test)))))
 
 (defn make-beat [name beats]
@@ -327,10 +332,9 @@
         events (first beats)
         rules (cons (get-rules start-notes destination-notes name)
                     (list name (ffirst (sort-by-first-element events))))
-        composer-id (str *composer* "-" (str (second rules) "-" (nth rules 2)))]
+        composer-rules (eval (symbol (str *composer* "-rules")))]
 
-    ;(my-push rules composer-id)
-    (reset! *composer-rules* (assoc @*composer-rules* composer-id rules))
+    (my-push rules composer-rules)
 
     (make-instance 'beat-it {:start-notes start-notes
                             :destination-notes destination-notes
