@@ -1,4 +1,4 @@
-(ns musical-creativity.integation.t-chorale
+(ns musical-creativity.integration.t-chorale
   (:require
    [midje.sweet :refer :all]
    [musical-creativity.composers.chorale :refer :all]))
