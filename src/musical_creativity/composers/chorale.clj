@@ -66,7 +66,7 @@
 
 (defn my-push [stuff place-name]
   "A simple synonym for push."
-  (reset! place-name (cons stuff (eval place-name))))
+  (reset! place-name (cons stuff @place-name)))
 
 (defn make-name [db-name counter]
   "Simple synonym for imploding the database name and number."
@@ -418,8 +418,9 @@
 (defn get-smallest-set [set]
   "Returns the set with the smallest outer boundaries."
   (let [projected-sets (project set)
-        set-differentials (get-intervals projected-sets)]
-    (nth (position (first (sort < set-differentials)) set-differentials) projected-sets)))
+        set-differentials (get-intervals projected-sets)
+        sorted-differentials (sort < set-differentials)]
+    (nth projected-sets (position (first sorted-differentials) set-differentials))))
 
 (defn triad? [events]
   "Checks to see if the events are a triad."
@@ -439,8 +440,9 @@
         (members-all (rest arrows) target)
         :else ()))
 
-(defn find-triad-beginning []
+(defn find-triad-beginning
   "Returns the db with a triad beginning."
+  []
   (let [test (choose-one @(eval (first (eval *composer*))))
         beat (find-beat test)
         on-beat (get-on-beat (:events beat) (ffirst (:events beat)))
@@ -450,8 +452,8 @@
                    (members-all '(0 4 7) pcs)
                    (members-all '(0 5 8) pcs)
                    (members-all '(2 7 11) pcs))
-               (<= (third (first (:events (eval test)))) 1000)
-               (= (count (:events (eval test))) 4))
+               (<= (third (first (:events beat))) 1000)
+               (= (count (:events beat)) 4))
         test
         (find-triad-beginning))))
 
