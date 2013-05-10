@@ -29,7 +29,7 @@
 (def *history* (atom ()))
 (def *events* (atom ()))
 (def *tonic* (atom 'major))
-(def *early-exit?* (atom ()))
+(def *early-exit?* (atom false))
 (def *end* (atom ()))
 
 (def *compose-number* 0)
@@ -1017,36 +1017,38 @@
      (reset! *history* ())
      (reset! *events* (build-events counter))
 
-     (if (and (empty? *early-exit?*)
+     (if (and (false? @*early-exit?*)
               (= *composer* 'bach))
        *events*
        (reset! *events* ()))
-     (reset! *history* (reverse *history*))
+     (reset! *history* (reverse @*history*))
      (if *end*
        (swap! *history* conj (list (+ 1 *compose-number*))))))
 
 (defn compose-bach
-  "The top-level compose function."
   []
   (compose-b)
-  (if (or (empty? *events*)
-          (< (let [it (my-last (sort-by-first-element *events*))]
+  (if (or (empty? @*events*)
+          (< (let [it (my-last (sort-by-first-element @*events*))]
                (+ (first it)(third it)))
              15000)
-          (> (let [it (my-last (sort-by-first-element *events*))]
+          (> (let [it (my-last (sort-by-first-element @*events*))]
                (+ (first it)(third it)))
              200000)
-          (not (wait-for-cadence *events*))
-          (check-for-parallel *events*)
-          (empty? *end*))
+          (not (wait-for-cadence @*events*))
+          (check-for-parallel @*events*)
+          (empty? @*end*))
     (compose-bach)
-    (do (reset! *save-events* *events*) (reset! *events* (ensure-necessary-cadences (sort-by-first-element *events*)))
-           (if (not (check-mt (get-on-beat *events* (ffirst *events*))))
-             (reset! *events* (delay-for-upbeat *events*)))
-           (if (and (empty? *early-exit?*)(= *composer* 'bach))
-             (reset! *events*
-                   (cadence-collapse (transpose-to-bach-range *events*)))(reset! *events* ()))
-           true)))
+    (do
+      (reset! *save-events* @*events*)
+      (reset! *events* (ensure-necessary-cadences (sort-by-first-element @*events*)))
+      (if (not (check-mt (get-on-beat @*events* (ffirst @*events*))))
+        (reset! *events* (delay-for-upbeat @*events*)))
+      (if (and (false? *early-exit?*)(= *composer* 'bach))
+        (reset! *events*
+                (cadence-collapse (transpose-to-bach-range @*events*)))
+        (reset! *events* ()))
+      true)))
 
 (defn compose []
   (create-complete-database chorale/bach-chorales-in-databases)
