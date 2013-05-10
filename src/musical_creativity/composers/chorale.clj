@@ -969,47 +969,51 @@
               (match-harmony (sort < (map second events)) '(60 63 67))
               (match-harmony (sort > (map second events)) '(60 63 67))))))
 
+(def get-events []
+  (let [current-beat (find-triad-beginning)]
+    (if (match-tonic-minor (take 4 (:events (find-beat current-beat))))
+      (reset! *tonic* 'minor)
+      (reset! *tonic* 'major))
+
+    (apply concat
+           (re-time
+            (concat
+             (loop [events []
+                    counter counter
+                    current-beat current-beat]
+               (if (or
+                    (reset! *early-exit?* (empty? (:destination-notes (find-beat current-beat))))
+                    (if (and (> counter 36)
+                             (if (= *tonic* 'minor)
+                               (and (> (find-events-duration (:events (find-beat current-beat))) *beat-size*)
+                                    (match-tonic-minor (:events (find-beat current-beat))))
+                               (and (> (find-events-duration (:events (find-beat current-beat))) *beat-size*)
+                                    (match-bach-tonic (:events (find-beat current-beat))))))
+                      (do
+                        (reset! *end* true)
+                        true)))
+                 events
+                 (let [new-events (:events (find-beat current-beat))]
+                   (swap! *history* conj current-beat)
+                   (reset! *previous-beat* current-beat)
+                   (recur new-events
+                          (+ 1 counter)
+                          (choose-one
+                           (let [destination-notes (:destination-notes (find-beat current-beat))
+                                 beat-choices (:beats (find-in-lexicon (make-lexicon-name destination-notes)))]
+                             (if (empty? (rest beat-choices))
+                               beat-choices
+                               (my-remove (list *previous-beat* (incf-beat *previous-beat*)) beat-choices))))))))
+             (do
+               (swap! *history* conj current-beat)
+               (list (:events (find-beat current-beat)))))))))
+
 (defn compose-b
-  "The real horse for compose-bach."
   ([] (compose-b 0))
   ([counter]
      (reset! *end* ())
      (reset! *history* ())
-     (reset! *events*
-             (let [current-beat
-                   (find-triad-beginning)]
-               (if (match-tonic-minor (take 4 (:events (find-beat current-beat))))
-                 (reset! *tonic* 'minor)(reset! *tonic* 'major))
-               (apply concat
-                      (re-time
-                       (concat
-                        (loop [events []
-                               counter counter
-                               current-beat current-beat]
-                          (if  (or (reset! *early-exit?* (empty? (:destination-notes (find-beat current-beat))))
-                                  (if (and (> counter 36)
-                                           (if (= *tonic* 'minor)
-                                             (and (> (find-events-duration (events (find-beat current-beat))) *beat-size*)
-                                                  (match-tonic-minor (events (find-beat current-beat))))
-                                             (and (> (find-events-duration (events (find-beat current-beat))) *beat-size*)
-                                                  (match-bach-tonic (events (find-beat current-beat))))))
-                                    (do
-                                      (reset! *end* true)
-                                      true)))
-
-                            events
-                            (let [new-events (:events (find-beat current-beat))]
-                              (swap! *history* conj current-beat)
-                              (reset! *previous-beat* current-beat)
-                              (recur new-events
-                                     (+ 1 counter)
-                                     (choose-one
-                                      (let [destination-notes (:destination-notes (find-beat current-beat))
-                                            beat-choices (:beats (find-in-lexicon (make-lexicon-name destination-notes)))]
-                                        (if (empty? (rest beat-choices)) beat-choices (my-remove (list *previous-beat* (incf-beat *previous-beat*)) beat-choices))))))))
-                        (do
-                          (swap! *history* conj current-beat)
-                          (list (:events (find-beat current-beat)))))))))
+     (reset! *events* (get-events))
 
      (if (and (empty? *early-exit?*)
               (= *composer* 'bach))
