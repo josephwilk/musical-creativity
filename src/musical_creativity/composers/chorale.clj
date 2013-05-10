@@ -216,7 +216,6 @@
   [beat-name]
   (let [beat (find-beat beat-name)
         lexicon-name (keyword (make-lexicon-name (:start-notes beat)))]
-
     (if (and (lexicon-contains? lexicon-name)
              (not (member beat-name (:beats (find-in-lexicon lexicon-name)))))
 
@@ -315,10 +314,6 @@
           events))
 
 (defn collect-beats [events]
-  (if (empty? events)()
-      (let [test (collect-by-timing (first-place-where-all-together events) events)
-            reduced-test (drop (count test) events)]
-        (cons test
    (if (empty? events)
     ()
     (let [test (collect-by-timing (first-place-where-all-together events) events)
@@ -345,6 +340,9 @@
 (defn- find-composer-beats-atom []
   (var-get (resolve (symbol (str "musical-creativity.composers.chorale/" *composer* "-compose-beats")))))
 
+(defn- find-composer-start-beats-atom []
+  (eval (str *composer* "-compose-beats")))
+
 (defn start-beats [db-name]
   (remove-nils
    (collect-beats
@@ -361,6 +359,7 @@
          (loop [beats (start-beats (first db-names))
                 counter counter
                 start true]
+
            (when-not (empty? beats)
              (let [name (make-name (first db-names) counter)
                    instance (make-beat name beats)]
@@ -786,15 +785,18 @@
 
 (defn get-all-events-with-start-time-of [start-time events]
   "As its name suggests."
-  (cond (empty? events)()
-        (= (ffirst events) start-time)
-        (cons (first events)
-              (get-all-events-with-start-time-of start-time (rest events)))
-        :else (get-all-events-with-start-time-of start-time (rest events))))
+  (cond
+   (empty? events)
+   ()
+   (= (ffirst events) start-time)
+   (cons (first events)
+         (get-all-events-with-start-time-of start-time (rest events)))
+   :else (get-all-events-with-start-time-of start-time (rest events))))
 
 (defn get-last-beat-events [events]
-  "As its name suggests."
-  (let [begin-time (first (my-last (sort-by-first-element events)))
+  (let [sorted-events (sort-by-first-element events)
+        last-event (last sorted-events)
+        begin-time (first last-event)
         last-beat (get-all-events-with-start-time-of begin-time events)]
     (if (and (= (count last-beat) 4)
              (a-thousand? (third (first last-beat))))
@@ -834,16 +836,20 @@
            (find-events-duration (rest events) (+ duration (third (first events))))
            :else (find-events-duration (rest events) duration))))
 
+(defn- retimed-events [events current-time]
+  (map (fn [event]
+         (cons (+ (first event) current-time)
+               (rest event)))
+       (set-to-zero (first events))))
+
 (defn re-time
   "Re-times the beats to fit together."
   ([event-lists] (re-time event-lists 0))
   ([event-lists current-time]
-      (if (empty? event-lists)()
-          (cons (map (fn [event]
-                       (cons (+ (first event) current-time) (rest event))) (set-to-zero (first event-lists)))
-                (re-time (rest event-lists) (+ current-time
-                                               (get-beat-length
-                                                (first event-lists))))))))
+     (if (empty? event-lists)
+       ()
+       (cons (retimed-events event-lists current-time)
+             (re-time (rest event-lists) (+ current-time (get-beat-length (first event-lists))))))))
 
 (defn highest-lowest-notes [events]
   "Returns the highest and lowest pitches of its arg."
@@ -972,7 +978,7 @@
      (reset! *events*
              (let [current-beat
                    (find-triad-beginning)]
-               (if (match-tonic-minor (take 4 (:events (eval current-beat))))
+               (if (match-tonic-minor (take 4 (:events (find-beat current-beat))))
                  (reset! *tonic* 'minor)(reset! *tonic* 'major))
                (apply concat
                       (re-time
@@ -980,29 +986,30 @@
                         (loop [events []
                                counter counter
                                current-beat current-beat]
-                          (if  (or (reset! *early-exit?* (empty? (:destination-notes (eval current-beat))))
+                          (if  (or (reset! *early-exit?* (empty? (:destination-notes (find-beat current-beat))))
                                   (if (and (> counter 36)
                                            (if (= *tonic* 'minor)
-                                             (and (> (find-events-duration (events (eval current-beat))) *beat-size*)
-                                                  (match-tonic-minor (events (eval current-beat))))
-                                             (and (> (find-events-duration (events (eval current-beat))) *beat-size*)
-                                                  (match-bach-tonic (events (eval current-beat))))))
+                                             (and (> (find-events-duration (events (find-beat current-beat))) *beat-size*)
+                                                  (match-tonic-minor (events (find-beat current-beat))))
+                                             (and (> (find-events-duration (events (find-beat current-beat))) *beat-size*)
+                                                  (match-bach-tonic (events (find-beat current-beat))))))
                                     (do
                                       (reset! *end* true)
                                       true)))
 
                             events
-                            (let [new-events (:events (eval current-beat))]
+                            (let [new-events (:events (find-beat current-beat))]
                               (swap! *history* conj current-beat)
                               (reset! *previous-beat* current-beat)
                               (recur new-events
                                      (+ 1 counter)
                                      (choose-one
-                                      (let [beat-choices (beats (eval (make-lexicon-name (:destination-notes (eval current-beat)))))]
+                                      (let [destination-notes (:destination-notes (find-beat current-beat))
+                                            beat-choices (:beats (find-in-lexicon (make-lexicon-name destination-notes)))]
                                         (if (empty? (rest beat-choices)) beat-choices (my-remove (list *previous-beat* (incf-beat *previous-beat*)) beat-choices))))))))
                         (do
                           (swap! *history* conj current-beat)
-                          (list (:events (eval current-beat)))))))))
+                          (list (:events (find-beat current-beat)))))))))
 
      (if (and (empty? *early-exit?*)
               (= *composer* 'bach))
