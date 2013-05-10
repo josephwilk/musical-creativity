@@ -176,10 +176,6 @@
 (defn boundp [thing]
   (nil? thing))
 
-;TOOD: WHAT?
-(defn mix [list]
-  list)
-
 (defn swap-unless-includes [reference data]
   (when-not (some #{data} @reference)
     (swap! reference conj data)))
@@ -209,7 +205,7 @@
       (boundp (implode (cons (first names) (cons '- (hyphenate note-numbers)))))
       (implode (cons (first names) (cons '- (hyphenate note-numbers))))
       :else
-      (make-lexicon-name note-numbers (mix (rest names))))))
+      (make-lexicon-name note-numbers (shuffle (rest names))))))
 
 (defn put-beat-into-lexicon
   "Puts the beat arg into the appropriate lexicon."
