@@ -969,7 +969,7 @@
               (match-harmony (sort < (map second events)) '(60 63 67))
               (match-harmony (sort > (map second events)) '(60 63 67))))))
 
-(def get-events []
+(defn get-events [counter]
   (let [current-beat (find-triad-beginning)]
     (if (match-tonic-minor (take 4 (:events (find-beat current-beat))))
       (reset! *tonic* 'minor)
@@ -1013,7 +1013,7 @@
   ([counter]
      (reset! *end* ())
      (reset! *history* ())
-     (reset! *events* (get-events))
+     (reset! *events* (get-events counter))
 
      (if (and (empty? *early-exit?*)
               (= *composer* 'bach))
