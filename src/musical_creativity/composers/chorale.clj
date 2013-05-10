@@ -338,8 +338,14 @@
                             :voice-leading (first rules)
                             :speac ()})))
 
-(defn find-composer-beats-atom []
+(defn- find-composer-beats-atom []
   (var-get (resolve (symbol (str "musical-creativity.composers.chorale/" *composer* "-compose-beats")))))
+
+(defn start-beats [db-name]
+  (remove-nils
+   (collect-beats
+    (set-to-zero
+     (sort-by-first-element (chorale/find-db db-name))))))
 
 (defn create-complete-database
   "Loads and makes proper objects out of the db-names arg."
@@ -348,32 +354,23 @@
      (if (empty? db-names)
        true
        (do
-         (let [beats (remove-nils
-                      (collect-beats
-                       (set-to-zero
-                        (sort-by-first-element (chorale/find-db (first db-names))))))
-               name nil
-               start true]
-           (loop [beats beats
-                  counter counter
-                  start true]
-             (when-not (empty? beats)
-               (let [name (make-name (first db-names) counter)
-                     instance (make-beat name beats)]
+         (loop [beats (start-beats (first db-names))
+                counter counter
+                start true]
+           (when-not (empty? beats)
+             (let [name (make-name (first db-names) counter)
+                   instance (make-beat name beats)]
+               (reset! *beats-store* (assoc @*beats-store* name instance))
+               (put-beat-into-lexicon name)
+               (my-push name (find-composer-beats-atom))
 
-                 ;(set name instance)
-                 (reset! *beats-store* (assoc @*beats-store* name instance))
+               (when start
+                 (my-push name (eval (symbol (str *composer* '- 'start-beats)))))
 
-                 (put-beat-into-lexicon name)
+               (print (str " " name " "))
+               (flush)
 
-
-                 (my-push name (find-composer-beats-atom))
-                                        ;TODO: WTF
-                                        ;(when start (my-push name (concat *composer* '- 'start-beats)))
-
-                 (print (str " " name " "))
-                 (flush)
-                 (recur (rest beats) (+ 1 counter) nil)))))
+               (recur (rest beats) (+ 1 counter) nil))))
          (create-complete-database (rest db-names))))))
 
 (defn on-beat [events ontime]

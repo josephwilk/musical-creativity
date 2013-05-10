@@ -33,7 +33,7 @@
   (reset! *lexicon-store* {})
   (reset! *beats-store* {})
 
-  (create-complete-database ['b43500b])
+  (create-complete-database '(b43500b))
 
   (find-triad-beginning) => 'b43500b-14)
 
@@ -66,3 +66,14 @@
 
 (fact "get smallest set"
   (get-smallest-set '(0 4 7)) => '(0 4 7))
+
+(fact "get on beat"
+  (get-on-beat '((53000 46 1000 4 96) (53000 53 500 3 96) (53000 62 500 2 96) (53000 62 1000 1 96) (53500 52 250 3 96) (53500 55 500 2 96) (53750 50 250 3 96)) 53000)
+  => '((53000 46 1000 4 96) (53000 53 500 3 96) (53000 62 500 2 96) (53000 62 1000 1 96)))
+
+(fact "create pitch class set"
+  (create-pitch-class-set '(64 67 71)) => '(4 7 11))
+
+(fact "set to zero"
+  (set-to-zero '((31000 60 1000 4 96) (31000 67 1000 3 96) (31000 72 1000 2 96) (31000 76 1000 1 96)))
+  => '((0 60 1000 4 96) (0 67 1000 3 96) (0 72 1000 2 96) (0 76 1000 1 96)))
