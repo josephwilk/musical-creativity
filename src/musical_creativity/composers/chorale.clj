@@ -20,7 +20,7 @@
 (def bach-start-beats ())
 (def bach-dominants ())
 (def bach-tonics ())
-(def bach-compose-beats ())
+(def bach-compose-beats (atom ()))
 (def bach-rules ())
 
 (def *end* (atom ()))
@@ -38,7 +38,7 @@
 (def *save-events* ())
 (def *beat-size* 1000)
 
-(def bach [bach-compose-beats bach-start-beats bach-rules])
+(def bach ['bach-compose-beats 'bach-start-beats 'bach-rules])
 (def *beats* 4)
 (def bach-form [])
 
@@ -338,6 +338,9 @@
                             :voice-leading (first rules)
                             :speac ()})))
 
+(defn find-composer-beats-atom []
+  (var-get (resolve (symbol (str "musical-creativity.composers.chorale/" *composer* "-compose-beats")))))
+
 (defn create-complete-database
   "Loads and makes proper objects out of the db-names arg."
   ([db-names] (create-complete-database db-names 1))
@@ -363,9 +366,8 @@
 
                  (put-beat-into-lexicon name)
 
-                                        ;TODO: WTF
-                                        ;(my-push name (concat *composer* '-'compose-beats))
 
+                 (my-push name (find-composer-beats-atom))
                                         ;TODO: WTF
                                         ;(when start (my-push name (concat *composer* '- 'start-beats)))
 
@@ -421,7 +423,9 @@
 
 (defn triad? [events]
   "Checks to see if the events are a triad."
-  (let [pitch-classes (get-smallest-set (create-pitch-class-set (get-pitches events)))]
+  (let [pitches (get-pitches events)
+        pitches-class-set (create-pitch-class-set pitches)
+        pitch-classes (get-smallest-set pitches-class-set)]
     (and (= (count pitch-classes) 3)
          (and (> (- (second pitch-classes)(first pitch-classes)) 2)
               (< (- (second pitch-classes)(first pitch-classes)) 5))
@@ -437,8 +441,9 @@
 
 (defn find-triad-beginning []
   "Returns the db with a triad beginning."
-  (let [test (choose-one (eval (first (eval *composer*))))
-        on-beat (get-on-beat (:events (eval test)) (ffirst (:events (eval test))))
+  (let [test (choose-one @(eval (first (eval *composer*))))
+        beat (find-beat test)
+        on-beat (get-on-beat (:events beat) (ffirst (:events beat)))
         pcs (create-pitch-class-set (get-pitches on-beat))]
       (if (and (triad? on-beat)
                (or (members-all '(0 4 8) pcs)
