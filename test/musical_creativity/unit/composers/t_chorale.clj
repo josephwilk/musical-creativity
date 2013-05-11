@@ -51,16 +51,15 @@
 
   @*lexicon-store* => {:bach-57-60-69-76 {:beats '(b206b-1)}})
 
-
 (fact "build events for beat"
   (create-complete-database ['b5505b]) => true
 
-  (build-events-for-beat 60 'b5505b-60) => nil)
+  (build-events-for-beat 60 'b5505b-60) => ())
 
 (fact "create complete database"
   (create-complete-database ['b206b]) => true
 
-  (keys ('b206b-1 @*beats-store*)) => '(:start-notes :destination-notes :events :voice-leading :speac)
+  (keys ('b206b-1 @*beats-store*)) => '(:start-notes :destination-notes :events :voice-leading)
   (count (:events  ('b206b-1 @*beats-store*))) => 4)
 
 (facts "bugs"
@@ -152,7 +151,8 @@
   (transpose-to-bach-range '((0 60 1000 4 96) (0 64 1000 3 96))) => '((0 64 1000 4 96) (0 68 1000 3 96)))
 
 (fact "wait for cadence"
-  (wait-for-cadence '((0 48 1000 4 96) (0 64 1000 3 96) (0 67 1000 2 96) (4100 72 1000 1 96))) => true)
+  (wait-for-cadence '((0 48 1000 4 96) (0 64 1000 3 96) (0 67 1000 2 96) (4100 72 1000 1 96))) => true
+  (wait-for-cadence '((0 48 1000 4 96) (0 64 1000 3 96) (0 67 1000 2 96) (0 72 1000 1 96))) => false)
 
 (fact "check for parrellel"
   (check-for-parallel '((0 49 1000 4 96) (0 65 1000 3 96) (0 68 1000 2 96) (0 73 1000 1 96)
