@@ -25,7 +25,7 @@
 (def bach-compose-beats (atom ()))
 (def bach-rules (atom ()))
 
-(def *end* (atom ()))
+(def *end* (atom false))
 (def *history* (atom ()))
 
 (def *events* (atom ()))
@@ -33,7 +33,6 @@
 
 (def *tonic* (atom 'major))
 (def *early-exit?* (atom false))
-(def *end* (atom ()))
 
 (def *compose-number* 0)
 (def *histories* ())
@@ -1036,7 +1035,7 @@
 (defn compose-b
   ([] (compose-b 0))
   ([counter]
-     (reset! *end* ())
+     (reset! *end* false)
      (reset! *history* ())
      (reset! *events* (build-events counter))
 
@@ -1046,7 +1045,7 @@
        @*events*
        (reset! *events* ()))
      (reset! *history* (reverse @*history*))
-     (if *end*
+     (if @*end*
        (swap! *history* conj (list (+ 1 *compose-number*))))))
 
 (defn not-finished-composing? []
@@ -1060,7 +1059,7 @@
       200000)
    (not (wait-for-cadence @*events*))
    (check-for-parallel @*events*)
-   (empty? @*end*)))
+   (false? @*end*)))
 
 (defn finish []
   (reset! *save-events* @*events*)
