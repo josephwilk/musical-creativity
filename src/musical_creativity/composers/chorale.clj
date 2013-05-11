@@ -27,7 +27,10 @@
 
 (def *end* (atom ()))
 (def *history* (atom ()))
+
 (def *events* (atom ()))
+(def *save-events* (atom ()))
+
 (def *tonic* (atom 'major))
 (def *early-exit?* (atom false))
 (def *end* (atom ()))
@@ -37,7 +40,6 @@
 
 (def *previous-beat* (atom ()))
 
-(def *save-events* ())
 (def *beat-size* 1000)
 
 (def bach ['bach-compose-beats 'bach-start-beats 'bach-rules])
