@@ -100,10 +100,11 @@
   "Sets the events to zero."
   ([events] (set-to-zero events (ffirst events)))
   ([events subtract]
-     (if (empty? events)()
-         (cons (cons (- (ffirst events) subtract)
-                     (rest (first events)))
-               (set-to-zero (rest events) subtract)))))
+     (if (empty? events)
+       ()
+       (cons (cons (- (ffirst events) subtract)
+                   (rest (first events)))
+             (set-to-zero (rest events) subtract)))))
 
 (defn my-last [list]
   "Returns th atom last of the list."
@@ -186,9 +187,6 @@
   (when-not (some #{data} @reference)
     (swap! reference conj data)))
 
-(def beats
-  (atom []))
-
 (defn find-beat [name]
   (@*beats-store* name))
 
@@ -225,7 +223,6 @@
         (reset! *lexicon-store* (assoc @*lexicon-store* lexicon-name beat-name))
         lexicon-name)
       (do
-        ;(set lexicon-name (make-instance 'lexicon :beats (list beat-name)))
         (reset! *lexicon-store* (assoc @*lexicon-store* lexicon-name (make-instance 'lexicon {:beats (list beat-name)})))
         (swap-unless-includes *lexicons* lexicon-name)
         lexicon-name))))
@@ -269,8 +266,6 @@
         :else (collect-timings-by-channel (rest timings) channel)))
 
 (defn find-alignment [point channel]
-  "? (find-alignment 1000 '((4 1000) (4 1000) (4 5000)))
-   t this finds the timing point in the channel"
   (cond (empty? channel)()
         (and (a-thousand? point)
              (filter #(= point (first %)) (map reverse channel)))
@@ -298,7 +293,6 @@
    (find-alignment-in-all-channels (second (first channel)) channels)
    :else
    (all-together (rest channel) channels)))
-
 
 (defn first-place-where-all-together [events]
   "This looks ahead to get the first time they end together"
@@ -334,10 +328,9 @@
     (my-push rules composer-rules)
 
     (make-instance 'beat-it {:start-notes start-notes
-                            :destination-notes destination-notes
-                            :events events
-                            :voice-leading (first rules)
-                            :speac ()})))
+                             :destination-notes destination-notes
+                             :events events
+                             :voice-leading (first rules)})))
 
 (defn- find-composer-beats-atom []
   (var-get (resolve (symbol (str "musical-creativity.composers.chorale/" *composer* "-compose-beats")))))
@@ -352,7 +345,6 @@
      (sort-by-first-element (chorale/find-db db-name))))))
 
 (defn create-complete-database
-  "Loads and makes proper objects out of the db-names arg."
   ([db-names] (create-complete-database db-names 1))
   ([db-names counter]
      (if (empty? db-names)
@@ -372,7 +364,7 @@
                (when start
                  (my-push name (eval (symbol (str *composer* '- 'start-beats)))))
 
-               (print (str " " name " "))
+               (print ".")
                (flush)
 
                (recur (rest beats) (+ 1 counter) nil))))
@@ -380,18 +372,27 @@
 
 (defn on-beat [events ontime]
   "Returns t if the events conform to ontime."
-  (cond (empty? events) true
-        (and (a-thousand? (ffirst events))(= (ffirst events) ontime))
-        (on-beat (rest events) ontime)
-        :else ()))
+  (cond
+   (empty? events)
+   true
+   (and (a-thousand? (ffirst events))(= (ffirst events) ontime))
+   (on-beat (rest events) ontime)
+   :else
+   ()))
 
-(defn get-on-beat [events ontime]
+(defn get-on-beat
   "Returns the on beat from the events."
-  (cond (empty? events) ()
-        (and (a-thousand? (ffirst events))(= (ffirst events) ontime))
-        (cons (first events)
-              (get-on-beat (rest events) ontime))
-        :else ()))
+  [events ontime]
+  (cond
+   (empty? events)
+   ()
+   (and
+    (a-thousand? (ffirst events))
+    (= (ffirst events) ontime))
+   (cons (first events)
+         (get-on-beat (rest events) ontime))
+   :else
+   ()))
 
 (defn get-pitches [events]
   "Gets the pitches from its arg."
@@ -510,18 +511,20 @@
   "Returns remainders of beats."
   ([events] (remainders events (ffirst events) 0))
   ([events begin-time duration]
-
-      (cond (empty? events)()
-            (= (+ duration (third (first events))) 1000)
-            ()
-            (> (+ duration (third (first events))) 1000)
-            (list (concat (list (+ begin-time (- 1000 duration)))
-                          (list (second (first events)))
-                          (list (- (third (first events)) (- 1000 duration)))
-                          (drop  3 (first events))))
-            :else (remainders (rest events)
-                              (+ begin-time (third (first events)))
-                              (+ (third (first events)) duration)))))
+     (cond
+      (empty? events)
+      ()
+      (= (+ duration (third (first events))) 1000)
+      ()
+      (> (+ duration (third (first events))) 1000)
+      (list (concat (list (+ begin-time (- 1000 duration)))
+                    (list (second (first events)))
+                    (list (- (third (first events)) (- 1000 duration)))
+                    (drop  3 (first events))))
+      :else
+      (remainders (rest events)
+                  (+ begin-time (third (first events)))
+                  (+ (third (first events)) duration)))))
 
 (defn remove-full-beat
   "Removes one full beat from the events arg."
@@ -547,18 +550,21 @@
 
 (defn chop-into-bites [events]
   "Chops beats into groupings."
-  (cond (empty? events)()
-        (and (= (third (first events)) 1000)
-             (a-thousand? (ffirst events)))
-        (cons (list (first events))
-              (chop-into-bites (rest events)))
-        (> (third (first events)) 1000)
-        (cons (chop (first events))
-              (chop-into-bites (concat (remainder (first events))(rest events))))
-        :else (cons (get-full-beat (get-channel (fourth (first events)) events))
-                (chop-into-bites (concat (remainders (get-channel (fourth (first events)) events))
-                                         (concat (remove-full-beat (get-channel (fourth (first events)) events))
-                                                 (get-other-channels (fourth (first events)) events)))))))
+  (cond
+   (empty? events)
+   ()
+   (and (= (third (first events)) 1000)
+        (a-thousand? (ffirst events)))
+   (cons (list (first events))
+         (chop-into-bites (rest events)))
+   (> (third (first events)) 1000)
+   (cons (chop (first events))
+         (chop-into-bites (concat (remainder (first events)) (rest events))))
+   :else
+   (cons (get-full-beat (get-channel (fourth (first events)) events))
+         (chop-into-bites (concat (remainders (get-channel (fourth (first events)) events))
+                                  (concat (remove-full-beat (get-channel (fourth (first events)) events))
+                                          (get-other-channels (fourth (first events)) events)))))))
 
 (defn break-into-beats [events]
   "Breaks events into beat-sized groupings."
@@ -872,13 +878,11 @@
   (math/round (/ (+ (second extremes)(first extremes)) 2)))
 
 (defn transpose-to-bach-range [events]
-  "As its name suggests."
   (let [high-low (highest-lowest-notes events)
         intervals-off (list (- 83 (first high-low))
                             (- 40 (second high-low)))
         middle (put-it-in-the-middle intervals-off)]
-        (do
-          (transpose middle events))))
+    (transpose middle events)))
 
 (defn make-1000s [beat]
   "Makes all of the beat's durations into 1000s."

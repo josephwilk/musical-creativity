@@ -58,6 +58,15 @@
   (keys ('b206b-1 @*beats-store*)) => '(:start-notes :destination-notes :events :voice-leading :speac)
   (count (:events  ('b206b-1 @*beats-store*))) => 4)
 
+(facts "bugs"
+  (fact "loading a database"
+    (create-complete-database '(b40900b)) => true)
+
+  (println @*beats-store*))
+
+(fact "get channel numbers from events"
+  (get-channel-numbers-from-events '((0 57 1000 4 96) (0 60 1000 3 96))) => '(3 4))
+
 (fact "collect beats"
   (first (collect-beats b206b)) => '([0 57 1000 4 96] [0 60 1000 3 96] [0 69 1000 2 96] [0 76 1000 1 96])
   (second (collect-beats b206b)) => '([1000 59 1000 4 96] [1000 62 1000 3 96] [1000 67 1000 2 96] [1000 79 1000 1 96]))
@@ -122,3 +131,17 @@
   (all-members '(48 67 72 76) '(24 36 48 60 72 84 96 108 120 132 28 40 52 64 76 88 100 112 124 31 43 55 67 79 91 103 115 127))
   => truthy
   (all-members '(20 30) '(29 20)) => falsey)
+
+(fact "chop into bites"
+  (chop-into-bites '((20000 48 2000 4 96) (20000 55 2000 3 96) (20000 64 2000 2 96) (20000 72 2000 1 96)))
+  =>
+  '(((20000 48 1000 4 96) (21000 48 1000 4 96)) ((20000 55 1000 3 96) (21000 55 1000 3 96)) ((20000 64 1000 2 96) (21000 64 1000 2 96)) ((20000 72 1000 1 96) (21000 72 1000 1 96))))
+
+(fact "remainder"
+  (remainder '(76000 41 1500 4 96)) => '((77000 41 500 4 96)))
+
+(fact "remainders"
+  (remainders '((77000 53 500 3 96) (77500 50 500 3 96))) => ())
+
+(future-fact "transpose to bachs range"
+  (transpose-to-bach-range '((0 60 1000 4 96) (0 64 1000 3 96))) => '((0 64 1000 4 96) (0 68 1000 3 96)))
