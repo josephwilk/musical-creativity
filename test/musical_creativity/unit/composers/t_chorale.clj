@@ -24,6 +24,9 @@
                                           (reset! bach-rules [])
                                           (reset! bach-compose-beats []))))
 
+(fact "make lexicon name"
+  (make-lexicon-name '(57 60 69 76)) => :bach-57-60-69-76)
+
 (fact "find alignemnt in channels"
   (find-alignment-in-all-channels 1000 '(((2 1000) (2 2000) (2 2500)))) => 1000)
 
@@ -167,3 +170,13 @@
 
   (fact "when we are finished"
     (finished-composing? '((0 52 0 4 96) (4001 52 15000 3 96)) true) => true))
+
+(facts "skip-generating-new-events?"
+  (skip-generating-new-events?))
+
+(facts "incf the beat"
+  (incf-beat "b35300b-42") => "b35300b-3"
+  (incf-beat ()) => nil)
+
+(facts "get db name"
+  (get-db-name "b35300b-42") => "b35300b")
