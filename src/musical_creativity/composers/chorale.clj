@@ -100,11 +100,10 @@
   "Sets the events to zero."
   ([events] (set-to-zero events (ffirst events)))
   ([events subtract]
-
-       (if (empty? events)()
-           (cons (cons (- (ffirst events) subtract)
-                       (rest (first events)))
-                 (set-to-zero (rest events) subtract)))))
+     (if (empty? events)()
+         (cons (cons (- (ffirst events) subtract)
+                     (rest (first events)))
+               (set-to-zero (rest events) subtract)))))
 
 (defn my-last [list]
   "Returns th atom last of the list."
@@ -974,21 +973,25 @@
               (match-harmony (sort < (map second events)) '(60 63 67))
               (match-harmony (sort > (map second events)) '(60 63 67))))))
 
-(defn build-events-for-beat [counter current-beat]
+(defn- skip-generating-new-events? [counter current-beat]
+  (reset! *early-exit?* (empty? (:destination-notes (find-beat current-beat))))
+  (or
+   @*early-exit?*
+   (if (and (> counter 36)
+            (if (= *tonic* 'minor)
+              (and (> (find-events-duration (:events (find-beat current-beat))) *beat-size*)
+                   (match-tonic-minor (:events (find-beat current-beat))))
+              (and (> (find-events-duration (:events (find-beat current-beat))) *beat-size*)
+                   (match-bach-tonic (:events (find-beat current-beat))))))
+     (do
+       (reset! *end* true)
+       true))))
+
+(defn- build-events-for-beat [counter current-beat]
   (loop [events []
          counter counter
          current-beat current-beat]
-    (if (or
-         (reset! *early-exit?* (empty? (:destination-notes (find-beat current-beat))))
-         (if (and (> counter 36)
-                  (if (= *tonic* 'minor)
-                    (and (> (find-events-duration (:events (find-beat current-beat))) *beat-size*)
-                         (match-tonic-minor (:events (find-beat current-beat))))
-                    (and (> (find-events-duration (:events (find-beat current-beat))) *beat-size*)
-                         (match-bach-tonic (:events (find-beat current-beat))))))
-           (do
-             (reset! *end* true)
-             true)))
+    (if (skip-generating-new-events? counter current-beat)
       events
       (let [new-events (:events (find-beat current-beat))]
         (swap! *history* conj current-beat)
@@ -1022,9 +1025,10 @@
      (reset! *history* ())
      (reset! *events* (build-events counter))
 
-     (if (and (false? @*early-exit?*)
-              (= *composer* 'bach))
-       *events*
+     (if (and
+          (false? @*early-exit?*)
+          (= *composer* 'bach))
+       @*events*
        (reset! *events* ()))
      (reset! *history* (reverse @*history*))
      (if *end*
@@ -1033,25 +1037,27 @@
 (defn compose-bach
   []
   (compose-b)
-  (if (or (empty? @*events*)
-          (< (let [it (my-last (sort-by-first-element @*events*))]
-               (+ (first it)(third it)))
-             15000)
-          (> (let [it (my-last (sort-by-first-element @*events*))]
-               (+ (first it)(third it)))
-             200000)
-          (not (wait-for-cadence @*events*))
-          (check-for-parallel @*events*)
-          (empty? @*end*))
+  (if (or 
+       (empty? @*events*)
+       (< (let [it (my-last (sort-by-first-element @*events*))]
+            (+ (first it)(third it)))
+          15000)
+       (> (let [it (my-last (sort-by-first-element @*events*))]
+            (+ (first it)(third it)))
+          200000)
+       (not (wait-for-cadence @*events*))
+       (check-for-parallel @*events*)
+       (empty? @*end*))
     (compose-bach)
     (do
       (reset! *save-events* @*events*)
       (reset! *events* (ensure-necessary-cadences (sort-by-first-element @*events*)))
       (if (not (check-mt (get-on-beat @*events* (ffirst @*events*))))
         (reset! *events* (delay-for-upbeat @*events*)))
-      (if (and (false? *early-exit?*)(= *composer* 'bach))
-        (reset! *events*
-                (cadence-collapse (transpose-to-bach-range @*events*)))
+      (if (and 
+           (false? *early-exit?*)
+           (= *composer* 'bach))
+        (reset! *events* (cadence-collapse (transpose-to-bach-range @*events*)))
         (reset! *events* ()))
       true)))
 
