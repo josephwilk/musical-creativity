@@ -766,12 +766,19 @@
 
 (defn reduce-it [note base]
   "Reduces its first arg mod12 below its second arg."
-  (if (< note base) note (reduce-it (- note 12) base)))
+  (if (< note base)
+    note
+    (reduce-it (- note 12) base)))
 
 (defn project-octaves [note]
   "Projects its arg through a series of octaves."
   (let [base-note (reduce-it note 20)]
-    (map #(+ % 12)  (range base-note 120))))
+    (loop [results []
+           current-note (reduce-it note 20)]
+      (if  (> current-note 120)
+        results
+        (recur (conj results (+ 12 current-note))
+               (+ 12 current-note))))))
 
 (defn match-harmony [one two]
   "Checks to see if its args match mod-12."
@@ -783,9 +790,7 @@
 
 (defn all-members [list target]
   "Checks to see if its first arg members are present in second arg."
-  (cond (empty? list) true
-        (not (member (first list) target)) ()
-        :else (all-members (rest list) target)))
+  (clojure.set/superset? (set target) (set list)))
 
 (defn get-all-events-with-start-time-of [start-time events]
   "As its name suggests."
@@ -958,20 +963,22 @@
   "Ensures the cadence is the proper length."
   ([events] (wait-for-cadence events (ffirst events)))
   ([events start-time]
-     (cond (empty? events)()
-           (> (ffirst events) (+ start-time 4000))
-           true
-           (> (third (first events)) 1000) ()
-           :else (wait-for-cadence (rest events) start-time))))
+     (cond
+      (empty? events)()
+      (> (ffirst events) (+ start-time 4000))
+      true
+      (> (third (first events)) 1000) ()
+      :else
+      (wait-for-cadence (rest events) start-time))))
 
 (defn match-tonic-minor [the-events]
-  "Matches minor tonics."
   (let [events (get-last-beat-events (break-into-beats the-events))]
-    (and (not (empty? events))
-         (and (all-members (map second events) (apply concat
-                                                           (map (fn [note] (project-octaves note)) '(60 63 67))))
-              (match-harmony (sort < (map second events)) '(60 63 67))
-              (match-harmony (sort > (map second events)) '(60 63 67))))))
+    (when-not (empty? events)
+      (let [projected-octaves (mapcat (fn [note] (project-octaves note)) '(60 63 67))]
+        (and
+         (all-members (map second events) projected-octaves)
+         (match-harmony (sort < (map second events)) '(60 63 67))
+         (match-harmony (sort > (map second events)) '(60 63 67)))))))
 
 (defn- skip-generating-new-events? [counter current-beat]
   (reset! *early-exit?* (empty? (:destination-notes (find-beat current-beat))))
@@ -1037,7 +1044,7 @@
 (defn compose-bach
   []
   (compose-b)
-  (if (or 
+  (if (or
        (empty? @*events*)
        (< (let [it (my-last (sort-by-first-element @*events*))]
             (+ (first it)(third it)))
@@ -1054,7 +1061,7 @@
       (reset! *events* (ensure-necessary-cadences (sort-by-first-element @*events*)))
       (if (not (check-mt (get-on-beat @*events* (ffirst @*events*))))
         (reset! *events* (delay-for-upbeat @*events*)))
-      (if (and 
+      (if (and
            (false? *early-exit?*)
            (= *composer* 'bach))
         (reset! *events* (cadence-collapse (transpose-to-bach-range @*events*)))
