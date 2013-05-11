@@ -944,12 +944,16 @@
     (discover-cadences (get-long-phrases (if (not (= 0 (first cadence-start-times))) (cons 0 cadence-start-times) cadence-start-times))
                        ordered-events)))
 
+(defn- sorted-by-beat [beats]
+  (map (fn [beat]
+         (get-pitches (get-on-beat beat (ffirst beat)))) beats))
+
 (defn check-for-parallel [events]
-  "Checks for parallel motion."
-  (let [sorted-pitches-by-beat (map (fn [beat] (get-pitches (get-on-beat beat (ffirst beat)))) (collect-beats (take 30 (sort-by-first-element events))))]
+  (let [beats (collect-beats (take 30 (sort-by-first-element events)))
+        sorted-pitches-by-beat (sorted-by-beat beats)]
     (and (= (count (first sorted-pitches-by-beat)) 4)
          (= (count (second sorted-pitches-by-beat)) 4)
-         (or (and (> (- (first (first sorted-pitches-by-beat))
+         (or (and (> (- (ffirst sorted-pitches-by-beat)
                         (first (second sorted-pitches-by-beat))) 0)
                   (> (- (second (first sorted-pitches-by-beat))
                         (second (second sorted-pitches-by-beat))) 0)
@@ -957,24 +961,26 @@
                         (third (second sorted-pitches-by-beat))) 0)
                   (> (- (fourth (first sorted-pitches-by-beat))
                         (fourth (second sorted-pitches-by-beat)))) 0)
-             (and (< (- (first (first sorted-pitches-by-beat))
-                             (first (second sorted-pitches-by-beat))) 0)
+             (and (< (- (ffirst sorted-pitches-by-beat)
+                        (first (second sorted-pitches-by-beat))) 0)
                   (< (- (second (first sorted-pitches-by-beat))
-                             (second (second sorted-pitches-by-beat))) 0)
+                        (second (second sorted-pitches-by-beat))) 0)
                   (< (- (third (first sorted-pitches-by-beat))
-                             (third (second sorted-pitches-by-beat))) 0)
+                        (third (second sorted-pitches-by-beat))) 0)
                   (< (- (fourth (first sorted-pitches-by-beat))
-                             (fourth (second sorted-pitches-by-beat))) 0))))))
+                        (fourth (second sorted-pitches-by-beat))) 0))))))
 
 (defn wait-for-cadence
   "Ensures the cadence is the proper length."
   ([events] (wait-for-cadence events (ffirst events)))
   ([events start-time]
      (cond
-      (empty? events)()
-      (> (ffirst events) (+ start-time 4000))
+      (empty? events)
+      false
+      (> (ffirst events)  (+ start-time 4000))
       true
-      (> (third (first events)) 1000) ()
+      (> (third (first events)) 1000)
+      false
       :else
       (wait-for-cadence (rest events) start-time))))
 
@@ -1001,7 +1007,7 @@
        (reset! *end* true)
        true))))
 
-(defn- build-events-for-beat [counter current-beat]
+(defn build-events-for-beat [counter current-beat]
   (loop [events []
          counter counter
          current-beat current-beat]
@@ -1028,7 +1034,7 @@
 
     (let [events (build-events-for-beat counter current-beat)
           events-list (list current-beat-events)
-          all-events (concat events events-list)]
+          all-events (if-not (empty? events) (concat (list events) events-list) events-list)]
       (swap! *history* conj current-beat)
       (apply concat (re-time all-events)))))
 
@@ -1048,17 +1054,17 @@
      (if @*end*
        (swap! *history* conj (list (+ 1 *compose-number*))))))
 
-(defn not-finished-composing? []
+(defn not-finished-composing? [events]
   (or
-   (empty? @*events*)
-   (< (let [it (my-last (sort-by-first-element @*events*))]
+   (empty? events)
+   (< (let [it (last (sort-by-first-element events))]
         (+ (first it)(third it)))
-          15000)
-   (> (let [it (my-last (sort-by-first-element @*events*))]
+      15000)
+   (> (let [it (last (sort-by-first-element events))]
         (+ (first it)(third it)))
       200000)
-   (not (wait-for-cadence @*events*))
-   (check-for-parallel @*events*)
+   (not (wait-for-cadence events))
+   (check-for-parallel events)
    (false? @*end*)))
 
 (defn finish []
@@ -1075,7 +1081,7 @@
 
 (defn compose-bach []
   (compose-b)
-  (if not-finished-composing?
+  (if (not-finished-composing? @*events*)
     (compose-bach)
     (finish)))
 

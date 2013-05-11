@@ -52,6 +52,11 @@
   @*lexicon-store* => {:bach-57-60-69-76 {:beats '(b206b-1)}})
 
 
+(fact "build events for beat"
+  (create-complete-database ['b5505b]) => true
+
+  (build-events-for-beat 60 'b5505b-60) => nil)
+
 (fact "create complete database"
   (create-complete-database ['b206b]) => true
 
@@ -60,9 +65,9 @@
 
 (facts "bugs"
   (fact "loading a database"
-    (create-complete-database '(b40900b)) => true)
-
-  (println @*beats-store*))
+    (create-complete-database '(b40900b)) => true
+    (create-complete-database '(b18806b)) => true
+    (println @*beats-store*)))
 
 (fact "get channel numbers from events"
   (get-channel-numbers-from-events '((0 57 1000 4 96) (0 60 1000 3 96))) => '(3 4))
@@ -145,3 +150,10 @@
 
 (future-fact "transpose to bachs range"
   (transpose-to-bach-range '((0 60 1000 4 96) (0 64 1000 3 96))) => '((0 64 1000 4 96) (0 68 1000 3 96)))
+
+(fact "wait for cadence"
+  (wait-for-cadence '((0 48 1000 4 96) (0 64 1000 3 96) (0 67 1000 2 96) (4100 72 1000 1 96))) => true)
+
+(fact "check for parrellel"
+  (check-for-parallel '((0 49 1000 4 96) (0 65 1000 3 96) (0 68 1000 2 96) (0 73 1000 1 96)
+                        (1000 48 1000 4 96) (1000 64 1000 3 96) (1000 67 1000 2 96) (1000 72 1000 1 96))) => truthy)
