@@ -1046,7 +1046,7 @@
      (reset! *events* (build-events counter))
 
      (if (and
-          (false? @*early-exit?*)
+          (not @*early-exit?*)
           (= *composer* 'bach))
        @*events*
        (reset! *events* ()))
