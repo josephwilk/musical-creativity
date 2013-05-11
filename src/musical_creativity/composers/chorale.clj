@@ -216,12 +216,11 @@
   "Puts the beat arg into the appropriate lexicon."
   [beat-name]
   (let [beat (find-beat beat-name)
-        lexicon-name (keyword (make-lexicon-name (:start-notes beat)))]
+        lexicon-name (make-lexicon-name (:start-notes beat))]
     (if (and (lexicon-contains? lexicon-name)
              (not (member beat-name (:beats (find-in-lexicon lexicon-name)))))
-
-      (let [beats-name (cons beat-name (:beats (find-in-lexicon lexicon-name)))]
-        (reset! *lexicon-store* (assoc @*lexicon-store* lexicon-name beat-name))
+      (do
+        (reset! *lexicon-store* (update-in @*lexicon-store* [lexicon-name :beats] conj beat-name))
         lexicon-name)
       (do
         (reset! *lexicon-store* (assoc @*lexicon-store* lexicon-name (make-instance 'lexicon {:beats (list beat-name)})))
