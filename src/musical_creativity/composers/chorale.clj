@@ -451,15 +451,15 @@
         beat (find-beat test)
         on-beat (get-on-beat (:events beat) (ffirst (:events beat)))
         pcs (create-pitch-class-set (get-pitches on-beat))]
-      (if (and (triad? on-beat)
-               (or (members-all '(0 4 8) pcs)
-                   (members-all '(0 4 7) pcs)
-                   (members-all '(0 5 8) pcs)
-                   (members-all '(2 7 11) pcs))
-               (<= (third (first (:events beat))) 1000)
-               (= (count (:events beat)) 4))
-        test
-        (find-triad-beginning))))
+    (if (and (triad? on-beat)
+             (or (members-all '(0 4 8) pcs)
+                 (members-all '(0 4 7) pcs)
+                 (members-all '(0 5 8) pcs)
+                 (members-all '(2 7 11) pcs))
+             (<= (third (first (:events beat))) 1000)
+             (= (count (:events beat)) 4))
+      test
+      (recur))))
 
 (defn chop
   "Chops beats over 1000 into beat-sized pieces."
