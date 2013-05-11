@@ -313,7 +313,8 @@
 (defn collect-beats [events]
    (if (empty? events)
     ()
-    (let [test (collect-by-timing (first-place-where-all-together events) events)
+    (let [sync-time (first-place-where-all-together events)
+          test (collect-by-timing sync-time events)
           reduced-test (drop (count test) events)]
       (cons test
               (collect-beats reduced-test)))))
@@ -977,7 +978,7 @@
      (cond
       (empty? events)
       false
-      (> (ffirst events)  (+ start-time 4000))
+      (> (ffirst events) (+ start-time 4000))
       true
       (> (third (first events)) 1000)
       false
@@ -1054,18 +1055,18 @@
      (if @*end*
        (swap! *history* conj (list (+ 1 *compose-number*))))))
 
-(defn not-finished-composing? [events]
-  (or
-   (empty? events)
-   (< (let [it (last (sort-by-first-element events))]
-        (+ (first it)(third it)))
-      15000)
-   (> (let [it (last (sort-by-first-element events))]
-        (+ (first it)(third it)))
-      200000)
-   (not (wait-for-cadence events))
-   (check-for-parallel events)
-   (false? @*end*)))
+(defn finished-composing? [events end?]
+  (if (empty? events)
+    false
+    (let [last-event (last (sort-by-first-element events))
+          event-sum (+ (first last-event) (third last-event))]
+      (not
+       (or
+        (< event-sum 15000)
+        (> event-sum 200000)
+        (not (wait-for-cadence events))
+        (check-for-parallel events)
+        (not end?))))))
 
 (defn finish []
   (reset! *save-events* @*events*)
@@ -1081,9 +1082,9 @@
 
 (defn compose-bach []
   (compose-b)
-  (if (not-finished-composing? @*events*)
-    (compose-bach)
-    (finish)))
+  (if (finished-composing? @*events* @*end*)
+    (finish)
+    (compose-bach)))
 
 (defn compose []
   (create-complete-database chorale/bach-chorales-in-databases)

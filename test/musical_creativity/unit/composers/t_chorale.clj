@@ -160,8 +160,10 @@
 
   (check-for-parallel '((0 49 1000 4 96) (0 65 1000 3 96) (0 68 1000 2 96) (0 73 1000 1 96))) => false)
 
-(fact "not finished composing"
-  (not-finished-composing? '((0 52 1000 4 96) (0 60 1000 3 96) (0 67 500 2 96) (0 67 500 1 96) (1000 52 1000 4 96) (1000 60 1000 3 96) (1000 67 500 2 96) (1000 67 500 1 96))) => true
-  (not-finished-composing? ()) => true
+(facts "finished composing"
+  (fact "when we are not finished"
+    (finished-composing? '((0 52 1000 4 96) (0 60 1000 3 96) (0 67 500 2 96) (0 67 500 1 96) (1000 52 1000 4 96) (1000 60 1000 3 96) (1000 67 500 2 96) (1000 67 500 1 96)) true) => false
+    (finished-composing? () true) => false)
 
-  (not-finished-composing? '((0 52 15000 4 96))) => false)
+  (fact "when we are finished"
+    (finished-composing? '((0 52 0 4 96) (4001 52 15000 3 96)) true) => true))
