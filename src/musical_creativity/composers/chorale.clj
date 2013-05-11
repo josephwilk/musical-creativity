@@ -426,14 +426,15 @@
 
 (defn triad? [events]
   "Checks to see if the events are a triad."
-  (let [pitches (get-pitches events)
-        pitches-class-set (create-pitch-class-set pitches)
-        pitch-classes (get-smallest-set pitches-class-set)]
-    (and (= (count pitch-classes) 3)
-         (and (> (- (second pitch-classes)(first pitch-classes)) 2)
-              (< (- (second pitch-classes)(first pitch-classes)) 5))
-         (and (> (- (third pitch-classes)(second pitch-classes)) 2)
-              (< (- (third pitch-classes)(second pitch-classes)) 5)))))
+  (when-not (empty? events)
+    (let [pitches (get-pitches events)
+          pitches-class-set (create-pitch-class-set pitches)
+          pitch-classes (get-smallest-set pitches-class-set)]
+      (and (= (count pitch-classes) 3)
+           (and (> (- (second pitch-classes)(first pitch-classes)) 2)
+                (< (- (second pitch-classes)(first pitch-classes)) 5))
+           (and (> (- (third pitch-classes)(second pitch-classes)) 2)
+                (< (- (third pitch-classes)(second pitch-classes)) 5))))))
 
 (defn members-all [arrows target]
   "Checks to see if arrows are all in target."
