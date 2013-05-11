@@ -865,7 +865,8 @@
      (if (empty? event-lists)
        ()
        (cons (retimed-events event-lists current-time)
-             (re-time (rest event-lists) (+ current-time (get-beat-length (first event-lists))))))))
+             (re-time (rest event-lists)
+                      (+ current-time (get-beat-length (first event-lists))))))))
 
 (defn highest-lowest-notes [events]
   "Returns the highest and lowest pitches of its arg."
