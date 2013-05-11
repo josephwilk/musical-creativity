@@ -821,19 +821,24 @@
 
 (defn get-db-n [exploded-lexicon]
   "Checks for dashes in the db-name."
-  (cond (= (first exploded-lexicon) '-)
-        ()
-        (empty? exploded-lexicon)()
-        :else (cons (first exploded-lexicon)
-                    (get-db-n (rest exploded-lexicon)))))
+  (cond
+   (= (first exploded-lexicon) '-)
+   ()
+   (empty? exploded-lexicon)
+   ()
+   :else
+   (cons (first exploded-lexicon)
+         (get-db-n (rest exploded-lexicon)))))
 
 (defn get-db-name [lexicon]
   "Returns the database name."
-  (implode (get-db-n (explode lexicon))))
+  (first (str/split lexicon #"-")))
 
 (defn incf-beat [beat]
   "Increments the beat number."
-  (implode (list (get-db-name beat) '- (+ 1 (my-last (explode beat))))))
+  (when-not (empty? beat)
+    (let [last-beat-digit (Integer/parseInt (str (last (explode beat))))]
+      (str (get-db-name beat) "-" (+ 1 last-beat-digit)))))
 
 (defn match-bach-tonic [the-events]
   "Returns true if the events are tonic."
@@ -1013,17 +1018,26 @@
          current-beat current-beat]
     (if (skip-generating-new-events? counter current-beat)
       events
-      (let [new-events (:events (find-beat current-beat))]
+      (let [beat (find-beat current-beat)
+            new-events (:events beat)
+            destination-notes (:destination-notes beat)
+            lexicon-name (make-lexicon-name destination-notes)
+            beat-in-lexicon (find-in-lexicon lexicon-name)
+            beat-choices (:beats beat-in-lexicon)
+            new-beat (choose-one
+                      (if (empty? (rest beat-choices))
+                        beat-choices
+                        (my-remove (list @*previous-beat* (incf-beat @*previous-beat*)) beat-choices)))]
+
+        (println @*lexicon-store*)
+        (println :beat-choices beat-choices)
+        (println :beat-in-lexicon beat-in-lexicon)
+
         (swap! *history* conj current-beat)
         (reset! *previous-beat* current-beat)
         (recur new-events
                (+ 1 counter)
-               (choose-one
-                (let [destination-notes (:destination-notes (find-beat current-beat))
-                      beat-choices (:beats (find-in-lexicon (make-lexicon-name destination-notes)))]
-                  (if (empty? (rest beat-choices))
-                    beat-choices
-                    (my-remove (list *previous-beat* (incf-beat *previous-beat*)) beat-choices)))))))))
+               new-beat)))))
 
 (defn- build-events [counter]
   (let [current-beat (find-triad-beginning)
