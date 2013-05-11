@@ -1047,32 +1047,36 @@
      (if *end*
        (swap! *history* conj (list (+ 1 *compose-number*))))))
 
-(defn compose-bach
-  []
-  (compose-b)
-  (if (or
-       (empty? @*events*)
-       (< (let [it (my-last (sort-by-first-element @*events*))]
-            (+ (first it)(third it)))
+(defn not-finished-composing? []
+  (or
+   (empty? @*events*)
+   (< (let [it (my-last (sort-by-first-element @*events*))]
+        (+ (first it)(third it)))
           15000)
-       (> (let [it (my-last (sort-by-first-element @*events*))]
-            (+ (first it)(third it)))
-          200000)
-       (not (wait-for-cadence @*events*))
-       (check-for-parallel @*events*)
-       (empty? @*end*))
+   (> (let [it (my-last (sort-by-first-element @*events*))]
+        (+ (first it)(third it)))
+      200000)
+   (not (wait-for-cadence @*events*))
+   (check-for-parallel @*events*)
+   (empty? @*end*)))
+
+(defn finish []
+  (reset! *save-events* @*events*)
+  (reset! *events* (ensure-necessary-cadences (sort-by-first-element @*events*)))
+  (if (not (check-mt (get-on-beat @*events* (ffirst @*events*))))
+    (reset! *events* (delay-for-upbeat @*events*)))
+  (if (and
+       (false? *early-exit?*)
+       (= *composer* 'bach))
+    (reset! *events* (cadence-collapse (transpose-to-bach-range @*events*)))
+    (reset! *events* ()))
+  @*save-events*)
+
+(defn compose-bach []
+  (compose-b)
+  (if not-finished-composing?
     (compose-bach)
-    (do
-      (reset! *save-events* @*events*)
-      (reset! *events* (ensure-necessary-cadences (sort-by-first-element @*events*)))
-      (if (not (check-mt (get-on-beat @*events* (ffirst @*events*))))
-        (reset! *events* (delay-for-upbeat @*events*)))
-      (if (and
-           (false? *early-exit?*)
-           (= *composer* 'bach))
-        (reset! *events* (cadence-collapse (transpose-to-bach-range @*events*)))
-        (reset! *events* ()))
-      true)))
+    (finish)))
 
 (defn compose []
   (create-complete-database chorale/bach-chorales-in-databases)
