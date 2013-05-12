@@ -4,7 +4,7 @@
 
 Experiments with models for computers generating music.
 
-##Demos
+##Examples
 
 ```clojure
 (require '[musical-creativity.musician :as musician] :reload)
@@ -26,6 +26,11 @@ Experiments with models for computers generating music.
 ;Sonify text
 (require '[musical-creativity.composers.sonify-words :as sonify-words] :reload)
 (musician/play (sonify-words/compose "potato potato potata potatd potate potatk") piano)
+
+;Recombinance (Based on Bach Choral no. 140)
+;(Still very experimental, some notes go missing!)
+(use '[musical-creativity.composers.recombinance :as recombinance] :reload)
+(musician/play (compose) piano)
 
 ;Network (Using adaptive resonance theory)
 (require '[musical-creativity.composers.network :as network] :reload)
