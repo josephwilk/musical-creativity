@@ -171,12 +171,49 @@
   (fact "when we are finished"
     (finished-composing? '((0 52 0 4 96) (4001 52 15000 3 96)) true) => true))
 
-(facts "skip-generating-new-events?"
-  (skip-generating-new-events?))
-
-(facts "incf the beat"
+(fact "incf the beat"
   (incf-beat "b35300b-42") => "b35300b-3"
-  (incf-beat ()) => nil)
+  (incf-beat 'b32100b-31) => "b32100b-2"
+  (incf-beat nil) => nil)
 
-(facts "get db name"
+(fact "get db name"
   (get-db-name "b35300b-42") => "b35300b")
+
+(fact "find 1000s"
+  (find-1000s '((3000 61 1000 1 96) (3000 69 1000 2 96) (3000 69 1000 3 96) (3000 69 1000 4 96)))
+  => 3000)
+
+(fact "find 2000s"
+  (find-2000s '((3000 61 1000 4 96) (3000 69 1000 3 96)))
+  => nil)
+
+(fact "get region"
+  (get-region 0 4000 '((3000 61 1000 4 96) (3000 69 1000 3 96) (4001 70 1000 96)))
+  => '((3000 61 1000 4 96) (3000 69 1000 3 96)))
+
+(fact "distance to cadence"
+  (distance-to-cadence '((3000 61 1000 1 96) (3000 69 1000 2 96) (3000 69 1000 3 96) (3000 69 1000 4 96)))
+  => 3000)
+
+(fact "discover cadences"
+  (discover-cadences '((4000)) '((3000 61 1000 1 96) (3000 69 1000 2 96) (3000 69 1000 3 96) (3000 69 1000 4 96)))
+  => '((3000 61 1000 1 96) (3000 69 1000 2 96) (3000 69 1000 3 96) (3000 69 1000 4 96)))
+
+(fact "find cadence place"
+  (find-cadence-place '((3000 61 1000 4 96) (3000 69 1000 3 96))) => nil
+  (find-cadence-place '((25000 57 1000 4 96) (25000 64 1000 3 96) (25000 69 1000 2 96) (25000 72 1000 1 96))) => '(25000))
+
+(fact "find best on time"
+  (find-best-on-time '(0 1000 2000)) => 1000)
+
+(fact "resolve beat"
+  (resolve-beat '((3000 61 1000 4 96) (3000 69 1000 3 96))) => '((3000 61 1000 4 96) (3000 69 1000 3 96))
+  (resolve-beat '((30000 55 1000 4 96) (30000 60 500 3 96) (30000 64 1000 2 96) (30000 67 1000 1 96) (30500 57 500 3 96))) => nil)
+
+(fact "positions"
+  (positions 1 '(4 5 3 1 2 1 4 5))
+  => '(3 5))
+
+(fact "check-mt"
+  (check-mt '((0 43 1000 4 96) (0 59 1000 3 96) (0 62 1000 2 96) (0 67 1000 1 96)))
+  => false)

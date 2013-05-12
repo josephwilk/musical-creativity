@@ -577,12 +577,15 @@
 
 (defn get-region [begin-time end-time events]
   "Returns the region boardered by begin and end times."
-  (cond (empty? events)()
-        (and (>= (ffirst events) begin-time)
-             (< (ffirst events) end-time))
-        (cons (first events)
-              (get-region begin-time end-time (rest events)))
-        :else (get-region begin-time end-time (rest events))))
+  (cond
+   (empty? events)
+   ()
+   (and (>= (ffirst events) begin-time)
+        (< (ffirst events) end-time))
+   (cons (first events)
+         (get-region begin-time end-time (rest events)))
+   :else
+   (get-region begin-time end-time (rest events))))
 
 (defn not-beyond [channel-events]
   "Returns events beyond the initial ontime."
@@ -597,35 +600,36 @@
             (not-beyond-1000 beat (+ channel 1))
             :else ())))
 
-(defn find-cadence-place [ordered-events]
+(defn- cadence-place? [beat]
+  (and (on-beat (take 4 beat) (ffirst beat))
+       (triad? (take 4 beat))
+       (not-beyond-1000 beat)))
+
+(defn find-cadence-place
   "Returns the best place for a first cadence."
+  [ordered-events]
   (let [beats (collect-beats ordered-events)]
-    (map (fn [beat] (ffirst beat))
-         (filter (fn [beat]
-                   (and (on-beat (take 4 beat)(ffirst beat))
-                        (triad? (take 4 beat))
-                        (not-beyond-1000 beat))) beats))))
+    (seq
+     (map (fn [beat] (ffirst beat))
+          (filter cadence-place? beats)))))
 
 (defn positions [number list]
   "Shows the positions of number in list."
-  (loop [positions []
-         number number
-         list list]
-    (if (empty? (member number list))
-      positions
-      (let [position (position number list)]
-        (recur (conj positions position)
-               (+ 1 number)
-               (replace 'x number list))))))
+  (let [indexed-list (map-indexed vector list)]
+    (for [[index element] indexed-list :when (= number element)] index)))
 
-(defn find-closest [number list]
+(defn find-closest
   "finds the closest number in list to number."
+  [number list]
   (let [test (map (fn [item] (math/abs (- number item))) list)]
-    (nth (choose-one (positions (first (sort < test)) test)) list)))
+    (nth list (choose-one (positions (first (sort < test)) test)))))
 
 (defn find-best-on-time [on-times]
-  "Finds the best ontime."
-  (find-closest (+ (/ (- (my-last on-times)(first on-times)) 2)(first on-times)) on-times))
+  (find-closest
+   (+
+    (/ (- (last on-times) (first on-times)) 2)
+    (first on-times))
+   on-times))
 
 (defn remove-region [begin-time end-time events]
   "Removes the region boardered by begin and end times."
@@ -645,85 +649,105 @@
       (recur (rest stuff)
              (remove (first stuff) other-stuff)))))
 
-(defn resolve-it
+(defn resolve-beat
   "Resolves the beat if necessary."
-  ([beat] (resolve-it beat (ffirst beat)))
+  ([beat] (resolve-beat beat (ffirst beat)))
   ([beat on-time]
-      (cond (empty? beat)()
-            (= (third (first beat)) 1000)
-            (cons (first beat)
-                  (resolve-it (rest beat) on-time))
-            :else (let [test (get-on-beat (get-channel (fourth (first beat)) beat) on-time)]
-                    (cons (if (>= (third (first test)) 1000)(first test)
-                              (concat (take 2 (first test)) '(1000) (drop 3 (first test))))
-                          (resolve-it (remove-all (get-channel (fourth (first beat)) beat) beat) on-time))))))
+     (cond
+      (nil? (seq beat))
+      ()
+      (= (third (first beat)) 1000)
+      (cons (first beat)
+            (resolve-beat (rest beat) on-time))
+      :else
+      (let [on-beat-candidate (get-on-beat (get-channel (fourth (first beat)) beat) on-time)]
+        (cons (if (>= (third (first on-beat-candidate)) 1000)
+                (first on-beat-candidate)
+                (concat (take 2 (first on-beat-candidate)) '(1000) (drop 3 (first on-beat-candidate))))
+              (resolve-beat (remove-all (get-channel (fourth (first beat)) beat) beat) on-time))))))
 
-(defn discover-cadence [missing-cadence-locations ordered-events]
+(defn discover-cadence
   "Discovers an appropriate cadence."
-  (let [relevant-events (get-region (first missing-cadence-locations)(second missing-cadence-locations) ordered-events)
+  [missing-cadence-locations ordered-events]
+  (let [relevant-events (get-region (first missing-cadence-locations) (second missing-cadence-locations) ordered-events)
         places-for-cadence (find-cadence-place relevant-events)
-        best-location-for-new-cadence (if places-for-cadence (find-best-on-time places-for-cadence) nil)]
-    (if (empty? best-location-for-new-cadence) ordered-events
-    (sort-by-first-element
-     (concat (resolve-it (get-region best-location-for-new-cadence (+ best-location-for-new-cadence 1000) relevant-events))
-             (remove-region best-location-for-new-cadence (+ best-location-for-new-cadence 1000) ordered-events))))))
+        best-location-for-new-cadence (when places-for-cadence (find-best-on-time places-for-cadence))]
+    (if (nil? best-location-for-new-cadence)
+      ordered-events
+      (sort-by-first-element
+       (concat (resolve-beat (get-region best-location-for-new-cadence (+ best-location-for-new-cadence 1000) relevant-events))
+               (remove-region best-location-for-new-cadence (+ best-location-for-new-cadence 1000) ordered-events))))))
 
 (defn find-1000s
   "Returns the ontime if the ordered events are all duration 1000."
   ([ordered-events] (find-1000s ordered-events (ffirst ordered-events)))
   ([ordered-events start-time]
-     (cond (empty? ordered-events)()
-           (and (let [channel-1-event (first (get-channel 1 ordered-events))]
-                  (and (= (third channel-1-event) 1000)
-                       (= start-time (first channel-1-event))))
-                (let [channel-1-event (first (get-channel 2 ordered-events))]
-                  (and (= (third channel-1-event) 1000)
-                       (= start-time (first channel-1-event))))
-                (let [channel-1-event (first (get-channel 3 ordered-events))]
-                  (and (= (third channel-1-event) 1000)
-                       (= start-time (first channel-1-event))))
-                (let [channel-1-event (first (get-channel 4 ordered-events))]
-                  (and (= (third channel-1-event) 1000)
-                       (= start-time (first channel-1-event)))))
-           start-time
-           :else (find-1000s (rest ordered-events)))))
+     (cond
+      (empty? ordered-events)
+      nil
+      (and (let [channel-1-event (first (get-channel 1 ordered-events))]
+             (and (= (third channel-1-event) 1000)
+                  (= start-time (first channel-1-event))))
+           (let [channel-1-event (first (get-channel 2 ordered-events))]
+             (and (= (third channel-1-event) 1000)
+                  (= start-time (first channel-1-event))))
+           (let [channel-1-event (first (get-channel 3 ordered-events))]
+             (and (= (third channel-1-event) 1000)
+                  (= start-time (first channel-1-event))))
+           (let [channel-1-event (first (get-channel 4 ordered-events))]
+             (and (= (third channel-1-event) 1000)
+                  (= start-time (first channel-1-event)))))
+      start-time
+      :else
+      (find-1000s (rest ordered-events)))))
 
 (defn find-2000s
   "Returns events of 2000 duration."
   ([ordered-events] (find-2000s ordered-events (ffirst ordered-events)))
   ([ordered-events start-time]
-      (cond (empty? ordered-events)()
-            (and (let [channel-1-event (first (get-channel 1 ordered-events))]
-                   (and (= (third channel-1-event) 2000)
-                        (= start-time (first channel-1-event))))
-                 (let [channel-1-event (first (get-channel 2 ordered-events))]
-                   (and (= (third channel-1-event) 2000)
-                        (= start-time (first channel-1-event))))
-                 (let [channel-1-event (first (get-channel 3 ordered-events))]
-                   (and (= (third channel-1-event) 2000)
-                        (= start-time (first channel-1-event))))
-                 (let [channel-1-event (first (get-channel 4 ordered-events))]
-                   (and (= (third channel-1-event) 2000)
-                        (= start-time (first channel-1-event)))))
-            start-time
-            :else (find-2000s (rest ordered-events)))))
+      (cond
+       (empty? ordered-events)
+       nil
+       (and (let [channel-1-event (first (get-channel 1 ordered-events))]
+              (and (= (third channel-1-event) 2000)
+                   (= start-time (first channel-1-event))))
+            (let [channel-1-event (first (get-channel 2 ordered-events))]
+              (and (= (third channel-1-event) 2000)
+                   (= start-time (first channel-1-event))))
+            (let [channel-1-event (first (get-channel 3 ordered-events))]
+              (and (= (third channel-1-event) 2000)
+                   (= start-time (first channel-1-event))))
+            (let [channel-1-event (first (get-channel 4 ordered-events))]
+              (and (= (third channel-1-event) 2000)
+                   (= start-time (first channel-1-event)))))
+       start-time
+       :else
+       (find-2000s (rest ordered-events)))))
 
 
-(defn discover-cadences [missing-cadence-locations ordered-events]
+(defn discover-cadences
   "Makes an appropriate cadence possible."
-  (if (empty? missing-cadence-locations) ordered-events
-      (discover-cadences (rest missing-cadence-locations)
-                     (discover-cadence (first missing-cadence-locations) ordered-events))))
+  [missing-cadence-locations ordered-events]
+  (if (empty? missing-cadence-locations)
+    ordered-events
+    (discover-cadences (rest missing-cadence-locations)
+                       (discover-cadence (first missing-cadence-locations) ordered-events))))
 
 (defn distance-to-cadence [ordered-events]
   "Returns the distance tocadence of the arg."
   (let [quarter-note-distance (find-1000s ordered-events)
         half-note-distance (find-2000s ordered-events)]
-    (cond (and (empty? quarter-note-distance)(empty? half-note-distance)) ()
-          (empty? quarter-note-distance) half-note-distance
-          (empty? half-note-distance) quarter-note-distance
-          :else (if (> quarter-note-distance half-note-distance) half-note-distance
-                quarter-note-distance))))
+    (cond
+     (and (nil? quarter-note-distance) (nil? half-note-distance))
+     nil
+     (nil? quarter-note-distance)
+     half-note-distance
+     (nil? half-note-distance)
+     quarter-note-distance
+     :else
+     (if (> quarter-note-distance half-note-distance)
+       half-note-distance
+       quarter-note-distance))))
 
 (defn clear-to [distance-to-cadence ordered-events]
   "Clears the events up to the cadence."
@@ -736,11 +760,14 @@
 (defn find-cadence-start-times [ordered-events]
   "Finds the cadence start times."
   (let [distance-to-cadence (distance-to-cadence ordered-events)]
-    (cond (empty? ordered-events)()
-          (empty? distance-to-cadence)
-          (find-cadence-start-times (rest ordered-events))
-          :else (cons distance-to-cadence
-                  (find-cadence-start-times (clear-to distance-to-cadence ordered-events))))))
+    (cond
+     (empty? ordered-events)
+     ()
+     (nil? distance-to-cadence)
+     (find-cadence-start-times (rest ordered-events))
+     :else
+     (cons distance-to-cadence
+           (find-cadence-start-times (clear-to distance-to-cadence ordered-events))))))
 
 (defn transpose [amt events]
   "Transposes the events according to its first arg."
@@ -922,12 +949,15 @@
   "Delays the upbeat."
   (reset-events-to events 3000))
 
-(defn all [first second]
+(defn all [list1 list2]
   "Tests for presence of all of first arg in second arg."
-  (cond (empty? first) true
-        (member (first first) second)
-        (all (rest first) second)
-        :else ()))
+  (cond
+   (empty? list1)
+   true
+   (member (first list1) list2)
+   (all (rest list1) list2)
+   :else
+   false))
 
 (defn get-tonic  [events]
   "Returns the tonic."
@@ -941,11 +971,13 @@
   "Returns the major tonic."
   (get-tonic events))
 
-(defn ensure-necessary-cadences [ordered-events]
+(defn ensure-necessary-cadences
   "Ensures the cadences are proper."
-  (let [cadence-start-times (find-cadence-start-times ordered-events)]
-    (discover-cadences (get-long-phrases (if (not (= 0 (first cadence-start-times))) (cons 0 cadence-start-times) cadence-start-times))
-                       ordered-events)))
+  [ordered-events]
+  (let [cadence-start-times (find-cadence-start-times ordered-events)
+        cadence-start-times (if-not (= 0 (first cadence-start-times)) (cons 0 cadence-start-times) cadence-start-times)
+        long-phrases (get-long-phrases cadence-start-times)]
+    (discover-cadences long-phrases ordered-events)))
 
 (defn- sorted-by-beat [beats]
   (map (fn [beat]
@@ -1027,7 +1059,6 @@
                         beat-choices
                         (my-remove (list @*previous-beat* (incf-beat @*previous-beat*)) beat-choices)))]
 
-
         (swap! *history* conj current-beat)
         (reset! *previous-beat* current-beat)
 
@@ -1054,7 +1085,6 @@
      (reset! *end* false)
      (reset! *history* ())
      (reset! *events* (build-events counter))
-
      (if (and
           (not @*early-exit?*)
           (= *composer* 'bach))
