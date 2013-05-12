@@ -28,7 +28,7 @@ Experiments with models for computers generating music.
 (musician/play (sonify-words/compose "potato potato potata potatd potate potatk") piano)
 
 ;Recombinance (Based on Bach Choral no. 140)
-;(Still very experimental, some notes go missing!)
+;(Still very experimental)
 (use '[musical-creativity.composers.recombinance :as recombinance] :reload)
 (musician/play (compose) piano)
 
