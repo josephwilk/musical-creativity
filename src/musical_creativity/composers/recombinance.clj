@@ -1102,6 +1102,7 @@
         (not end?))))))
 
 (defn prepare-events [events early-exit?]
+  (reset! *save-events* events)
   (let [events (ensure-necessary-cadences (sort-by-first-element events))
         events (if-not (check-mt (get-on-beat events (ffirst events)))
                  (delay-for-upbeat events)
