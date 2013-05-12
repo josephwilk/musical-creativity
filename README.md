@@ -8,7 +8,7 @@ Experiments with models for computers generating music.
 
 ```clojure
 (require '[musical-creativity.musician :as musician] :reload)
-(use '[musical-creativity.instruments])
+(use '[musical-creativity.instruments] :reload)
 
 ;Cosine
 (require '[musical-creativity.composers.cosine :as cosine] :reload)
@@ -26,6 +26,7 @@ Experiments with models for computers generating music.
 ;Sonify text
 (require '[musical-creativity.composers.sonify-words :as sonify-words] :reload)
 (musician/play (sonify-words/compose "potato potato potata potatd potate potatk") piano)
+(musician/play (sonify-words/compose "potato potato") ping)
 
 ;Recombinance (Based on Bach Choral no. 140)
 ;(Still very experimental)
