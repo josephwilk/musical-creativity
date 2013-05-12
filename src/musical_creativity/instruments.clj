@@ -36,15 +36,37 @@
 (defn- note->hz [music-note]
   (midi->hz (note music-note)))
 
+(defn linear-map
+  "given points (x0,y0), (x1,y1) calculate linear relation y given x"
+  [x0 x1 y0 y1 x]
+  (let [dydx (/ (- y1 y0) (- x1 x0))
+        dx (- x x0)]
+    (+ y0 (* dydx dx))))
+
+(defn velocity-to-attack
+  "sampled-piano uses attack & level, not velocity"
+  [v]
+  (linear-map 0 127 0.2 0.05 v))
+
+(defn velocity-to-level
+  "sampled-piano uses attack & level, not velocity"
+  [v]
+  (linear-map 0 800 0.0 0.8 v))
+
 (defn- play-chord [a-chord]
   (doseq [note a-chord] (saw2 note)))
 
 (defn play-event [event start-time player-fn]
   (let [pitch-to-play (:pitch event)
         log (:log event)
+        attack (when (:velocity event) (velocity-to-attack (:velocity event)))
+        level (when (:velocity event)  (velocity-to-level (:velocity event))  1)
         note-time (+ start-time (:time event))]
     (when pitch-to-play
-      (at note-time (player-fn pitch-to-play))
+      (if (and attack level)
+        (let [current-instrument (at note-time (player-fn :note pitch-to-play :attack attack :level level))]
+          (at (+ 1200 note-time) (ctl current-instrument :gate 0)))
+        (at note-time (player-fn pitch-to-play)))
       (overtone.at-at/at (- note-time 10) #(when log (do (print log) (flush))) my-pool))))
 
 (defn play-saw [event start-time]
