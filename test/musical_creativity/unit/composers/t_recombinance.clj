@@ -1,21 +1,21 @@
-(ns musical-creativity.unit.composers.t-chorale
+(ns musical-creativity.unit.composers.t-recombinance
   (:require
-   [midje.sweet :refer :all]
-   [data.chorale :as chorale]
-   [data.chorale.jsb1 :refer :all]
-   [data.chorale.jsb2 :refer :all]
-   [data.chorale.jsb3 :refer :all]
-   [data.chorale.jsb4 :refer :all]
-   [data.chorale.jsb5 :refer :all]
-   [data.chorale.jsb6 :refer :all]
-   [data.chorale.jsb7 :refer :all]
-   [data.chorale.jsb8 :refer :all]
-   [data.chorale.jsb9 :refer :all]
-   [data.chorale.jsb10 :refer :all]
-   [data.chorale.jsb11 :refer :all]
-   [data.chorale.jsb12 :refer :all]
-   [data.chorale.jsb13 :refer :all]
-   [musical-creativity.composers.chorale :refer :all]))
+   [midje.sweet                               :refer :all]
+   [data.chorale                              :as chorale]
+   [data.chorale.jsb1                         :refer :all]
+   [data.chorale.jsb2                         :refer :all]
+   [data.chorale.jsb3                         :refer :all]
+   [data.chorale.jsb4                         :refer :all]
+   [data.chorale.jsb5                         :refer :all]
+   [data.chorale.jsb6                         :refer :all]
+   [data.chorale.jsb7                         :refer :all]
+   [data.chorale.jsb8                         :refer :all]
+   [data.chorale.jsb9                         :refer :all]
+   [data.chorale.jsb10                        :refer :all]
+   [data.chorale.jsb11                        :refer :all]
+   [data.chorale.jsb12                        :refer :all]
+   [data.chorale.jsb13                        :refer :all]
+   [musical-creativity.composers.recombinance :refer :all]))
 
 (namespace-state-changes (before :facts (do
                                           (reset! *beats-store* {})

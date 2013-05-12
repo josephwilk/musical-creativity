@@ -1,4 +1,4 @@
-(ns musical-creativity.composers.chorale
+(ns musical-creativity.composers.recombinance
   (:require
    [clojure.math.numeric-tower :as math]
    [data.chorale :as chorale]
@@ -330,7 +330,7 @@
                              :voice-leading (first rules)})))
 
 (defn- find-composer-beats-atom []
-  (var-get (resolve (symbol (str "musical-creativity.composers.chorale/" *composer* "-compose-beats")))))
+  (var-get (resolve (symbol (str "musical-creativity.composers.recombinance/" *composer* "-compose-beats")))))
 
 (defn- find-composer-start-beats-atom []
   (eval (str *composer* "-compose-beats")))
@@ -644,6 +644,10 @@
   "Resolves the beat if necessary."
   ([beat] (resolve-beat beat (ffirst beat)))
   ([beat on-time]
+
+     (println)
+     (println :b beat)
+
      (cond
       (nil? (seq beat))
       ()
@@ -652,6 +656,7 @@
             (resolve-beat (rest beat) on-time))
       :else
       (let [on-beat-candidate (get-on-beat (get-channel (fourth (first beat)) beat) on-time)]
+
 
         (cons (if (>= (third (first on-beat-candidate)) 1000)
                 (first on-beat-candidate)
