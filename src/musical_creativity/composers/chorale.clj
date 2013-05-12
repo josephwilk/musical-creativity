@@ -1030,7 +1030,8 @@
 
         (swap! *history* conj current-beat)
         (reset! *previous-beat* current-beat)
-        (recur new-events
+
+        (recur (concat events new-events)
                (+ 1 counter)
                new-beat)))))
 
