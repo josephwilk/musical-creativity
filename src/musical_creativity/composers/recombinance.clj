@@ -1104,7 +1104,7 @@
         (check-for-parallel events)
         (not end?))))))
 
-(defn finish []
+(defn final-events []
   (reset! *save-events* @*events*)
   (reset! *events* (ensure-necessary-cadences (sort-by-first-element @*events*)))
   (if (not (check-mt (get-on-beat @*events* (ffirst @*events*))))
@@ -1119,7 +1119,7 @@
 (defn compose-bach []
   (compose-b)
   (if (finished-composing? @*events* @*end*)
-    (finish)
+    (final-events)
     (compose-bach)))
 
 (defn compose []
