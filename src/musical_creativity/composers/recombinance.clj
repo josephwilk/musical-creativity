@@ -1118,13 +1118,15 @@
     (compose-bach)
     (prepare-events @*events* @*early-exit?*)))
 
-(defn load-bach-chorales
+(defn load-bach-chorales []
   (create-complete-database chorale/bach-chorales-in-databases))
+
+(defn- midi-to-event [midi]
+  {:time (nth midi 0)
+   :pitch (nth midi 1)
+   :channel (nth midi 3)})
 
 (defn compose []
   (let [events (compose-bach)]
-    (map (fn [event]
-                                        ;TODO Some negative times here
-           {:time (nth event 0)
-            :pitch (nth event 1)
-            :channel (nth event 3)}) events)))
+    (println events)
+    (map midi-to-event events)))

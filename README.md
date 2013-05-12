@@ -30,6 +30,7 @@ Experiments with models for computers generating music.
 ;Recombinance (Based on Bach Choral no. 140)
 ;(Still very experimental)
 (use '[musical-creativity.composers.recombinance :as recombinance] :reload)
+(load-bach-chorales)
 (musician/play (compose) piano)
 
 ;Network (Using adaptive resonance theory)
