@@ -1117,9 +1117,10 @@
   (if (finished-composing? @*events* @*end*)
     (prepare-events @*events* @*early-exit?*)
     (compose-bach)))
+(defn load-bach-chorales
+  (create-complete-database chorale/bach-chorales-in-databases))
 
 (defn compose []
-  (create-complete-database chorale/bach-chorales-in-databases)
   (let [events (compose-bach)]
     (map (fn [event]
                                         ;TODO Some negative times here
