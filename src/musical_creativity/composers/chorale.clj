@@ -37,7 +37,7 @@
 (def *compose-number* 0)
 (def *histories* ())
 
-(def *previous-beat* (atom ()))
+(def *previous-beat* (atom nil))
 
 (def *beat-size* 1000)
 
@@ -48,11 +48,7 @@
 (declare get-rule)
 
 (defn my-remove [objects-to-be-remove list-of-objects]
-  (if (empty? objects-to-be-remove)
-    list-of-objects
-    (my-remove (rest objects-to-be-remove)
-               (remove (first objects-to-be-remove)
-                       list-of-objects))))
+  (remove #(some #{%} objects-to-be-remove) list-of-objects))
 
 (defn position [thing list]
   (let [index (.indexOf list thing)]
@@ -834,10 +830,12 @@
   "Returns the database name."
   (first (str/split lexicon #"-")))
 
-(defn incf-beat [beat]
+(defn incf-beat
   "Increments the beat number."
-  (when-not (empty? beat)
-    (let [last-beat-digit (Integer/parseInt (str (last (explode beat))))]
+  [beat]
+  (when-not (nil? beat)
+    (let [beat (str beat)
+          last-beat-digit (Integer/parseInt (str (last (explode beat))))]
       (str (get-db-name beat) "-" (+ 1 last-beat-digit)))))
 
 (defn match-bach-tonic [the-events]
@@ -1029,9 +1027,6 @@
                         beat-choices
                         (my-remove (list @*previous-beat* (incf-beat @*previous-beat*)) beat-choices)))]
 
-        (println @*lexicon-store*)
-        (println :beat-choices beat-choices)
-        (println :beat-in-lexicon beat-in-lexicon)
 
         (swap! *history* conj current-beat)
         (reset! *previous-beat* current-beat)
