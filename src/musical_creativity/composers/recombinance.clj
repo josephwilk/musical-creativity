@@ -361,9 +361,6 @@
                (when start
                  (my-push name (eval (symbol (str *composer* '- 'start-beats)))))
 
-               (print ".")
-               (flush)
-
                (recur (rest beats) (+ 1 counter) nil))))
          (create-complete-database (rest db-names))))))
 
