@@ -1110,7 +1110,7 @@
   (if (not (check-mt (get-on-beat @*events* (ffirst @*events*))))
     (reset! *events* (delay-for-upbeat @*events*)))
   (if (and
-       (false? *early-exit?*)
+       (not @*early-exit?*)
        (= *composer* 'bach))
     (reset! *events* (cadence-collapse (transpose-to-bach-range @*events*)))
     (reset! *events* ()))
