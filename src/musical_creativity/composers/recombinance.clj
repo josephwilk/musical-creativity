@@ -1101,22 +1101,21 @@
         (check-for-parallel events)
         (not end?))))))
 
-(defn final-events []
-  (reset! *save-events* @*events*)
-  (reset! *events* (ensure-necessary-cadences (sort-by-first-element @*events*)))
-  (if (not (check-mt (get-on-beat @*events* (ffirst @*events*))))
-    (reset! *events* (delay-for-upbeat @*events*)))
-  (if (and
-       (not @*early-exit?*)
-       (= *composer* 'bach))
-    (reset! *events* (cadence-collapse (transpose-to-bach-range @*events*)))
-    (reset! *events* ()))
-  @*save-events*)
+(defn prepare-events [events early-exit?]
+  (let [events (ensure-necessary-cadences (sort-by-first-element events))
+        events (if-not (check-mt (get-on-beat events (ffirst events)))
+                 (delay-for-upbeat events)
+                 events)
+        events (if (and (not early-exit?) (= *composer* 'bach))
+                 (cadence-collapse (transpose-to-bach-range events))
+                 events)]
+    events))
 
 (defn compose-bach []
+  (reset! *events* [])
   (compose-b)
   (if (finished-composing? @*events* @*end*)
-    (final-events)
+    (prepare-events @*events* @*early-exit?*)
     (compose-bach)))
 
 (defn compose []
