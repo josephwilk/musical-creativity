@@ -1114,9 +1114,10 @@
 (defn compose-bach []
   (reset! *events* [])
   (compose-b)
-  (if (finished-composing? @*events* @*end*)
-    (prepare-events @*events* @*early-exit?*)
-    (compose-bach)))
+  (if-not (finished-composing? @*events* @*end*)
+    (compose-bach)
+    (prepare-events @*events* @*early-exit?*)))
+
 (defn load-bach-chorales
   (create-complete-database chorale/bach-chorales-in-databases))
 
