@@ -770,7 +770,7 @@
   "Transposes the events according to its first arg."
   (filter (fn [event]
             (not (= 0 (second event)))
-            (concat (list (first event))(list (+ (second event) amt))(drop  2 event)))))
+            (concat (list (first event))(list (+ (second event) amt))(drop  2 event))) events))
 
 (defn get-note-timing [event time]
   "grunt work for get-beat-length"
