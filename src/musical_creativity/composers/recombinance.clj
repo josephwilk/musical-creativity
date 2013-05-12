@@ -1131,3 +1131,9 @@
   (let [events (compose-bach)]
     (println events)
     (map midi-to-event events)))
+
+(defn compose-original []
+  (map midi-to-event
+       (mapcat chorale/find-db (list (first chorale/bach-chorales-in-databases)
+                                     (second chorale/bach-chorales-in-databases)
+                                     (third chorale/bach-chorales-in-databases)))))
