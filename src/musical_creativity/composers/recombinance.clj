@@ -1125,6 +1125,7 @@
 (defn- midi-to-event [midi]
   {:time (nth midi 0)
    :pitch (nth midi 1)
+   :velocity (nth midi 2)
    :channel (nth midi 3)})
 
 (defn compose []
