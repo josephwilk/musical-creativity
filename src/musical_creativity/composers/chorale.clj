@@ -499,10 +499,7 @@
 
 (defn get-channel [n music]
   "Gets the nth channel of the music."
-  (cond (empty? music)()
-        (= (fourth (first music)) n)
-        (cons (first music)(get-channel n (rest music)))
-        :else (get-channel n (rest music))))
+  (filter (fn [note] (= (fourth note) n)) music))
 
 (defn remainders
   "Returns remainders of beats."
@@ -641,13 +638,7 @@
                 (remove-region begin-time end-time (rest events)))))
 
 (defn remove-all [stuff other-stuff]
-  "Removes all of the stuff from the other-stuff."
-  (loop [stuff stuff
-         other-stuff other-stuff]
-    (if (empty? stuff)
-      other-stuff
-      (recur (rest stuff)
-             (remove (first stuff) other-stuff)))))
+  (vec (clojure.set/difference (set other-stuff) (set stuff))))
 
 (defn resolve-beat
   "Resolves the beat if necessary."
@@ -661,6 +652,7 @@
             (resolve-beat (rest beat) on-time))
       :else
       (let [on-beat-candidate (get-on-beat (get-channel (fourth (first beat)) beat) on-time)]
+
         (cons (if (>= (third (first on-beat-candidate)) 1000)
                 (first on-beat-candidate)
                 (concat (take 2 (first on-beat-candidate)) '(1000) (drop 3 (first on-beat-candidate))))
@@ -1127,4 +1119,9 @@
 
 (defn compose []
   (create-complete-database chorale/bach-chorales-in-databases)
-  (compose-bach))
+  (let [events (compose-bach)]
+    (map (fn [event]
+                                        ;TODO Some negative times here
+           {:time (nth event 0)
+            :pitch (nth event 1)
+            :channel (nth event 3)}) events)))
