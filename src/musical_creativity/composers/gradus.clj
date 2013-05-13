@@ -112,7 +112,7 @@
   (first (second list)))
 
 (defn second-to-last [list]
-  (llast (butlast list)))
+  (last-first (butlast list)))
 
 (defn third-to-last [list]
   (nth (butlast list) (- (count list) 3)))
@@ -237,7 +237,7 @@
   "returns the map part of the template."
   [cantus-firmus scale]
   (let [tessitura (get-tessitura cantus-firmus scale)
-        scale-intervals (find-scale-intervals (list (first cantus-firmus) (llast cantus-firmus)) scale)]
+        scale-intervals (find-scale-intervals (list (first cantus-firmus) (last-first cantus-firmus)) scale)]
     [tessitura (first scale-intervals)]))
 
 (defn select-new-seed-note
@@ -466,8 +466,8 @@
          (not (>= (count last-notes) 1)))
      nil
      (member (list (math/abs (- (second-to-last cantus-firmus-to-here)
-                                (llast last-notes)))
-                   (math/abs (- (llast cantus-firmus-to-here) choice)))
+                                (last-first last-notes)))
+                   (math/abs (- (last-first cantus-firmus-to-here) choice)))
              @illegal-parallel-motions)
      true
      :else
@@ -480,7 +480,7 @@
    (not (>= (count extended-last-notes) 3))
    nil
    (member (list (- (second-to-last extended-last-notes)
-                    (llast extended-last-notes))
+                    (last-first extended-last-notes))
                  (- (third-to-last extended-last-notes)
                     (second-to-last extended-last-notes)))
            @illegal-double-skips)
@@ -488,7 +488,7 @@
    (and (> (math/abs (- (third-to-last extended-last-notes)
                         (second-to-last extended-last-notes)))
            2)
-        (not (opposite-sign? (list (- (second-to-last extended-last-notes)(llast extended-last-notes))
+        (not (opposite-sign? (list (- (second-to-last extended-last-notes)(last-first extended-last-notes))
                                   (- (third-to-last extended-last-notes)(second-to-last extended-last-notes))))))
    true
    :else
@@ -664,9 +664,9 @@
   (print-backtracking @*seed-note* @rules)
 
   (let [new-last-notes (get-new-starting-point last-notes)
-        seed-note (if (empty? new-last-notes) @*seed-note* (llast new-last-notes))
+        seed-note (if (empty? new-last-notes) @*seed-note* (last-first new-last-notes))
         choices (shuffle (create-choices major-scale seed-note))
-        new-choices (remove #(= % (llast last-notes)) choices)
+        new-choices (remove #(= % (last-first last-notes)) choices)
         line (drop-last (- (count last-notes) (count new-last-notes)) @new-line)
         new-length (+ length (- (count last-notes) (count new-last-notes)))]
     (reset! new-line line)
@@ -776,7 +776,7 @@
   "creates a simple canon in two voices."
   [cantus-firmus]
   (let [difference 12
-        seed-note (- (llast cantus-firmus) difference)
+        seed-note (- (last-first cantus-firmus) difference)
         voices (find-voices false seed-note cantus-firmus)
         voices-as-pitches (evaluate-pitch-names voices)
         theme (concat cantus-firmus (map (fn [x] (+ x difference)) (second voices-as-pitches)))

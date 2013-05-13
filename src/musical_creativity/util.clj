@@ -7,7 +7,7 @@
 (defn choose-one [list]
   (nth list (rand-int (count list))))
 
-(defn llast
+(defn last-first
   "Returns first atom of last item in the list."
   [list]
   (let [last-item (last list)]

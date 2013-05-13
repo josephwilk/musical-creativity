@@ -255,7 +255,7 @@
   "Returns the appropriate channel timing."
   (cond
    (empty? channel)
-   (second (llast (llast channels)))
+   (second (last-first (last-first channels)))
    (find-alignment-in-all-channels (second (first channel)) channels)
    (find-alignment-in-all-channels (second (first channel)) channels)
    :else
