@@ -4,4 +4,5 @@
    [musical-creativity.composers.recombinance :refer :all]))
 
 (fact "it composes"
+  (load-bach-chorales)
   (count (compose)) => 197)
