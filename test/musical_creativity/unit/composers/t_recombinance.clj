@@ -50,9 +50,9 @@
 (fact "put beat into lexicon"
   (reset! *beats-store* {'b206b-1 {:start-notes [57 60 69 76]}})
 
-  (put-beat-into-lexicon 'b206b-1) => :bach-57-60-69-76
+  (put-beat-into-lexicon 'b206b-1) => "bach-57-60-69-76"
 
-  @*lexicon-store* => {:bach-57-60-69-76 {:beats '(b206b-1)}})
+  @*lexicon-store* => {"bach-57-60-69-76" {:beats '(b206b-1)}})
 
 (fact "build events for beat"
   (create-complete-database ['b5505b]) => true
@@ -83,7 +83,6 @@
 
 (fact "first place where all together"
   (first-place-where-all-together '((0 57 1000 4 96) (0 60 1000 3 96) (0 69 1000 2 96))) => 1000)
-
 
 (fact "get onset notes from events"
   (get-onset-notes '((0 57 1000 4 96) (0 60 1000 3 96) (0 69 1000 2 96) (0 76 1000 1 96)))
