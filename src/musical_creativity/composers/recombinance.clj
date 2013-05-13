@@ -97,6 +97,15 @@
 (defn remove-nils [list]
   (remove #(nil? %) list))
 
+(defn- find-composer-beats-atom []
+  (var-get (resolve (symbol (str "musical-creativity.composers.recombinance/" *composer* "-compose-beats")))))
+
+(defn- find-composer-start-beats-atom []
+  (var-get (resolve (symbol (str "musical-creativity.composers.recombinance/" *composer* "-start-beats")))))
+
+(defn- find-composer-rules-atom []
+  (var-get (resolve (symbol (str "musical-creativity.composers.recombinance/" *composer* "-rules")))))
+
 (defn plot-timings [events]
   "Plots out the times of each beat."
   (if (empty? events)()
@@ -131,7 +140,6 @@
                                       (first start-notes) start-notes destination-notes name))]
       (reset! *rules-store* (concat new-rule  @*rules-store*))
       (get-rules1 (rest start-notes) (rest destination-notes) name))))
-
 
 (defn get-rule [voice start-note start-notes destination-notes name]
   "Gets the rule between first two args."
@@ -290,21 +298,14 @@
         destination-notes (get-onset-notes (second beats))
         events (first beats)
         rules (cons (get-rules start-notes destination-notes name)
-                    (list name (ffirst (sort-by-first-element events))))
-        composer-rules (eval (symbol (str *composer* "-rules")))]
+                    (list name (ffirst (sort-by-first-element events))))]
 
-    (my-push rules composer-rules)
+    (my-push rules (find-composer-beats-atom))
 
     (make-instance 'beat-it {:start-notes start-notes
                              :destination-notes destination-notes
                              :events events
                              :voice-leading (first rules)})))
-
-(defn- find-composer-beats-atom []
-  (var-get (resolve (symbol (str "musical-creativity.composers.recombinance/" *composer* "-compose-beats")))))
-
-(defn- find-composer-start-beats-atom []
-  (eval (str *composer* "-compose-beats")))
 
 (defn start-beats [db-name]
   (remove-nils
@@ -330,7 +331,7 @@
                (my-push name (find-composer-beats-atom))
 
                (when start
-                 (my-push name (eval (symbol (str *composer* '- 'start-beats)))))
+                 (my-push name (find-composer-start-beats-atom)))
 
                (recur (rest beats) (+ 1 counter) nil))))
          (create-complete-database (rest db-names))))))
