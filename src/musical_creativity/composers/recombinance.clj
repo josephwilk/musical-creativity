@@ -35,7 +35,7 @@
 (def bach-start-beats (atom ()))
 (def bach-compose-beats (atom ()))
 (def bach-rules (atom ()))
-(def bach ['bach-compose-beats 'bach-start-beats 'bach-rules])
+(def bach [bach-compose-beats bach-start-beats bach-rules])
 (def bach-form [])
 
 (declare get-rule)
@@ -105,6 +105,9 @@
 
 (defn- find-composer-rules-atom []
   (var-get (resolve (symbol (str "musical-creativity.composers.recombinance/" *composer* "-rules")))))
+
+(defn find-composer []
+  (var-get (resolve (symbol (str "musical-creativity.composers.recombinance/" *composer*)))))
 
 (defn plot-timings [events]
   "Plots out the times of each beat."
@@ -413,7 +416,7 @@
 (defn find-triad-beginning
   "Returns the db with a triad beginning."
   []
-  (let [test (choose-one @(eval (first (eval *composer*))))
+  (let [test (choose-one @(first (find-composer)))
         beat (find-beat test)
         on-beat (get-on-beat (:events beat) (ffirst (:events beat)))
         pcs (create-pitch-class-set (get-pitches on-beat))]
