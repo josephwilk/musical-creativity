@@ -25,7 +25,7 @@
                                           (reset! bach-compose-beats []))))
 
 (fact "make lexicon name"
-  (make-lexicon-name '(57 60 69 76)) => :bach-57-60-69-76)
+  (make-lexicon-name '(57 60 69 76)) => "bach-57-60-69-76")
 
 (fact "find alignemnt in channels"
   (find-alignment-in-all-channels 1000 '(((2 1000) (2 2000) (2 2500)))) => 1000)
