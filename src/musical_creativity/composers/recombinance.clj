@@ -240,11 +240,8 @@
         :else (collect-timings-by-channel (rest timings) channel)))
 
 (defn find-alignment [point channel]
-  (cond (empty? channel)()
-        (and (a-thousand? point)
-             (filter #(= point (first %)) (map reverse channel)))
-        true
-        :else (find-alignment point (rest channel))))
+  (and (a-thousand? point)
+       (some #(= point (first %)) (map reverse channel))))
 
 (defn find-alignment-in-all-channels [point channels]
   "run this on the channels of the channel-point-lists"
