@@ -2,7 +2,8 @@
   (:require
    [clojure.math.numeric-tower :as math]
    [clojure.pprint :refer :all]
-   [musical-creativity.events :as events]))
+   [musical-creativity.events :as events]
+   [musical-creativity.util :refer :all]))
 
 (def number-of-outputs (atom 5))
 (def number-of-inputs (atom 5))
@@ -65,9 +66,6 @@
 (def reset-threshold 0.05)
 (def uplr 0.12)
 (def downlr 0.12)
-
-(defn position [item list]
-  (.indexOf list item))
 
 (defn random-floating-point
   [low high]

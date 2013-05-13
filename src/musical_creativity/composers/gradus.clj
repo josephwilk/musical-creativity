@@ -2,6 +2,7 @@
   (:require
    [clojure.math.numeric-tower :as math]
    [musical-creativity.events :as events]
+   [musical-creativity.util :refer :all]
    [overtone.music.pitch :as music]))
 
 (load-file "data/gradus.clj")
@@ -107,15 +108,6 @@
   (reset! illegal-double-skips      default-illegal-double-skips)
   (reset! direct-fifths-and-octaves default-direct-fifths-and-octaves))
 
-(defn llast [list]
-  (let [last-item (last list)]
-    (if (seq? last-item)
-      (first last-item)
-      last-item)))
-
-(defn third [list]
-  (nth list 2))
-
 (defn very-second [list]
   (first (second list)))
 
@@ -150,15 +142,6 @@
 (defn swap-unless-includes [reference data]
   (when-not (some #{data} @reference)
     (swap! reference conj data)))
-
-(defn position [thing list]
-  (let [index (.indexOf list thing)]
-    (when (>= index 0) index)))
-
-(defn choose-one
-  "chooses one its arg randomly."
-  [list]
-  (nth list (rand-int (count list))))
 
 (defn translate-into-pitchnames [list-of-midi-note-numbers]
   "used to translate midi note numbers into note names."
