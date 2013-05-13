@@ -97,17 +97,20 @@
 (defn remove-nils [list]
   (remove #(nil? %) list))
 
+(defn- var-get-from-str [name]
+  (var-get (ns-resolve 'musical-creativity.composers.recombinance (symbol name))))
+
 (defn- find-composer-beats-atom []
-  (var-get (resolve (symbol (str "musical-creativity.composers.recombinance/" *composer* "-compose-beats")))))
+  (var-get-from-str (str *composer* "-compose-beats")))
 
 (defn- find-composer-start-beats-atom []
-  (var-get (resolve (symbol (str "musical-creativity.composers.recombinance/" *composer* "-start-beats")))))
+  (var-get-from-str (str *composer* "-start-beats")))
 
 (defn- find-composer-rules-atom []
-  (var-get (resolve (symbol (str "musical-creativity.composers.recombinance/" *composer* "-rules")))))
+  (var-get-from-str (str *composer* "-rules")))
 
-(defn find-composer []
-  (var-get (resolve (symbol (str "musical-creativity.composers.recombinance/" *composer*)))))
+(defn- find-composer []
+  (var-get-from-str (str *composer*)))
 
 (defn plot-timings [events]
   "Plots out the times of each beat."
