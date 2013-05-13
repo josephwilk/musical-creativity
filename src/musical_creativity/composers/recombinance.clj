@@ -216,15 +216,11 @@
            :else (return-beat (rest channel-events)
                           start-time))))
 
-(defn create-pc-set [pitches]
-  "Creates a full PC set."
-  (if (empty? pitches) ()
-      (cons (mod (first pitches) 12)
-            (create-pc-set (rest pitches)))))
-
-(defn create-pitch-class-set [pitches]
+(defn create-pitch-class-set
   "Sorts and gets a full pc-set."
-  (sort < (distinct (create-pc-set pitches))))
+  [pitches]
+  (let [pitch-classes (map #(mod % 12) pitches)]
+    (sort < (distinct pitch-classes))))
 
 (defn get-channel-numbers-from-events
   "simply gets the channel numbers from the music"
