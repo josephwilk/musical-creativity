@@ -1,61 +1,47 @@
 (ns musical-creativity.composers.recombinance
   (:require
    [clojure.math.numeric-tower :as math]
-   [data.chorale :as chorale]
-   [clojure.string :as str]))
-
-(def *composer* 'bach)
+   [data.chorale               :as chorale]
+   [musical-creativity.util    :refer :all]
+   [clojure.string             :as str]))
 
 (def *beats-store* (atom {}))
 (def *lexicon-store* (atom {}))
+(def *rules-store* (atom ()))
 
 (def *lexicons* (atom []))
-
-(def *rules-storage* (atom ()))
+(def *history* (atom ()))
 
 (def *mix-names* ())
 (def *mix* ())
 
-(def bach-dominants-tonics ())
+(def *end?* (atom false))
+(def *early-exit?* (atom false))
+(def *compose-number* 0)
 
+(def *events* (atom ()))
+(def *save-events* (atom ()))
+
+(def *tonic* (atom 'major))
+(def *previous-beat* (atom nil))
+(def *beat-size* 1000)
+(def *beats* 4)
+
+(def *composer* 'bach)
+(def bach-dominants-tonics ())
 (def bach-dominants ())
 (def bach-tonics ())
 
 (def bach-start-beats (atom ()))
 (def bach-compose-beats (atom ()))
 (def bach-rules (atom ()))
-
-(def *end* (atom false))
-(def *history* (atom ()))
-
-(def *events* (atom ()))
-(def *save-events* (atom ()))
-
-(def *tonic* (atom 'major))
-(def *early-exit?* (atom false))
-
-(def *compose-number* 0)
-(def *histories* ())
-
-(def *previous-beat* (atom nil))
-
-(def *beat-size* 1000)
-
 (def bach ['bach-compose-beats 'bach-start-beats 'bach-rules])
-(def *beats* 4)
 (def bach-form [])
 
 (declare get-rule)
 
-(defn my-remove [objects-to-be-remove list-of-objects]
+(defn remove-from-list [objects-to-be-remove list-of-objects]
   (remove #(some #{%} objects-to-be-remove) list-of-objects))
-
-(defn position [thing list]
-  (let [index (.indexOf list thing)]
-    (when (>= index 0) index)))
-
-(defn choose-one [list]
-  (nth list (rand-int (count list))))
 
 (defn implode [list]
   (str/join "" list))
@@ -75,12 +61,7 @@
   (symbol (str (name  db-name)  "-" counter)))
 
 (defn hyphenate [note-numbers]
-  "Hyphenates the numbers in its arg."
-  (if (empty? note-numbers)()
-      (concat (if (empty? (rest note-numbers))
-                (list (first note-numbers))
-                (list (first note-numbers) '-))
-              (hyphenate (rest note-numbers)))))
+  (str/join "-" note-numbers))
 
 (defn get-onset-notes
   "Gets the onset pitches for its arg."
@@ -103,19 +84,9 @@
                    (rest (first events)))
              (set-to-zero (rest events) subtract)))))
 
-(defn my-last [list]
-  "Returns th atom last of the list."
-  (first (last list)))
-
 (defn a-thousand? [number]
   "Returns the number under 1000."
   (if (= 0 (mod number 1000)) true))
-
-(defn fourth [list]
-  (nth list 3))
-
-(defn third [list]
-  (nth list 2))
 
 (defn member [value list]
   (if (seq list)
@@ -149,16 +120,16 @@
    interval
    (< interval 0)
    (reduce-interval (+ interval 12))
-        :else
-        (reduce-interval (- interval 12))))
+   :else
+   (reduce-interval (- interval 12))))
 
 (defn get-rules1 [start-notes destination-notes name]
   "Does the grunt work for get-rules."
   (if (or (empty? (rest start-notes))(empty? (rest destination-notes)))
-    (reverse @*rules-storage*)
-    (do
-      (reset! *rules-storage* (concat (reverse (get-rule (- (first destination-notes) (first start-notes))
-                                                         (first start-notes) start-notes destination-notes name)) @*rules-storage*))
+    (reverse @*rules-store*)
+    (let [new-rule (reverse (get-rule (- (first destination-notes) (first start-notes))
+                                      (first start-notes) start-notes destination-notes name))]
+      (reset! *rules-store* (concat new-rule  @*rules-store*))
       (get-rules1 (rest start-notes) (rest destination-notes) name))))
 
 
@@ -173,9 +144,9 @@
 
 (defn get-rules [start-notes destination-notes name]
   "Gets the intervals between adjacent sets of the two args."
-  (reset! *rules-storage* ())
+  (reset! *rules-store* ())
   (let [test (make-lists-equal (list start-notes destination-notes))]
-    (get-rules1 (first test)(second test) name)))
+    (get-rules1 (first test) (second test) name)))
 
 (defn boundp [thing]
   (nil? thing))
@@ -284,7 +255,7 @@
   "Returns the appropriate channel timing."
   (cond
    (empty? channel)
-   (second (my-last (my-last channels)))
+   (second (llast (llast channels)))
    (find-alignment-in-all-channels (second (first channel)) channels)
    (find-alignment-in-all-channels (second (first channel)) channels)
    :else
@@ -1033,7 +1004,7 @@
               (and (> (find-events-duration (:events (find-beat current-beat))) *beat-size*)
                    (match-bach-tonic (:events (find-beat current-beat))))))
      (do
-       (reset! *end* true)
+       (reset! *end?* true)
        true))))
 
 (defn build-events-for-beat [counter current-beat]
@@ -1051,7 +1022,7 @@
             new-beat (choose-one
                       (if (empty? (rest beat-choices))
                         beat-choices
-                        (my-remove (list @*previous-beat* (incf-beat @*previous-beat*)) beat-choices)))]
+                        (remove-from-list (list @*previous-beat* (incf-beat @*previous-beat*)) beat-choices)))]
 
         (swap! *history* conj current-beat)
         (reset! *previous-beat* current-beat)
@@ -1076,7 +1047,7 @@
 (defn compose-b
   ([] (compose-b 0))
   ([counter]
-     (reset! *end* false)
+     (reset! *end?* false)
      (reset! *history* ())
      (reset! *events* (build-events counter))
      (if (and
@@ -1085,7 +1056,7 @@
        @*events*
        (reset! *events* ()))
      (reset! *history* (reverse @*history*))
-     (if @*end*
+     (if @*end?*
        (swap! *history* conj (list (+ 1 *compose-number*))))))
 
 (defn finished-composing? [events end?]
@@ -1115,7 +1086,7 @@
 (defn compose-bach []
   (reset! *events* [])
   (compose-b)
-  (if-not (finished-composing? @*events* @*end*)
+  (if-not (finished-composing? @*events* @*end?*)
     (compose-bach)
     (prepare-events @*events* @*early-exit?*)))
 
