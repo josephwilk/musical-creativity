@@ -52,17 +52,6 @@
 (defn make-instance [type attributes]
   attributes)
 
-(defn my-push [stuff place-name]
-  "A simple synonym for push."
-  (reset! place-name (cons stuff @place-name)))
-
-(defn make-name [db-name counter]
-  "Simple synonym for imploding the database name and number."
-  (symbol (str (name  db-name)  "-" counter)))
-
-(defn hyphenate [note-numbers]
-  (str/join "-" note-numbers))
-
 (defn get-onset-notes
   "Gets the onset pitches for its arg."
   [events]
@@ -99,6 +88,14 @@
 
 (defn- var-get-from-str [name]
   (var-get (ns-resolve 'musical-creativity.composers.recombinance (symbol name))))
+
+(defn make-name
+  "Simple synonym for imploding the database name and number."
+  [db-name counter]
+  (symbol (str (name db-name)  "-" counter)))
+
+(defn hyphenate [note-numbers]
+  (str/join "-" note-numbers))
 
 (defn- find-composer-beats-atom []
   (var-get-from-str (str *composer* "-compose-beats")))
@@ -306,7 +303,7 @@
         rules (cons (get-rules start-notes destination-notes name)
                     (list name (ffirst (sort-by-first-element events))))]
 
-    (my-push rules (find-composer-beats-atom))
+    (swap! (find-composer-beats-atom) conj rules)
 
     (make-instance 'beat-it {:start-notes start-notes
                              :destination-notes destination-notes
@@ -334,10 +331,10 @@
                    instance (make-beat name beats)]
                (reset! *beats-store* (assoc @*beats-store* name instance))
                (put-beat-into-lexicon name)
-               (my-push name (find-composer-beats-atom))
+               (swap! (find-composer-beats-atom) conj name)
 
                (when start
-                 (my-push name (find-composer-start-beats-atom)))
+                 (swap! (find-composer-start-beats-atom) conj name))
 
                (recur (rest beats) (+ 1 counter) nil))))
          (create-complete-database (rest db-names))))))
