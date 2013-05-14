@@ -249,13 +249,14 @@
    (find-alignment point (first channels))
    (find-alignment-in-all-channels point (rest channels))
    :else
-   ()))
+   nil))
 
-(defn all-together [channel channels]
+(defn all-together
   "Returns the appropriate channel timing."
+  [channel channels]
   (cond
    (empty? channel)
-   (second (last-first (last-first channels)))
+   (second (last-first channels))
    (find-alignment-in-all-channels (second (first channel)) channels)
    (find-alignment-in-all-channels (second (first channel)) channels)
    :else
@@ -270,8 +271,9 @@
     (all-together (first ordered-timings-by-channel)
                   (rest ordered-timings-by-channel))))
 
-(defn collect-by-timing [timing events]
+(defn collect-by-timing
   "Collects the events accoring to timing."
+  [timing events]
   (filter (fn [event]
             (<= (+ (first event) (fourth event)) timing))
           events))
@@ -283,7 +285,7 @@
           test (collect-by-timing sync-time events)
           reduced-test (drop (count test) events)]
       (cons test
-              (collect-beats reduced-test)))))
+            (collect-beats reduced-test)))))
 
 (defn make-beat [name beats]
   (let [start-notes (get-onset-notes (first beats))

@@ -28,13 +28,14 @@
   (make-lexicon-name '(57 60 69 76)) => "bach-57-60-69-76")
 
 (fact "find alignemnt in channels"
-  (find-alignment-in-all-channels 1000 '(((2 1000) (2 2000) (2 2500)))) => 1000)
+  (find-alignment-in-all-channels 1000 '(((2 1000) (2 2000) (2 2500)))) => 1000
+  (find-alignment-in-all-channels 9000 '(((3 1000) (1 2000) (2 2500)))) => nil)
 
 (fact "find alignment"
   (find-alignment 1000 '((2 1000) (2 2000) (2 2500) (2 3000) (2 3500) (2 4000))) => true)
 
 (fact "all together"
-  (all-together '((1 1000) (1 2000) (1 2500) (1 3000)) '((1000) (2000))) => 1000)
+  (all-together '((1 1000) (1 2000) (1 2500) (1 3000)) '(((1000) (2000)))) => 1000)
 
 (fact "triad?"
   (triad? ()) => falsey
