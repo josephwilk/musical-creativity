@@ -75,7 +75,7 @@
 
 (defn a-thousand? [number]
   "Returns the number under 1000."
-  (if (= 0 (mod number 1000)) true))
+  (= 0 (mod number 1000)))
 
 (defn member [value list]
   (if (seq list)
