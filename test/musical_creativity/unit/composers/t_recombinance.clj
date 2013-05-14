@@ -117,9 +117,6 @@
 (fact "get re-time"
   (re-time '(((15000 60 1000 4 96) (15000 64 1000 3 96)))) => '(((0 60 1000 4 96) (0 64 1000 3 96))))
 
-(fact "create pc set"
-  (create-pc-set '(64 67 71)) => '(4 7 11))
-
 (fact "match tonic minor"
   (match-tonic-minor '((5000 55 1000 4 96) (5000 67 1000 3 96) (5000 62 1000 2 96) (5000 71 1000 1 96)))
   => falsey)
