@@ -227,3 +227,6 @@
 (fact "return beat"
   (return-beat '((0 45 1000 4 96) (1000 57 500 4 96))) => 1
   (return-beat '((0 45 1020 4 96) (1200 57 500 4 96))) => nil)
+
+(fact "get intervals"
+  (get-intervals '((0 4 7) (4 7 12) (7 12 16))) => '(7 8 9))

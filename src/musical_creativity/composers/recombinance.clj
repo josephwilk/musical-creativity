@@ -237,9 +237,7 @@
 (defn find-alignment-in-all-channels [point channels]
   "run this on the channels of the channel-point-lists"
   (cond
-   (empty? channels)
-   point
-   (nil? point)
+   (or (empty? channels) (nil? point))
    point
    (find-alignment point (first channels))
    (find-alignment-in-all-channels point (rest channels))
@@ -360,7 +358,7 @@
       (if (= length times)
         ()
         (cons set
-              (project (concat (rest set)(list (+ 12 (first set)))) length (+ 1 times))))))
+              (project (concat (rest set) (list (+ 12 (first set)))) length (+ 1 times))))))
 
 (defn get-interval [set]
   "Returns the intervals between set members."
@@ -371,10 +369,9 @@
 
 (defn get-intervals [sets]
   "Returns the intervals in the sets."
-  (if  (empty? sets)
-    ()
-    (cons (math/abs (apply #'+ (get-interval (first sets))))
-          (get-intervals (rest sets)))))
+  (map (fn [set]
+         (math/abs (apply + (get-interval set))))
+       sets))
 
 (defn get-smallest-set [set]
   "Returns the set with the smallest outer boundaries."
@@ -617,10 +614,6 @@
   "Resolves the beat if necessary."
   ([beat] (resolve-beat beat (ffirst beat)))
   ([beat on-time]
-
-     (println)
-     (println :b beat)
-
      (cond
       (nil? (seq beat))
       ()
