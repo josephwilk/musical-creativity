@@ -220,3 +220,6 @@
 (fact "check-mt"
   (check-mt '((0 43 1000 4 96) (0 59 1000 3 96) (0 62 1000 2 96) (0 67 1000 1 96)))
   => false)
+
+(fact "plot timings"
+  (plot-timings-of-each-beat '((0 57 1000 4 96) (0 60 1000 3 96))) => '((4 1000) (3 1000)))

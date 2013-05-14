@@ -103,11 +103,11 @@
 (defn- find-composer []
   (var-get-from-str (str *composer*)))
 
-(defn plot-timings [events]
-  "Plots out the times of each beat."
-  (if (empty? events)()
-      (cons (list (fourth (first events))(+ (ffirst events)(third (first events))))
-            (plot-timings (rest events)))))
+(defn plot-timings-of-each-beat
+  [events]
+  (map (fn [event]
+         (list (fourth event) (+ (first event) (third event))))
+       events))
 
 (defn make-lists-equal [lists]
   "Ensures the two lists are equal in length."
@@ -258,7 +258,7 @@
 
 (defn first-place-where-all-together [events]
   "This looks ahead to get the first time they end together"
-  (let [test (plot-timings events)
+  (let [test (plot-timings-of-each-beat events)
         channels (get-channel-numbers-from-events events)
         ordered-timings-by-channel (map (fn [channel] (collect-timings-by-channel test channel)) channels)]
 
