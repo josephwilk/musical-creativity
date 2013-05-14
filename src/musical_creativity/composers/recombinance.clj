@@ -67,11 +67,8 @@
   "Sets the events to zero."
   ([events] (set-to-zero events (ffirst events)))
   ([events subtract]
-     (if (empty? events)
-       ()
-       (cons (cons (- (ffirst events) subtract)
-                   (rest (first events)))
-             (set-to-zero (rest events) subtract)))))
+     (map (fn [event]
+            (assoc (vec event) 0 (- (first event) subtract))) events)))
 
 (defn a-thousand? [number]
   "Returns the number under 1000."
