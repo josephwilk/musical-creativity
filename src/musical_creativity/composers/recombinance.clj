@@ -49,9 +49,6 @@
 (defn explode [atom]
   (vec atom))
 
-(defn make-instance [type attributes]
-  attributes)
-
 (defn get-onset-notes
   "Gets the onset pitches for its arg."
   [events]
@@ -198,7 +195,7 @@
         (reset! *lexicon-store* (update-in @*lexicon-store* [lexicon-name :beats] conj beat-name))
         lexicon-name)
       (do
-        (reset! *lexicon-store* (assoc @*lexicon-store* lexicon-name (make-instance 'lexicon {:beats (list beat-name)})))
+        (reset! *lexicon-store* (assoc @*lexicon-store* lexicon-name {:beats (list beat-name)}))
         (swap-unless-includes *lexicons* lexicon-name)
         lexicon-name))))
 
@@ -293,10 +290,10 @@
 
     (swap! (find-composer-beats-atom) conj rules)
 
-    (make-instance 'beat-it {:start-notes start-notes
-                             :destination-notes destination-notes
-                             :events events
-                             :voice-leading (first rules)})))
+    {:start-notes start-notes
+     :destination-notes destination-notes
+     :events events
+     :voice-leading (first rules)}))
 
 (defn start-beats [db-name]
   (remove-nils
