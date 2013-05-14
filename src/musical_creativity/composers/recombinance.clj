@@ -223,10 +223,10 @@
   "simply gets the channel numbers from the music"
   ([events] (get-channel-numbers-from-events events []))
   ([events channels]
-      (cond (empty? events) channels
-            (not (member (fourth (first events)) channels))
-            (get-channel-numbers-from-events (rest events) (cons (fourth (first events)) channels))
-            :else (get-channel-numbers-from-events (rest events) channels))))
+     (map #(fourth %)
+          (filter (fn [event]
+                    (not (member (fourth (first events)) channels)))
+                  (reverse events)))))
 
 (defn collect-timings-by-channel [timings channel]
   "collects the timings of the channel indicated in second arg"
