@@ -338,7 +338,7 @@
    (and (a-thousand? (ffirst events))(= (ffirst events) ontime))
    (on-beat (rest events) ontime)
    :else
-   ()))
+   nil))
 
 (defn get-on-beat
   "Returns the on beat from the events."
@@ -362,21 +362,24 @@
   "Projects the pc-set through its inversions."
   ([set] (project set (count set) 0))
   ([set length times]
-      (if (= length times)()
-          (cons set
-                (project (concat (rest set)(list (+ 12 (first set)))) length (+ 1 times))))))
+      (if (= length times)
+        ()
+        (cons set
+              (project (concat (rest set)(list (+ 12 (first set)))) length (+ 1 times))))))
 
 (defn get-interval [set]
   "Returns the intervals between set members."
   (if (empty? (rest set))
-    () (cons (- (second set)(first set))
-             (get-interval (rest set)))))
+    ()
+    (cons (- (second set)(first set))
+          (get-interval (rest set)))))
 
 (defn get-intervals [sets]
   "Returns the intervals in the sets."
-  (if  (empty? sets)()
-       (cons (math/abs (apply #'+ (get-interval (first sets))))
-             (get-intervals (rest sets)))))
+  (if  (empty? sets)
+    ()
+    (cons (math/abs (apply #'+ (get-interval (first sets))))
+          (get-intervals (rest sets)))))
 
 (defn get-smallest-set [set]
   "Returns the set with the smallest outer boundaries."
@@ -399,10 +402,13 @@
 
 (defn members-all [arrows target]
   "Checks to see if arrows are all in target."
-  (cond (empty? arrows) true
-        (member (first arrows) target)
-        (members-all (rest arrows) target)
-        :else ()))
+  (cond
+   (empty? arrows)
+   true
+   (member (first arrows) target)
+   (members-all (rest arrows) target)
+   :else
+   nil))
 
 (defn find-triad-beginning
   "Returns the db with a triad beginning."
@@ -425,30 +431,36 @@
   "Chops beats over 1000 into beat-sized pieces."
   ([event] (chop event (first event) (third event)))
   ([event begin-time duration]
-      (if (< duration 1000)()
-          (cons (concat (list begin-time)
-                        (list (second event))
-                        '(1000)
-                        (drop 3 event))
-                (chop event (+ begin-time 1000)(- duration 1000))))))
+      (if (< duration 1000)
+        ()
+        (cons (concat (list begin-time)
+                      (list (second event))
+                      '(1000)
+                      (drop 3 event))
+              (chop event (+ begin-time 1000)(- duration 1000))))))
 
 (defn remainder
   "Returns the remainder of the beat."
   ([event] (remainder event (first event) (third event)))
   ([event begin-time duration]
-     (cond (empty? event)()
-           (= duration 1000)()
-           (< duration 1000) (list (concat (list begin-time)
-                                           (list (second event))
-                                           (list duration)
-                                           (drop  3 event)))
-           :else (remainder event (+ begin-time 1000)(- duration 1000)))))
+     (cond
+      (empty? event)
+      ()
+      (= duration 1000)
+      ()
+      (< duration 1000) (list (concat (list begin-time)
+                                      (list (second event))
+                                      (list duration)
+                                      (drop  3 event)))
+      :else
+      (remainder event (+ begin-time 1000)(- duration 1000)))))
 
 (defn get-full-beat
   "Returns one full beat of the music."
   ([events] (get-full-beat events (ffirst events) 0))
   ([events begin-time duration]
-     (cond (empty? events)()
+     (cond (empty? events)
+           ()
            (= (+ duration (third (first events))) 1000)
            (list (first events))
            (> (+ duration (third (first events))) 1000)
@@ -456,9 +468,9 @@
                          (list (- 1000 duration))
                          (drop  3 (first events))))
            :else (cons (first events)
-                   (get-full-beat (rest events)
-                                  (+ begin-time (third (first events)))
-                                  (+ (third (first events)) duration))))))
+                       (get-full-beat (rest events)
+                                      (+ begin-time (third (first events)))
+                                      (+ (third (first events)) duration))))))
 
 (defn get-channel [n music]
   "Gets the nth channel of the music."
@@ -503,7 +515,7 @@
         (= (fourth (first events)) channel-not-to-get)
         (get-other-channels channel-not-to-get (rest events))
         :else (cons (first events)
-                (get-other-channels channel-not-to-get (rest events)))))
+                    (get-other-channels channel-not-to-get (rest events)))))
 
 (defn chop-into-bites [events]
   "Chops beats into groupings."
@@ -555,10 +567,13 @@
   "Returns t if the beat does not contain events beyond the incept time."
   ([beat] (not-beyond-1000 beat 1))
   ([beat channel]
-      (cond (= channel 5) true
-            (not-beyond (get-channel channel beat))
-            (not-beyond-1000 beat (+ channel 1))
-            :else ())))
+      (cond
+       (= channel 5)
+       true
+       (not-beyond (get-channel channel beat))
+       (not-beyond-1000 beat (+ channel 1))
+       :else
+       nil)))
 
 (defn- cadence-place? [beat]
   (and (on-beat (take 4 beat) (ffirst beat))
