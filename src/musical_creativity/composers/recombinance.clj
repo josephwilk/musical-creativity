@@ -233,11 +233,7 @@
 
 (defn collect-timings-by-channel [timings channel]
   "collects the timings of the channel indicated in second arg"
-  (cond (empty? timings)()
-        (= (ffirst timings) channel)
-        (cons (first timings)
-              (collect-timings-by-channel (rest timings) channel))
-        :else (collect-timings-by-channel (rest timings) channel)))
+  (filter #(= (first %) channel) timings))
 
 (defn find-alignment [point channel]
   (and (a-thousand? point)
