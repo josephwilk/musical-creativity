@@ -138,14 +138,16 @@
       (reset! *rules-store* (concat new-rule  @*rules-store*))
       (get-rules1 (rest start-notes) (rest destination-notes) name))))
 
-(defn get-rule [voice start-note start-notes destination-notes name]
+(defn get-rule
   "Gets the rule between first two args."
-  (if (or (empty? (rest start-notes))(empty? destination-notes))()
-      (cons (list (reduce-interval (- (second start-notes) start-note))
-                  voice
-                  (- (second destination-notes) (second start-notes))
-                  name)
-            (get-rule voice start-note (rest start-notes)(rest destination-notes) name))))
+  [voice start-note start-notes destination-notes name]
+  (if (or (empty? (rest start-notes)) (empty? destination-notes))
+    ()
+    (cons (list (reduce-interval (- (second start-notes) start-note))
+                voice
+                (- (second destination-notes) (second start-notes))
+                name)
+          (get-rule voice start-note (rest start-notes) (rest destination-notes) name))))
 
 (defn get-rules [start-notes destination-notes name]
   "Gets the intervals between adjacent sets of the two args."
@@ -153,7 +155,7 @@
   (let [test (make-lists-equal (list start-notes destination-notes))]
     (get-rules1 (first test) (second test) name)))
 
-(defn boundp [thing]
+(defn bound? [thing]
   (nil? thing))
 
 (defn swap-unless-includes [reference data]
@@ -179,7 +181,7 @@
       (implode (cons *composer* (cons '- (hyphenate note-numbers))))
       (empty? names)
       (implode (cons *composer* (cons '- (hyphenate note-numbers))))
-      (boundp (implode (cons (first names) (cons '- (hyphenate note-numbers)))))
+      (bound? (implode (cons (first names) (cons '- (hyphenate note-numbers)))))
       (implode (cons (first names) (cons '- (hyphenate note-numbers))))
       :else
       (make-lexicon-name note-numbers (shuffle (rest names))))))
@@ -203,12 +205,11 @@
   "Returns the beat number of the initiating event."
   ([channel-events] (return-beat channel-events (ffirst channel-events)))
   ([channel-events start-time]
-     (cond (empty? channel-events) nil
-           (and (a-thousand? (ffirst channel-events))
-                (not (= start-time (ffirst channel-events))))
-           (/ (- (ffirst channel-events) start-time) 1000)
-           :else (return-beat (rest channel-events)
-                          start-time))))
+     (some (fn [event]
+             (when (and (a-thousand? (first event))
+                        (not (= start-time (first event))))
+               (/ (- (first event) start-time) 1000)))
+           channel-events)))
 
 (defn create-pitch-class-set
   "Sorts and gets a full pc-set."

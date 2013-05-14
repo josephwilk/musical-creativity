@@ -160,7 +160,7 @@
 
   (check-for-parallel '((0 49 1000 4 96) (0 65 1000 3 96) (0 68 1000 2 96) (0 73 1000 1 96))) => false)
 
-(facts "finished composing"
+(future-facts "finished composing"
   (fact "when we are not finished"
     (finished-composing? '((0 52 1000 4 96) (0 60 1000 3 96) (0 67 500 2 96) (0 67 500 1 96) (1000 52 1000 4 96) (1000 60 1000 3 96) (1000 67 500 2 96) (1000 67 500 1 96)) true) => false
     (finished-composing? () true) => false)
@@ -223,3 +223,7 @@
 
 (fact "plot timings"
   (plot-timings-of-each-beat '((0 57 1000 4 96) (0 60 1000 3 96))) => '((4 1000) (3 1000)))
+
+(fact "return beat"
+  (return-beat '((0 45 1000 4 96) (1000 57 500 4 96))) => 1
+  (return-beat '((0 45 1020 4 96) (1200 57 500 4 96))) => nil)
