@@ -228,15 +228,10 @@
        (some #(= point (second %)) channel)))
 
 (defn find-alignment-in-all-channels
-  "run this on the channels of the channel-point-lists"
   [point channels]
-  (cond
-   (or (empty? channels) (nil? point))
-   point
-   (find-alignment point (first channels))
-   (find-alignment-in-all-channels point (rest channels))
-   :else
-   nil))
+  (when (and point
+             (every? #(find-alignment point %) channels))
+    point))
 
 (defn all-together
   "Returns the appropriate channel timing."
