@@ -235,14 +235,12 @@
 
 (defn all-together
   "Returns the appropriate channel timing."
-  [channel channels]
-  (cond
-   (empty? channel)
-   (second (last-first channels))
-   (find-alignment-in-all-channels (second (first channel)) channels)
-   (find-alignment-in-all-channels (second (first channel)) channels)
-   :else
-   (all-together (rest channel) channels)))
+  [channels all-channels]
+  (let [together-timepoint (some (fn [[_ timepoint]]
+                                   (find-alignment-in-all-channels timepoint all-channels))
+                                 channels)]
+    (or together-timepoint
+        (second (last-first all-channels)))))
 
 (defn first-place-where-all-together [events]
   "This looks ahead to get the first time they end together"
