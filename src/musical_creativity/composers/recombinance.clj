@@ -155,9 +155,6 @@
   (let [test (make-lists-equal (list start-notes destination-notes))]
     (get-rules1 (first test) (second test) name)))
 
-(defn bound? [thing]
-  (nil? thing))
-
 (defn swap-unless-includes [reference data]
   (when-not (some #{data} @reference)
     (swap! reference conj data)))
