@@ -284,7 +284,7 @@
         rules (cons (get-rules start-notes destination-notes name)
                     (list name (ffirst (sort-by-first-element events))))]
 
-    (swap! (find-composer-beats-atom) conj rules)
+    (swap! (find-composer-rules-atom) conj rules)
 
     {:start-notes start-notes
      :destination-notes destination-notes
