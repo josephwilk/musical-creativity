@@ -218,16 +218,18 @@
                     (not (member (fourth (first events)) channels)))
                   (reverse events)))))
 
-(defn collect-timings-by-channel [timings channel]
+(defn collect-timings-by-channel
   "collects the timings of the channel indicated in second arg"
+  [timings channel]
   (filter #(= (first %) channel) timings))
 
 (defn find-alignment [point channel]
   (and (a-thousand? point)
-       (some #(= point (first %)) (map reverse channel))))
+       (some #(= point (second %)) channel)))
 
-(defn find-alignment-in-all-channels [point channels]
+(defn find-alignment-in-all-channels
   "run this on the channels of the channel-point-lists"
+  [point channels]
   (cond
    (or (empty? channels) (nil? point))
    point
