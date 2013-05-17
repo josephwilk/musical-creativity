@@ -37,6 +37,21 @@
 (def bach [bach-compose-beats bach-start-beats bach-rules])
 (def bach-form [])
 
+(defn timepoint-of [event]
+  (first event))
+
+(defn pitch-of [event]
+  (second event))
+
+(defn velocity-of [event]
+  (third event))
+
+(defn channel-of [event]
+  (fourth event))
+
+(defn instrument-of [event]
+  (nth event 4))
+
 (defn remove-from-list [objects-to-be-remove list-of-objects]
   (remove #(some #{%} objects-to-be-remove) list-of-objects))
 
@@ -51,7 +66,7 @@
   [events]
   (let [onbeat (ffirst events)
         onbeat-events (filter (fn [event]
-                                (= (first event) onbeat)) events)]
+                                (= (timepoint-of event) onbeat)) events)]
     (map #(second %) onbeat-events)))
 
 (defn sort-by-first-element [lists]
@@ -62,7 +77,7 @@
   ([events] (set-to-zero events (ffirst events)))
   ([events subtract]
      (map (fn [event]
-            (assoc (vec event) 0 (- (first event) subtract))) events)))
+            (assoc (vec event) 0 (- (timepoint-of event) subtract))) events)))
 
 (defn a-thousand? [number]
   "Returns the number under 1000."
@@ -103,7 +118,7 @@
 (defn plot-timings-of-each-beat
   [events]
   (map (fn [event]
-         (list (fourth event) (+ (first event) (third event))))
+         (list (channel-of event) (+ (timepoint-of event) (velocity-of event))))
        events))
 
 (defn reduce-interval [interval]
@@ -198,9 +213,9 @@
   ([channel-events] (return-beat channel-events (ffirst channel-events)))
   ([channel-events start-time]
      (some (fn [event]
-             (when (and (a-thousand? (first event))
-                        (not (= start-time (first event))))
-               (/ (- (first event) start-time) 1000)))
+             (when (and (a-thousand? (timepoint-of event))
+                        (not (= start-time (timepoint-of event))))
+               (/ (- (timepoint-of event) start-time) 1000)))
            channel-events)))
 
 (defn create-pitch-class-set
@@ -408,19 +423,19 @@
 
 (defn chop
   "Chops beats over 1000 into beat-sized pieces."
-  ([event] (chop event (first event) (third event)))
+  ([event] (chop event (timepoint-of event) (velocity-of event)))
   ([event begin-time duration]
       (if (< duration 1000)
         ()
         (cons (concat (list begin-time)
-                      (list (second event))
+                      (list (pitch-of event))
                       '(1000)
                       (drop 3 event))
               (chop event (+ begin-time 1000)(- duration 1000))))))
 
 (defn remainder
   "Returns the remainder of the beat."
-  ([event] (remainder event (first event) (third event)))
+  ([event] (remainder event (timepoint-of event) (velocity-of event)))
   ([event begin-time duration]
      (cond
       (empty? event)
@@ -428,7 +443,7 @@
       (= duration 1000)
       ()
       (< duration 1000) (list (concat (list begin-time)
-                                      (list (second event))
+                                      (list (pitch-of event))
                                       (list duration)
                                       (drop  3 event)))
       :else
@@ -722,12 +737,12 @@
 (defn transpose [amt events]
   "Transposes the events according to its first arg."
   (filter (fn [event]
-            (not (= 0 (second event)))
-            (concat (list (first event))(list (+ (second event) amt))(drop  2 event))) events))
+            (not (= 0 (pitch-of event)))
+            (concat (list (timepoint-of event))(list (+ (pitch-of event) amt))(drop  2 event))) events))
 
 (defn get-note-timing [event time]
   "grunt work for get-beat-length"
-  (- (+ (first event)(third event)) time))
+  (- (+ (timepoint-of event) (velocity-of event)) time))
 
 (defn get-beat-length [events]
   "this is used in re-time for setting the new time!
@@ -835,7 +850,7 @@
 
 (defn- retimed-events [events current-time]
   (map (fn [event]
-         (cons (+ (first event) current-time)
+         (cons (+ (timepoint-of event) current-time)
                (rest event)))
        (set-to-zero (first events))))
 
@@ -851,8 +866,8 @@
 
 (defn highest-lowest-notes [events]
   "Returns the highest and lowest pitches of its arg."
-  (list (first (sort > (map (fn [event] (second event)) (get-channel 1 events))))
-        (first (sort < (map (fn [event] (second event)) (let [test (get-channel 4 events)]
+  (list (first (sort > (map (fn [event] (pitch-of event)) (get-channel 1 events))))
+        (first (sort < (map (fn [event] (pitch-of event)) (let [test (get-channel 4 events)]
                                                           (if (empty? test)(get-channel 2 events) test)))))))
 
 (defn put-it-in-the-middle [extremes]
@@ -873,7 +888,7 @@
 (defn reset [beats subtraction]
   "Resets the beats appropriately."
   (if (empty? beats)()
-      (cons (map (fn [event] (concat (list (- (first event) subtraction)) (rest event)) ) (first beats))
+      (cons (map (fn [event] (concat (list (- (timepoint-of event) subtraction)) (rest event)) ) (first beats))
             (reset (rest beats) subtraction))))
 
 (defn collapse [beats]
@@ -893,7 +908,7 @@
 
 (defn reset-events-to [events begin-time]
   "Resets the events for the delayed beat."
-  (map (fn [event] (cons (+ begin-time (first event))(rest event))) (set-to-zero events)))
+  (map (fn [event] (cons (+ begin-time (timepoint-of event))(rest event))) (set-to-zero events)))
 
 (defn delay-for-upbeat [events]
   "Delays the upbeat."
