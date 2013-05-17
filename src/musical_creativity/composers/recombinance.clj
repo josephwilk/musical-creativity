@@ -254,8 +254,8 @@
 (defn collect-by-timing
   "Collects the events accoring to timing."
   [timing events]
-  (filter (fn [event]
-            (<= (+ (first event) (fourth event)) timing))
+  (filter (fn [[timepoint _ _ channel _]]
+            (<= (+ timepoint channel) timing))
           events))
 
 (defn collect-beats [events]
