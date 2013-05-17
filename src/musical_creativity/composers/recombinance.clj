@@ -447,10 +447,6 @@
                                       (+ begin-time (third (first events)))
                                       (+ (third (first events)) duration))))))
 
-(defn get-channel [n music]
-  "Gets the nth channel of the music."
-  (filter (fn [note] (= (fourth note) n)) music))
-
 (defn remainders
   "Returns remainders of beats."
   ([events] (remainders events (ffirst events) 0))
@@ -504,6 +500,10 @@
                       (drop 3 event))
               (chop event (+ begin-time 1000) (- duration 1000))))))
 
+(defn get-channel [channel music]
+  "Gets the nth channel of the music."
+  (filter (fn [note] (= (channel-of note) channel)) music))
+
 (defn chop-into-bites [events]
   "Chops beats into groupings."
   (cond
@@ -541,38 +541,28 @@
    :else
    (get-long-phrases (rest distances))))
 
-(defn get-region [begin-time end-time events]
+(defn get-region
   "Returns the region boardered by begin and end times."
-  (cond
-   (empty? events)
-   ()
-   (and (>= (ffirst events) begin-time)
-        (< (ffirst events) end-time))
-   (cons (first events)
-         (get-region begin-time end-time (rest events)))
-   :else
-   (get-region begin-time end-time (rest events))))
+  [begin-time end-time events]
+  (filter (fn [event]
+            (and (>= (timepoint-of event) begin-time)
+                 (<  (timepoint-of event) end-time)))
+          events))
 
-(defn not-beyond [channel-events]
-  "Returns events beyond the initial ontime."
+(defn not-beyond? [channel-events]
   (if (not (> (apply + (map third channel-events)) 1000)) true))
 
-(defn not-beyond-1000
-  "Returns t if the beat does not contain events beyond the incept time."
-  ([beat] (not-beyond-1000 beat 1))
-  ([beat channel]
-      (cond
-       (= channel 5)
-       true
-       (not-beyond (get-channel channel beat))
-       (not-beyond-1000 beat (+ channel 1))
-       :else
-       nil)))
+(defn not-beyond-1000?
+  "Returns true if the beat does not contain events beyond the incept time."
+  [beat]
+  (every? (fn [channel]
+            (not-beyond? (get-channel channel beat)))
+          (range 1 4)))
 
 (defn- cadence-place? [beat]
   (and (on-beat? (take 4 beat) (ffirst beat))
        (triad? (take 4 beat))
-       (not-beyond-1000 beat)))
+       (not-beyond-1000? beat)))
 
 (defn find-cadence-place
   "Returns the best place for a first cadence."
@@ -600,17 +590,21 @@
     (first on-times))
    on-times))
 
-(defn remove-region [begin-time end-time events]
+(defn remove-region
   "Removes the region boardered by begin and end times."
-  (cond (empty? events)()
-        (and (>= (ffirst events) begin-time)
-             (< (ffirst events) end-time))
-        (remove-region begin-time end-time (rest events))
-        :else (cons (first events)
-                (remove-region begin-time end-time (rest events)))))
+  [begin-time end-time events]
+  (concat (filter (fn [event]
+                    (or (< (timepoint-of event) begin-time)
+                        (>= (timepoint-of event) end-time)))
+                  events)))
 
 (defn remove-all [stuff other-stuff]
   (vec (clojure.set/difference (set other-stuff) (set stuff))))
+
+(defn- build-suitable-event [event]
+  (if (>= (velocity-of event) 1000)
+    event
+    (concat (take 2 event) '(1000) (drop 3 event))))
 
 (defn resolve-beat
   "Resolves the beat if necessary."
@@ -623,13 +617,10 @@
       (cons (first beat)
             (resolve-beat (rest beat) on-time))
       :else
-      (let [on-beat-candidate (get-on-beat (get-channel (fourth (first beat)) beat) on-time)]
-
-
-        (cons (if (>= (third (first on-beat-candidate)) 1000)
-                (first on-beat-candidate)
-                (concat (take 2 (first on-beat-candidate)) '(1000) (drop 3 (first on-beat-candidate))))
-              (resolve-beat (remove-all (get-channel (fourth (first beat)) beat) beat) on-time))))))
+      (let [on-beat-candidate (get-on-beat (get-channel (channel-of (first beat)) beat) on-time)
+            on-beat-event (first on-beat-candidate)]
+        (cons (build-suitable-event on-beat-event)
+              (resolve-beat (remove-all (get-channel (channel-of (first beat)) beat) beat) on-time))))))
 
 (defn discover-cadence
   "Discovers an appropriate cadence."
@@ -637,11 +628,25 @@
   (let [relevant-events (get-region (first missing-cadence-locations) (second missing-cadence-locations) ordered-events)
         places-for-cadence (find-cadence-place relevant-events)
         best-location-for-new-cadence (when places-for-cadence (find-best-on-time places-for-cadence))]
-    (if (nil? best-location-for-new-cadence)
+    (if-not best-location-for-new-cadence
       ordered-events
       (sort-by-first-element
        (concat (resolve-beat (get-region best-location-for-new-cadence (+ best-location-for-new-cadence 1000) relevant-events))
                (remove-region best-location-for-new-cadence (+ best-location-for-new-cadence 1000) ordered-events))))))
+
+(defn all-match-velocity? [velocity ordered-events start-time]
+  (and (let [channel-1-event (first (get-channel 1 ordered-events))]
+         (and (= (velocity-of channel-1-event) velocity)
+              (= start-time (timepoint-of channel-1-event))))
+       (let [channel-2-event (first (get-channel 2 ordered-events))]
+         (and (= (velocity-of channel-2-event) velocity)
+              (= start-time (timepoint-of channel-2-event))))
+       (let [channel-3-event (first (get-channel 3 ordered-events))]
+         (and (= (velocity-of channel-3-event) velocity)
+              (= start-time (timepoint-of channel-3-event))))
+       (let [channel-4-event (first (get-channel 4 ordered-events))]
+         (and (= (velocity-of channel-4-event) velocity)
+              (= start-time (timepoint-of channel-4-event))))))
 
 (defn find-1000s
   "Returns the ontime if the ordered events are all duration 1000."
@@ -650,18 +655,7 @@
      (cond
       (empty? ordered-events)
       nil
-      (and (let [channel-1-event (first (get-channel 1 ordered-events))]
-             (and (= (third channel-1-event) 1000)
-                  (= start-time (first channel-1-event))))
-           (let [channel-1-event (first (get-channel 2 ordered-events))]
-             (and (= (third channel-1-event) 1000)
-                  (= start-time (first channel-1-event))))
-           (let [channel-1-event (first (get-channel 3 ordered-events))]
-             (and (= (third channel-1-event) 1000)
-                  (= start-time (first channel-1-event))))
-           (let [channel-1-event (first (get-channel 4 ordered-events))]
-             (and (= (third channel-1-event) 1000)
-                  (= start-time (first channel-1-event)))))
+      (all-match-velocity? 1000 ordered-events start-time)
       start-time
       :else
       (find-1000s (rest ordered-events)))))
@@ -673,30 +667,18 @@
       (cond
        (empty? ordered-events)
        nil
-       (and (let [channel-1-event (first (get-channel 1 ordered-events))]
-              (and (= (third channel-1-event) 2000)
-                   (= start-time (first channel-1-event))))
-            (let [channel-1-event (first (get-channel 2 ordered-events))]
-              (and (= (third channel-1-event) 2000)
-                   (= start-time (first channel-1-event))))
-            (let [channel-1-event (first (get-channel 3 ordered-events))]
-              (and (= (third channel-1-event) 2000)
-                   (= start-time (first channel-1-event))))
-            (let [channel-1-event (first (get-channel 4 ordered-events))]
-              (and (= (third channel-1-event) 2000)
-                   (= start-time (first channel-1-event)))))
+       (all-match-velocity? 2000 ordered-events start-time)
        start-time
        :else
        (find-2000s (rest ordered-events)))))
 
-
 (defn discover-cadences
   "Makes an appropriate cadence possible."
   [missing-cadence-locations ordered-events]
-  (if (empty? missing-cadence-locations)
-    ordered-events
-    (discover-cadences (rest missing-cadence-locations)
-                       (discover-cadence (first missing-cadence-locations) ordered-events))))
+  (reduce (fn [events location]
+            (discover-cadence location events))
+          ordered-events
+          missing-cadence-locations))
 
 (defn distance-to-cadence [ordered-events]
   "Returns the distance tocadence of the arg."
@@ -714,13 +696,12 @@
        half-note-distance
        quarter-note-distance))))
 
-(defn clear-to [distance-to-cadence ordered-events]
+(defn clear-to
   "Clears the events up to the cadence."
-  (cond (empty?  ordered-events)()
-        (<= (ffirst  ordered-events) distance-to-cadence)
-        (clear-to distance-to-cadence (rest ordered-events))
-        :else (cons (first ordered-events)
-                (clear-to distance-to-cadence (rest ordered-events)))))
+  [distance-to-cadence ordered-events]
+  (filter (fn [event]
+            (> (timepoint-of event) distance-to-cadence))
+   ordered-events))
 
 (defn find-cadence-start-times [ordered-events]
   "Finds the cadence start times."
@@ -738,27 +719,29 @@
   "Transposes the events according to its first arg."
   (filter (fn [event]
             (not (= 0 (pitch-of event)))
-            (concat (list (timepoint-of event))(list (+ (pitch-of event) amt))(drop  2 event))) events))
+            (concat (list (timepoint-of event))
+                    (list (+ (pitch-of event) amt))
+                    (drop  2 event))) events))
 
 (defn get-note-timing [event time]
   "grunt work for get-beat-length"
   (- (+ (timepoint-of event) (velocity-of event)) time))
 
 (defn get-beat-length [events]
-  "this is used in re-time for setting the new time!
-   requires that the first in events be sorted to current time!"
   (let [time (ffirst events)]
     (first (sort > (map (fn [event] (get-note-timing event time)) events)))))
 
 (defn match-them [chord full-chord allowance]
   "Matches the chord with the list of pitches within the allowance."
-  (cond (empty? chord) true
-        (and (not (member (first chord) full-chord))
-             (= 0 allowance))
-        ()
-        (not (member (first chord) full-chord))
-        (match-them (rest chord) full-chord (- allowance 1))
-        :else (match-them (rest chord) full-chord allowance)))
+  (cond
+   (empty? chord) true
+   (and (not (member (first chord) full-chord))
+        (= 0 allowance))
+   ()
+   (not (member (first chord) full-chord))
+   (match-them (rest chord) full-chord (- allowance 1))
+   :else
+   (match-them (rest chord) full-chord allowance)))
 
 (defn reduce-it [note base]
   "Reduces its first arg mod12 below its second arg."
@@ -970,19 +953,20 @@
                   (< (- (fourth (first sorted-pitches-by-beat))
                         (fourth (second sorted-pitches-by-beat))) 0))))))
 
-(defn wait-for-cadence
+
+(defn wait-for-cadence?
   "Ensures the cadence is the proper length."
-  ([events] (wait-for-cadence events (ffirst events)))
+  ([events] (wait-for-cadence? events (ffirst events)))
   ([events start-time]
      (cond
       (empty? events)
       false
-      (> (ffirst events) (+ start-time 4000))
+      (> (timepoint-of (first events)) (+ start-time 4000))
       true
-      (> (third (first events)) 1000)
+      (> (velocity-of (first events)) 1000)
       false
       :else
-      (wait-for-cadence (rest events) start-time))))
+      (wait-for-cadence? (rest events) start-time))))
 
 (defn match-tonic-minor [the-events]
   (let [events (get-last-beat-events (break-into-beats the-events))]
@@ -1068,7 +1052,7 @@
        (or
         (< event-sum 15000)
         (> event-sum 200000)
-        (not (wait-for-cadence events))
+        (not (wait-for-cadence? events))
         (check-for-parallel events)
         (not end?))))))
 
@@ -1094,10 +1078,10 @@
   (create-complete-database chorale/bach-chorales-in-databases))
 
 (defn- midi-to-event [midi]
-  {:time (nth midi 0)
-   :pitch (nth midi 1)
-   :velocity (nth midi 2)
-   :channel (nth midi 3)})
+  {:time  (timepoint-of midi)
+   :pitch (pitch-of midi)
+   :velocity (velocity-of midi)
+   :channel (channel-of midi)})
 
 (defn compose []
   (let [events (compose-bach)]
