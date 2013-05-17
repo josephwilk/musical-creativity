@@ -7,7 +7,6 @@
 
 (def *beats-store* (atom {}))
 (def *lexicon-store* (atom {}))
-(def *rules-store* (atom ()))
 
 (def *lexicons* (atom []))
 (def *history* (atom ()))
@@ -130,13 +129,14 @@
    (reduce-interval (- interval 12))))
 
 (defn get-rules1 [start-notes destination-notes name]
-  "Does the grunt work for get-rules."
-  (if (or (empty? (rest start-notes))(empty? (rest destination-notes)))
-    (reverse @*rules-store*)
-    (let [new-rule (reverse (get-rule (- (first destination-notes) (first start-notes))
-                                      (first start-notes) start-notes destination-notes name))]
-      (reset! *rules-store* (concat new-rule  @*rules-store*))
-      (get-rules1 (rest start-notes) (rest destination-notes) name))))
+  (loop [rules []
+         start-notes start-notes
+         destination-notes destination-notes]
+    (if (or (empty? (rest start-notes)) (empty? (rest destination-notes)))
+      (reverse rules)
+      (let [new-rule (reverse (get-rule (- (first destination-notes) (first start-notes))
+                                        (first start-notes) start-notes destination-notes name))]
+        (recur (concat new-rule rules) (rest start-notes) (rest destination-notes))))))
 
 (defn get-rule
   "Gets the rule between first two args."
@@ -149,9 +149,9 @@
                 name)
           (get-rule voice start-note (rest start-notes) (rest destination-notes) name))))
 
-(defn get-rules [start-notes destination-notes name]
+(defn get-rules
   "Gets the intervals between adjacent sets of the two args."
-  (reset! *rules-store* ())
+  [start-notes destination-notes name]
   (let [test (make-lists-equal (list start-notes destination-notes))]
     (get-rules1 (first test) (second test) name)))
 
