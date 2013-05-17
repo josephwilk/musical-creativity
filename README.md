@@ -1,7 +1,5 @@
 #Computer models of musical creativity
 
-[![Build Status](https://travis-ci.org/josephwilk/musical-creativity.png?branch=master)](https://travis-ci.org/josephwilk/musical-creativity)
-
 Experiments with models for computers generating music.
 
 ##Examples
