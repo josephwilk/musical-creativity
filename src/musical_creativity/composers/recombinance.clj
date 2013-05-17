@@ -115,12 +115,6 @@
 (defn- find-composer []
   (var-get-from-str (str *composer*)))
 
-(defn plot-timings-of-each-beat
-  [events]
-  (map (fn [event]
-         (list (channel-of event) (+ (timepoint-of event) (velocity-of event))))
-       events))
-
 (defn reduce-interval [interval]
   "Reduces the interval mod 12."
   (cond
@@ -233,11 +227,6 @@
                     (not (member (fourth (first events)) channels)))
                   (reverse events)))))
 
-(defn collect-timings-by-channel
-  "collects the timings of the channel indicated in second arg"
-  [timings channel]
-  (filter #(= (first %) channel) timings))
-
 (defn find-alignment [point channel]
   (and (a-thousand? point)
        (some #(= point (second %)) channel)))
@@ -256,6 +245,17 @@
                                  channels)]
     (or together-timepoint
         (second (last-first all-channels)))))
+
+(defn collect-timings-by-channel
+  "collects the timings of the channel indicated in second arg"
+  [timings channel]
+  (filter #(= (first %) channel) timings))
+
+(defn plot-timings-of-each-beat
+  [events]
+  (map (fn [event]
+         (list (channel-of event) (+ (timepoint-of event) (velocity-of event))))
+       events))
 
 (defn first-place-where-all-together [events]
   "This looks ahead to get the first time they end together"
@@ -325,15 +325,13 @@
                (recur (rest beats) (+ 1 counter) nil))))
          (create-complete-database (rest db-names))))))
 
-(defn on-beat [events ontime]
-  "Returns t if the events conform to ontime."
-  (cond
-   (empty? events)
-   true
-   (and (a-thousand? (ffirst events))(= (ffirst events) ontime))
-   (on-beat (rest events) ontime)
-   :else
-   nil))
+(defn on-beat?
+  "Returns true if the events conform to ontime."
+  [events ontime]
+  (every? (fn [event]
+            (and (a-thousand? (timepoint-of event))
+                 (= (timepoint-of event) ontime)))
+          events))
 
 (defn get-on-beat
   "Returns the on beat from the events."
@@ -351,16 +349,7 @@
 
 (defn get-pitches [events]
   "Gets the pitches from its arg."
-  (map #(second %) events))
-
-(defn project
-  "Projects the pc-set through its inversions."
-  ([set] (project set (count set) 0))
-  ([set length times]
-      (if (= length times)
-        ()
-        (cons set
-              (project (concat (rest set) (list (+ 12 (first set)))) length (+ 1 times))))))
+  (map #(pitch-of %) events))
 
 (defn get-interval [set]
   "Returns the intervals between set members."
@@ -374,6 +363,16 @@
   (map (fn [set]
          (math/abs (apply + (get-interval set))))
        sets))
+
+(defn project
+  "Projects the pc-set through its inversions."
+  ([set] (project set (count set) 0))
+  ([set length times]
+     (if (= length times)
+       ()
+       (cons set
+             (project (concat (rest set) (list (+ 12 (first set))))
+                      length (+ 1 times))))))
 
 (defn get-smallest-set [set]
   "Returns the set with the smallest outer boundaries."
@@ -389,20 +388,14 @@
           pitches-class-set (create-pitch-class-set pitches)
           pitch-classes (get-smallest-set pitches-class-set)]
       (and (= (count pitch-classes) 3)
-           (and (> (- (second pitch-classes)(first pitch-classes)) 2)
-                (< (- (second pitch-classes)(first pitch-classes)) 5))
-           (and (> (- (third pitch-classes)(second pitch-classes)) 2)
-                (< (- (third pitch-classes)(second pitch-classes)) 5))))))
+           (and (> (- (second pitch-classes) (first pitch-classes)) 2)
+                (< (- (second pitch-classes) (first pitch-classes)) 5))
+           (and (> (- (third pitch-classes) (second pitch-classes)) 2)
+                (< (- (third pitch-classes) (second pitch-classes)) 5))))))
 
 (defn members-all [arrows target]
   "Checks to see if arrows are all in target."
-  (cond
-   (empty? arrows)
-   true
-   (member (first arrows) target)
-   (members-all (rest arrows) target)
-   :else
-   nil))
+  (every? #(some #{%} target) arrows))
 
 (defn find-triad-beginning
   "Returns the db with a triad beginning."
@@ -420,18 +413,6 @@
              (= (count (:events beat)) 4))
       test
       (recur))))
-
-(defn chop
-  "Chops beats over 1000 into beat-sized pieces."
-  ([event] (chop event (timepoint-of event) (velocity-of event)))
-  ([event begin-time duration]
-      (if (< duration 1000)
-        ()
-        (cons (concat (list begin-time)
-                      (list (pitch-of event))
-                      '(1000)
-                      (drop 3 event))
-              (chop event (+ begin-time 1000)(- duration 1000))))))
 
 (defn remainder
   "Returns the remainder of the beat."
@@ -511,6 +492,18 @@
         :else (cons (first events)
                     (get-other-channels channel-not-to-get (rest events)))))
 
+(defn chop
+  "Chops beats over 1000 into beat-sized pieces."
+  ([event] (chop event (timepoint-of event) (velocity-of event)))
+  ([event begin-time duration]
+      (if (< duration 1000)
+        ()
+        (cons (concat (list begin-time)
+                      (list (pitch-of event))
+                      '(1000)
+                      (drop 3 event))
+              (chop event (+ begin-time 1000) (- duration 1000))))))
+
 (defn chop-into-bites [events]
   "Chops beats into groupings."
   (cond
@@ -524,22 +517,29 @@
    (cons (chop (first events))
          (chop-into-bites (concat (remainder (first events)) (rest events))))
    :else
-   (cons (get-full-beat (get-channel (fourth (first events)) events))
-         (chop-into-bites (concat (remainders (get-channel (fourth (first events)) events))
-                                  (concat (remove-full-beat (get-channel (fourth (first events)) events))
-                                          (get-other-channels (fourth (first events)) events)))))))
+   (let [event (first events)
+         channel (channel-of event)
+         events-for-channel (get-channel channel events)]
+     (cons (get-full-beat events-for-channel)
+           (chop-into-bites (concat (remainders events-for-channel)
+                                    (concat (remove-full-beat events-for-channel)
+                                            (get-other-channels channel events))))))))
 
 (defn break-into-beats [events]
   "Breaks events into beat-sized groupings."
-  (sort-by-first-element (apply concat (chop-into-bites (sort-by-first-element events)))))
+  (sort-by-first-element
+   (apply concat (chop-into-bites (sort-by-first-element events)))))
 
 (defn get-long-phrases [distances]
   "Returns phrases of greater than 120000 duration."
-  (cond (empty? (rest distances))()
-        (> (- (second distances)(first distances)) 12000)
-        (cons (take 2 distances)
-              (get-long-phrases (rest distances)))
-        :else (get-long-phrases (rest distances))))
+  (cond
+   (empty? (rest distances))
+   ()
+   (> (- (second distances)(first distances)) 12000)
+   (cons (take 2 distances)
+         (get-long-phrases (rest distances)))
+   :else
+   (get-long-phrases (rest distances))))
 
 (defn get-region [begin-time end-time events]
   "Returns the region boardered by begin and end times."
@@ -570,7 +570,7 @@
        nil)))
 
 (defn- cadence-place? [beat]
-  (and (on-beat (take 4 beat) (ffirst beat))
+  (and (on-beat? (take 4 beat) (ffirst beat))
        (triad? (take 4 beat))
        (not-beyond-1000 beat)))
 
