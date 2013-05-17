@@ -234,3 +234,7 @@
 
 (fact "get intervals"
   (get-intervals '((0 4 7) (4 7 12) (7 12 16))) => '(7 8 9))
+
+(fact "make lists equal"
+  (make-lists-equal-length '(57 60 69) '(59 62 67 79)) => '((57 60 69) (59 62 67))
+  (make-lists-equal-length '(57 60 69 76) '(59 62 67 79)) => '((57 60 69 76) (59 62 67 79)))
