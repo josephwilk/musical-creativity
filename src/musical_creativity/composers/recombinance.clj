@@ -37,8 +37,6 @@
 (def bach [bach-compose-beats bach-start-beats bach-rules])
 (def bach-form [])
 
-(declare get-rule)
-
 (defn remove-from-list [objects-to-be-remove list-of-objects]
   (remove #(some #{%} objects-to-be-remove) list-of-objects))
 
@@ -108,16 +106,6 @@
          (list (fourth event) (+ (first event) (third event))))
        events))
 
-(defn make-lists-equal [lists]
-  "Ensures the two lists are equal in length."
-  (cond
-   (> (count (first lists)) (count (second lists)))
-   (list (take (count (second lists)) (first lists)) (second lists))
-   (> (count (second lists)) (count (first lists)))
-   (list (first lists) (take (count (first lists)) (second lists)))
-   :else
-   lists))
-
 (defn reduce-interval [interval]
   "Reduces the interval mod 12."
   (cond
@@ -127,16 +115,6 @@
    (reduce-interval (+ interval 12))
    :else
    (reduce-interval (- interval 12))))
-
-(defn get-rules1 [start-notes destination-notes name]
-  (loop [rules []
-         start-notes start-notes
-         destination-notes destination-notes]
-    (if (or (empty? (rest start-notes)) (empty? (rest destination-notes)))
-      (reverse rules)
-      (let [new-rule (reverse (get-rule (- (first destination-notes) (first start-notes))
-                                        (first start-notes) start-notes destination-notes name))]
-        (recur (concat new-rule rules) (rest start-notes) (rest destination-notes))))))
 
 (defn get-rule
   "Gets the rule between first two args."
@@ -149,11 +127,28 @@
                 name)
           (get-rule voice start-note (rest start-notes) (rest destination-notes) name))))
 
+(defn build-rules-for [start-notes destination-notes name]
+  (loop [rules []
+         start-notes start-notes
+         destination-notes destination-notes]
+    (if (or (empty? (rest start-notes)) (empty? (rest destination-notes)))
+      (reverse rules)
+      (let [new-rule (reverse (get-rule (- (first destination-notes) (first start-notes))
+                                        (first start-notes) start-notes destination-notes name))]
+        (recur (concat new-rule rules) (rest start-notes) (rest destination-notes))))))
+
+(defn make-lists-equal-length
+  [list1 list2]
+  (let [equal-pairs (map vector list1 list2)]
+    (list (map first equal-pairs) (map second equal-pairs))))
+
 (defn get-rules
   "Gets the intervals between adjacent sets of the two args."
   [start-notes destination-notes name]
-  (let [test (make-lists-equal (list start-notes destination-notes))]
-    (get-rules1 (first test) (second test) name)))
+  (let [test (make-lists-equal-length start-notes destination-notes)
+        test-start-notes (first test)
+        test-destination-notes (second test)]
+    (build-rules-for test-start-notes test-destination-notes name)))
 
 (defn swap-unless-includes [reference data]
   (when-not (some #{data} @reference)
