@@ -259,13 +259,13 @@
           events))
 
 (defn collect-beats [events]
-   (if (empty? events)
+  (if (empty? events)
     ()
     (let [sync-time (first-place-where-all-together events)
-          test (collect-by-timing sync-time events)
-          reduced-test (drop (count test) events)]
-      (cons test
-            (collect-beats reduced-test)))))
+          events-by-time  (collect-by-timing sync-time events)
+          reduced-events (drop (count events-by-time) events)]
+      (cons events-by-time
+            (collect-beats reduced-events)))))
 
 (defn make-beat [name beats]
   (let [start-notes (get-onset-notes (first beats))
