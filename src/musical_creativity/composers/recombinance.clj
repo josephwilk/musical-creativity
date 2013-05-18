@@ -428,7 +428,7 @@
                                       (list duration)
                                       (drop  3 event)))
       :else
-      (remainder event (+ begin-time 1000)(- duration 1000)))))
+      (remainder event (+ begin-time 1000) (- duration 1000)))))
 
 (defn get-full-beat
   "Returns one full beat of the music."
@@ -530,16 +530,15 @@
   (sort-by-first-element
    (apply concat (chop-into-bites (sort-by-first-element events)))))
 
-(defn get-long-phrases [distances]
+(defn get-long-phrases
   "Returns phrases of greater than 120000 duration."
-  (cond
-   (empty? (rest distances))
-   ()
-   (> (- (second distances)(first distances)) 12000)
-   (cons (take 2 distances)
-         (get-long-phrases (rest distances)))
-   :else
-   (get-long-phrases (rest distances))))
+  [distances]
+  (remove nil?
+          (map (fn [start stop]
+                 (when (> (- stop start) 12000)
+                   [start stop]))
+               distances
+               (rest distances))))
 
 (defn get-region
   "Returns the region boardered by begin and end times."
@@ -703,8 +702,9 @@
             (> (timepoint-of event) distance-to-cadence))
    ordered-events))
 
-(defn find-cadence-start-times [ordered-events]
+(defn find-cadence-start-times
   "Finds the cadence start times."
+  [ordered-events]
   (let [distance-to-cadence (distance-to-cadence ordered-events)]
     (cond
      (empty? ordered-events)
@@ -771,15 +771,12 @@
   "Checks to see if its first arg members are present in second arg."
   (clojure.set/superset? (set target) (set list)))
 
-(defn get-all-events-with-start-time-of [start-time events]
-  "As its name suggests."
-  (cond
-   (empty? events)
-   ()
-   (= (ffirst events) start-time)
-   (cons (first events)
-         (get-all-events-with-start-time-of start-time (rest events)))
-   :else (get-all-events-with-start-time-of start-time (rest events))))
+(defn get-all-events-with-start-time-of
+  [start-time events]
+  (mapcat #(str %)
+   (filter (fn [event]
+             (= (timepoint-of event) start-time))
+           events)))
 
 (defn get-last-beat-events [events]
   (let [sorted-events (sort-by-first-element events)
@@ -952,7 +949,6 @@
                         (third (second sorted-pitches-by-beat))) 0)
                   (< (- (fourth (first sorted-pitches-by-beat))
                         (fourth (second sorted-pitches-by-beat))) 0))))))
-
 
 (defn wait-for-cadence?
   "Ensures the cadence is the proper length."
