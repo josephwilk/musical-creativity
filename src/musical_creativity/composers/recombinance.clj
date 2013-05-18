@@ -1081,7 +1081,6 @@
 
 (defn compose []
   (let [events (compose-bach)]
-    (println events)
     (map midi-to-event events)))
 
 (defn compose-original []
