@@ -186,10 +186,10 @@
   "simply gets the channel numbers from the music"
   ([events] (get-channel-numbers-from-events events []))
   ([events channels]
-     (map #(fourth %)
-          (filter (fn [event]
-                    (not (member (fourth (first events)) channels)))
-                  (reverse events)))))
+     (filtermap (fn [event]
+                  (when (not (member (fourth (first events)) channels))
+                    (channel-of event)))
+                (reverse events))))
 
 (defn find-alignment [point channel]
   (and (a-thousand? point)

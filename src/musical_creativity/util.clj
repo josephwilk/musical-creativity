@@ -1,5 +1,15 @@
 (ns musical-creativity.util)
 
+(defn filtermap [predicate list]
+  (loop [items list
+         new-list []]
+    (if (empty? items)
+      new-list
+      (let [result (predicate (first items))]
+        (if result
+          (recur (rest items) (conj new-list result))
+          (recur (rest items) new-list))))))
+
 (defn position [thing list]
   (let [index (.indexOf list thing)]
     (when (>= index 0) index)))
