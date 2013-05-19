@@ -1,7 +1,7 @@
 (ns musical-creativity.composers.recombinance
   (:require
    [clojure.math.numeric-tower :as math]
-   [data.chorale               :as chorale]
+   [data.bach                  :as bach]
    [musical-creativity.util    :refer :all]
    [clojure.string             :as str]))
 
@@ -294,10 +294,10 @@
   (remove-nils
    (collect-beats
     (set-to-zero
-     (sort-by-first-element (chorale/find-db db-name))))))
+     (sort-by-first-element (bach/find-db db-name))))))
 
-(defn create-complete-database
-  ([db-names] (create-complete-database db-names 1))
+(defn create-database-from
+  ([db-names] (create-database-from db-names 1))
   ([db-names counter]
      (if (empty? db-names)
        true
@@ -317,7 +317,7 @@
                  (swap! (find-composer-start-beats-atom) conj name))
 
                (recur (rest beats) (+ 1 counter) nil))))
-         (create-complete-database (rest db-names))))))
+         (create-database-from (rest db-names))))))
 
 (defn on-beat?
   "Returns true if the events conform to ontime."
@@ -1068,8 +1068,7 @@
       (prepare-events events @*early-exit?*)
       (compose-bach))))
 
-(defn load-bach-chorales []
-  (create-complete-database chorale/bach-chorales-in-databases))
+(defn load-bach-chorales [])
 
 (defn- midi-to-event [midi]
   {:time     (timepoint-of midi)
@@ -1083,6 +1082,6 @@
 
 (defn compose-original []
   (map midi-to-event
-       (mapcat chorale/find-db (list (first chorale/bach-chorales-in-databases)
-                                     (second chorale/bach-chorales-in-databases)
-                                     (third chorale/bach-chorales-in-databases)))))
+       (mapcat bach/find-db (list (first bach/chorale-140-data)
+                                  (second bach/chorale-140-data)
+                                  (third bach/chorale-140-data)))))

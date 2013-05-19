@@ -27,9 +27,9 @@ Experiments with models for computers generating music.
 (musician/play (sonify-words/compose "potato potato") ping)
 
 ;Recombinance (Based on Bach Choral no. 140)
-;(Still very experimental)
 (require '[musical-creativity.composers.recombinance :as recombinance] :reload)
-(recombinance/load-bach-chorales)
+(require '[data.bach :as bach] :reload)
+(recombinance/create-database-from bach/chorale-140-data)
 (musician/play (recombinance/compose) piano)
 
 ;Network (Using adaptive resonance theory)
