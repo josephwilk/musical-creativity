@@ -18,8 +18,6 @@
 (def *early-exit?* (atom false))
 (def *compose-number* 0)
 
-(def *save-events* (atom ()))
-
 (def *tonic* (atom 'major))
 (def *previous-beat* (atom nil))
 (def *beat-size* 1000)
@@ -1060,7 +1058,6 @@
         (not end?))))))
 
 (defn prepare-events [events early-exit?]
-  (reset! *save-events* events)
   (let [events (ensure-necessary-cadences (sort-by-first-element events))
         events (if-not (check-mt (get-on-beat events (ffirst events)))
                  (delay-for-upbeat events)
