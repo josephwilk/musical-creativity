@@ -1059,7 +1059,7 @@
 
 (defn compose []
   (let [events (recombinance)
-        sorted-events (sort (fn [x y] (< (first  x) (first y))) events)]
+        sorted-events (sort (fn [e1 e2] (< (timepoint-of e1) (timepoint-of e2))) events)]
     (map midi-to-event sorted-events)))
 
 (defn compose-original []
