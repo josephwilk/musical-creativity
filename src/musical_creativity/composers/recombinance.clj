@@ -1044,7 +1044,7 @@
          ()
          events))))
 
-(defn finished-composing? [events end?]
+(defn valid-solution? [events end?]
   (if (empty? events)
     false
     (let [last-event (last (sort-by-first-element events))
@@ -1069,9 +1069,9 @@
 
 (defn compose-bach []
   (let [events (compose-events)]
-    (if-not (finished-composing? events @*end?*)
-      (compose-bach)
-      (prepare-events events @*early-exit?*))))
+    (if (valid-solution? events @*end?*)
+      (prepare-events events @*early-exit?*)
+      (compose-bach))))
 
 (defn load-bach-chorales []
   (create-complete-database chorale/bach-chorales-in-databases))
