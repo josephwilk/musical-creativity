@@ -402,18 +402,20 @@
   "Returns one full beat of the music."
   ([events] (get-full-beat events (ffirst events) 0))
   ([events begin-time duration]
-     (cond (empty? events)
-           ()
-           (= (+ duration (third (first events))) 1000)
-           (list (first events))
-           (> (+ duration (third (first events))) 1000)
-           (list (concat (take 2 (first events))
-                         (list (- 1000 duration))
-                         (drop  3 (first events))))
-           :else (cons (first events)
-                       (get-full-beat (rest events)
-                                      (+ begin-time (third (first events)))
-                                      (+ (third (first events)) duration))))))
+     (cond
+      (empty? events)
+      ()
+      (= (+ duration (velocity-of (first events))) 1000)
+      (list (first events))
+      (> (+ duration (third (first events))) 1000)
+      (list (concat (take 2 (first events))
+                    (list (- 1000 duration))
+                    (drop  3 (first events))))
+      :else
+      (cons (first events)
+            (get-full-beat (rest events)
+                           (+ begin-time (velocity-of (first events)))
+                           (+ (third (first events)) duration))))))
 
 (defn remainders
   "Returns remainders of beats."
@@ -448,13 +450,16 @@
                         (+ begin-time (third (first events)))
                         (+ (third (first events)) duration)))))
 
-(defn get-other-channels [channel-not-to-get events]
+(defn get-other-channels
   "Returns all but the first arg channeled events."
-  (cond (empty? events)()
-        (= (fourth (first events)) channel-not-to-get)
-        (get-other-channels channel-not-to-get (rest events))
-        :else (cons (first events)
-                    (get-other-channels channel-not-to-get (rest events)))))
+  [channel-not-to-get events]
+  (cond
+   (empty? events) ()
+   (= (fourth (first events)) channel-not-to-get)
+   (get-other-channels channel-not-to-get (rest events))
+   :else
+   (cons (first events)
+         (get-other-channels channel-not-to-get (rest events)))))
 
 (defn chop
   "Chops beats over 1000 into beat-sized pieces."
