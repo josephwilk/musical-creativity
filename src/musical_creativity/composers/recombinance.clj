@@ -1073,8 +1073,8 @@
   (create-complete-database chorale/bach-chorales-in-databases))
 
 (defn- midi-to-event [midi]
-  {:time  (timepoint-of midi)
-   :pitch (pitch-of midi)
+  {:time     (timepoint-of midi)
+   :pitch    (pitch-of midi)
    :velocity (velocity-of midi)
    :channel (channel-of midi)})
 
