@@ -244,8 +244,8 @@
   (positions 1 '(4 5 3 1 2 1 4 5))
   => '(3 5))
 
-(fact "check-mt"
-  (check-mt '((0 43 1000 4 96) (0 59 1000 3 96) (0 62 1000 2 96) (0 67 1000 1 96)))
+(fact "check major tonic"
+  (check-major-tonic '((0 43 1000 4 96) (0 59 1000 3 96) (0 62 1000 2 96) (0 67 1000 1 96)))
   => false)
 
 (fact "plot timings"
