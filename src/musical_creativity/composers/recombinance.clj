@@ -266,28 +266,26 @@
     (set-to-zero
      (sort-by-first-element (bach/find-db db-name))))))
 
+(defn- create-database-from-beats [db-name]
+  (loop [beats (start-beats db-name)
+         counter 1
+         start true]
+    (when-not (empty? beats)
+      (let [name (make-name db-name counter)
+            instance (make-beat name beats)]
+        (reset! beats-store (assoc @beats-store name instance))
+        (put-beat-into-lexicon name)
+        (swap! compose-beats-store conj name)
+
+        (when start
+          (swap! start-beats-store conj name))
+
+        (recur (rest beats) (+ 1 counter) nil)))))
+
 (defn create-database-from
-  ([db-names] (create-database-from db-names 1))
-  ([db-names counter]
-     (if (empty? db-names)
-       true
-       (do
-         (loop [beats (start-beats (first db-names))
-                counter counter
-                start true]
-
-           (when-not (empty? beats)
-             (let [name (make-name (first db-names) counter)
-                   instance (make-beat name beats)]
-               (reset! beats-store (assoc @beats-store name instance))
-               (put-beat-into-lexicon name)
-               (swap! compose-beats-store conj name)
-
-               (when start
-                 (swap! start-beats-store conj name))
-
-               (recur (rest beats) (+ 1 counter) nil))))
-         (create-database-from (rest db-names))))))
+  [db-names]
+  (doall
+   (map #(create-database-from-beats %) db-names)))
 
 (defn on-beat?
   "Returns true if the events conform to ontime."
