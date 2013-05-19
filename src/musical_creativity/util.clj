@@ -1,6 +1,9 @@
 (ns musical-creativity.util)
 
-(defn filtermap [predicate list]
+(defn filtermap
+  "Filter a list while also mapping to a new value if that value evaluates to not false.
+  equivalent to (map fn1 (filter fn2 list))"
+  [predicate list]
   (loop [items list
          new-list []]
     (if (empty? items)
