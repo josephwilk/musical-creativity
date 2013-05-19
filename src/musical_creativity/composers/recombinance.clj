@@ -18,7 +18,6 @@
 (def *early-exit?* (atom false))
 (def *compose-number* 0)
 
-(def *events* (atom ()))
 (def *save-events* (atom ()))
 
 (def *tonic* (atom 'major))
@@ -1023,8 +1022,8 @@
       (swap! *history* conj current-beat)
       (apply concat (re-time all-events)))))
 
-(defn compose-b
-  ([] (compose-b 0))
+(defn compose-events
+  ([] (compose-events 0))
   ([counter]
      (reset! *end?* false)
      (reset! *history* ())
@@ -1037,6 +1036,15 @@
      (reset! *history* (reverse @*history*))
      (if @*end?*
        (swap! *history* conj (list (+ 1 *compose-number*))))))
+     (let [events (build-events counter)]
+       (reset! *history* (reverse @*history*))
+       (when @*end?* (swap! *history* conj (list (+ 1 *compose-number*))))
+
+       (if (or
+            @*early-exit?*
+            (not (= *composer* 'bach)))
+         ()
+         events))))
 
 (defn finished-composing? [events end?]
   (if (empty? events)
@@ -1063,11 +1071,10 @@
     events))
 
 (defn compose-bach []
-  (reset! *events* [])
-  (compose-b)
-  (if-not (finished-composing? @*events* @*end?*)
-    (compose-bach)
-    (prepare-events @*events* @*early-exit?*)))
+  (let [events (compose-events)]
+    (if-not (finished-composing? events @*end?*)
+      (compose-bach)
+      (prepare-events events @*early-exit?*))))
 
 (defn load-bach-chorales []
   (create-complete-database chorale/bach-chorales-in-databases))
