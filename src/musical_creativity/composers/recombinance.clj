@@ -190,13 +190,11 @@
         lexicon-name (make-lexicon-name (:start-notes beat))]
     (if (and (lexicon-contains? lexicon-name)
              (not (member beat-name (:beats (find-in-lexicon lexicon-name)))))
-      (do
-        (reset! *lexicon-store* (update-in @*lexicon-store* [lexicon-name :beats] conj beat-name))
-        lexicon-name)
+      (reset! *lexicon-store* (update-in @*lexicon-store* [lexicon-name :beats] conj beat-name))
       (do
         (reset! *lexicon-store* (assoc @*lexicon-store* lexicon-name {:beats (list beat-name)}))
-        (swap-unless-includes *lexicons* lexicon-name)
-        lexicon-name))))
+        (swap-unless-includes *lexicons* lexicon-name)))
+    lexicon-name))
 
 (defn return-beat
   "Returns the beat number of the initiating event."
