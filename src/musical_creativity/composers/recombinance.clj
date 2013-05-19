@@ -346,19 +346,22 @@
    :else
    ()))
 
-(defn get-pitches [events]
+(defn get-pitches
   "Gets the pitches from its arg."
+  [events]
   (map #(pitch-of %) events))
 
-(defn get-interval [set]
+(defn get-interval
   "Returns the intervals between set members."
+  [set]
   (if (empty? (rest set))
     ()
-    (cons (- (second set)(first set))
+    (cons (- (second set) (first set))
           (get-interval (rest set)))))
 
-(defn get-intervals [sets]
+(defn get-intervals
   "Returns the intervals in the sets."
+  [sets]
   (map (fn [set]
          (math/abs (apply + (get-interval set))))
        sets))
@@ -800,31 +803,33 @@
   "Returns the database name."
   (first (str/split lexicon #"-")))
 
-(defn incf-beat
-  "Increments the beat number."
+(defn inc-beat-number
   [beat]
   (when-not (nil? beat)
     (let [beat (str beat)
           last-beat-digit (Integer/parseInt (str (last (explode beat))))]
       (str (get-db-name beat) "-" (+ 1 last-beat-digit)))))
 
-(defn match-bach-tonic [the-events]
+(defn match-bach-tonic?
   "Returns true if the events are tonic."
+  [the-events]
   (let [events (get-last-beat-events (break-into-beats the-events))]
     (and (not (empty? events))
-         (and (all-members (map second events) (apply concat (map (fn [note] (project-octaves note)) '(60 64 67))))
-              (match-harmony (sort < (map second events)) '(60 64 67))
-                                                            (match-harmony (sort > (map second events)) '(60 64 67))))))
+         (all-members (map second events) (apply concat (map #(project-octaves %) '(60 64 67))))
+         (match-harmony (sort < (map second events)) '(60 64 67))
+         (match-harmony (sort > (map second events)) '(60 64 67)))))
 
 (defn find-events-duration
   "Returns the events duration."
   ([events] (find-events-duration events 0))
   ([events duration]
-     (cond (empty? events)
-           duration
-           (= (fourth (first events)) 1)
-           (find-events-duration (rest events) (+ duration (third (first events))))
-           :else (find-events-duration (rest events) duration))))
+     (cond
+      (empty? events)
+      duration
+      (= (channel-of (first events)) 1)
+      (find-events-duration (rest events) (+ duration (velocity-of (first events))))
+      :else
+      (find-events-duration (rest events) duration))))
 
 (defn- retimed-events [events current-time]
   (map (fn [event]
@@ -842,15 +847,16 @@
              (re-time (rest event-lists)
                       (+ current-time (get-beat-length (first event-lists))))))))
 
-(defn highest-lowest-notes [events]
+(defn highest-lowest-notes
   "Returns the highest and lowest pitches of its arg."
+  [events]
   (list (first (sort > (map (fn [event] (pitch-of event)) (get-channel 1 events))))
         (first (sort < (map (fn [event] (pitch-of event)) (let [test (get-channel 4 events)]
-                                                          (if (empty? test)(get-channel 2 events) test)))))))
+                                                          (if (empty? test) (get-channel 2 events) test)))))))
 
 (defn put-it-in-the-middle [extremes]
   "Gets the average."
-  (math/round (/ (+ (second extremes)(first extremes)) 2)))
+  (math/round (/ (+ (second extremes) (first extremes)) 2)))
 
 (defn transpose-to-bach-range [events]
   (let [high-low (highest-lowest-notes events)
@@ -859,59 +865,60 @@
         middle (put-it-in-the-middle intervals-off)]
     (transpose middle events)))
 
-(defn make-1000s [beat]
+(defn make-1000s
   "Makes all of the beat's durations into 1000s."
+  [beat]
   (map (fn [event] (concat (take 2 event) '(1000) (drop 3 event))) beat))
 
-(defn reset [beats subtraction]
+(defn reset-beats
   "Resets the beats appropriately."
+  [beats subtraction]
   (if (empty? beats)()
       (cons (map (fn [event] (concat (list (- (timepoint-of event) subtraction)) (rest event)) ) (first beats))
-            (reset (rest beats) subtraction))))
+            (reset-beats (rest beats) subtraction))))
 
-(defn collapse [beats]
+(defn collapse
   "Collapses the final cadence."
-  (cond (empty? beats)
-        ()
-        (and (= (count (first beats)) 4)
-             (= (third (first (first beats))) 2000))
-        (cons (make-1000s (first beats))
-              (collapse (reset (rest beats) 1000)))
-        :else (cons (first beats)
-                    (collapse (rest beats)))))
+  [beats]
+  (cond
+   (empty? beats)
+   ()
+   (and (= (count (first beats)) 4)
+        (= (third (first (first beats))) 2000))
+   (cons (make-1000s (first beats))
+         (collapse (reset-beats (rest beats) 1000)))
+   :else
+   (cons (first beats)
+         (collapse (rest beats)))))
 
-(defn cadence-collapse [events]
+(defn cadence-collapse
   "Ensures the final chord will not have offbeats."
-  (apply concat (collapse (collect-beats (sort-by-first-element  events)))))
+  [events]
+  (apply concat (collapse (collect-beats (sort-by-first-element events)))))
 
-(defn reset-events-to [events begin-time]
+(defn reset-events-to
   "Resets the events for the delayed beat."
+  [events begin-time]
   (map (fn [event] (cons (+ begin-time (timepoint-of event))(rest event))) (set-to-zero events)))
 
 (defn delay-for-upbeat [events]
-  "Delays the upbeat."
   (reset-events-to events 3000))
 
-(defn all [list1 list2]
+(defn all?
   "Tests for presence of all of first arg in second arg."
-  (cond
-   (empty? list1)
-   true
-   (member (first list1) list2)
-   (all (rest list1) list2)
-   :else
-   false))
+  [list1 list2]
+  (empty? (clojure.set/difference (set list1) (set list2))))
 
-(defn get-tonic  [events]
+(defn get-tonic
   "Returns the tonic."
-  (and (or (all (create-pitch-class-set (get-pitches events))
-                '(0 4 7))
-           (all (create-pitch-class-set (get-pitches events))
-                '(0 3 7)))
+  [events]
+  (and (or (all? (create-pitch-class-set (get-pitches events)) '(0 4 7))
+           (all? (create-pitch-class-set (get-pitches events)) '(0 3 7)))
        (= 0 (first (create-pitch-class-set (get-pitches (get-channel 4 (sort-by-first-element  events))))))))
 
-(defn check-mt [events]
+(defn check-mt
   "Returns the major tonic."
+  [events]
   (get-tonic events))
 
 (defn ensure-necessary-cadences
@@ -926,7 +933,9 @@
   (map (fn [beat]
          (get-pitches (get-on-beat beat (ffirst beat)))) beats))
 
-(defn check-for-parallel [events]
+
+
+(defn parallel? [events]
   (let [beats (collect-beats (take 30 (sort-by-first-element events)))
         sorted-pitches-by-beat (sorted-by-beat beats)]
     (and (= (count (first sorted-pitches-by-beat)) 4)
@@ -980,7 +989,7 @@
               (and (> (find-events-duration (:events (find-beat current-beat))) *beat-size*)
                    (match-tonic-minor (:events (find-beat current-beat))))
               (and (> (find-events-duration (:events (find-beat current-beat))) *beat-size*)
-                   (match-bach-tonic (:events (find-beat current-beat))))))
+                   (match-bach-tonic? (:events (find-beat current-beat))))))
      (do
        (reset! *end?* true)
        true))))
@@ -1000,7 +1009,7 @@
             new-beat (choose-one
                       (if (empty? (rest beat-choices))
                         beat-choices
-                        (remove-from-list (list @*previous-beat* (incf-beat @*previous-beat*)) beat-choices)))]
+                        (remove-from-list (list @*previous-beat* (inc-beat-number @*previous-beat*)) beat-choices)))]
 
         (swap! *history* conj current-beat)
         (reset! *previous-beat* current-beat)
@@ -1027,15 +1036,6 @@
   ([counter]
      (reset! *end?* false)
      (reset! *history* ())
-     (reset! *events* (build-events counter))
-     (if (and
-          (not @*early-exit?*)
-          (= *composer* 'bach))
-       @*events*
-       (reset! *events* ()))
-     (reset! *history* (reverse @*history*))
-     (if @*end?*
-       (swap! *history* conj (list (+ 1 *compose-number*))))))
      (let [events (build-events counter)]
        (reset! *history* (reverse @*history*))
        (when @*end?* (swap! *history* conj (list (+ 1 *compose-number*))))
@@ -1056,7 +1056,7 @@
         (< event-sum 15000)
         (> event-sum 200000)
         (not (wait-for-cadence? events))
-        (check-for-parallel events)
+        (parallel? events)
         (not end?))))))
 
 (defn prepare-events [events early-exit?]
@@ -1083,7 +1083,7 @@
   {:time     (timepoint-of midi)
    :pitch    (pitch-of midi)
    :velocity (velocity-of midi)
-   :channel (channel-of midi)})
+   :channel  (channel-of midi)})
 
 (defn compose []
   (let [events (compose-bach)]
