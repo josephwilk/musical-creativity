@@ -1039,18 +1039,16 @@
          ()
          events))))
 
-(defn valid-solution? [events end?]
+(defn valid-solution? [events]
   (if (empty? events)
     false
     (let [last-event (last (sort-by-first-element events))
           event-sum (+ (first last-event) (third last-event))]
-      (not
-       (or
-        (< event-sum 15000)
-        (> event-sum 200000)
-        (not (wait-for-cadence? events))
-        (parallel? events)
-        (not end?))))))
+      (and
+       (>= event-sum 15000)
+       (<= event-sum 200000)
+       (wait-for-cadence? events)
+       (not (parallel? events))))))
 
 (defn prepare-events [events early-exit?]
   (let [events (ensure-necessary-cadences (sort-by-first-element events))
@@ -1062,13 +1060,12 @@
                  events)]
     events))
 
-(defn compose-bach []
+(defn recombinance []
   (let [events (compose-events)]
-    (if (valid-solution? events @*end?*)
+    (if (and (valid-solution? events)
+             @*end?*)
       (prepare-events events @*early-exit?*)
-      (compose-bach))))
-
-(defn load-bach-chorales [])
+      (recombinance))))
 
 (defn- midi-to-event [midi]
   {:time     (timepoint-of midi)
@@ -1077,7 +1074,7 @@
    :channel  (channel-of midi)})
 
 (defn compose []
-  (let [events (compose-bach)]
+  (let [events (recombinance)]
     (map midi-to-event events)))
 
 (defn compose-original []
