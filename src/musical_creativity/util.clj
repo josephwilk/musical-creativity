@@ -2,7 +2,7 @@
 
 (defn filtermap
   "Filter a list while also mapping to a new value if that value evaluates to not false.
-  equivalent to (map fn1 (filter fn2 list))"
+  equivalent to (map fn1 (filter fn2 list)) but not lazy"
   [predicate list]
   (loop [items list
          new-list []]
