@@ -1,20 +1,8 @@
 (ns musical-creativity.unit.composers.t-recombinance
   (:require
    [midje.sweet                               :refer :all]
-   [data.chorale                              :as chorale]
-   [data.chorale.jsb1                         :refer :all]
-   [data.chorale.jsb2                         :refer :all]
-   [data.chorale.jsb3                         :refer :all]
-   [data.chorale.jsb4                         :refer :all]
-   [data.chorale.jsb5                         :refer :all]
-   [data.chorale.jsb6                         :refer :all]
-   [data.chorale.jsb7                         :refer :all]
-   [data.chorale.jsb8                         :refer :all]
-   [data.chorale.jsb9                         :refer :all]
-   [data.chorale.jsb10                        :refer :all]
-   [data.chorale.jsb11                        :refer :all]
-   [data.chorale.jsb12                        :refer :all]
-   [data.chorale.jsb13                        :refer :all]
+   [data.bach                                 :as bach]
+   [data.bach.chorale-140                     :refer :all]
    [musical-creativity.composers.recombinance :refer :all]))
 
 (namespace-state-changes (before :facts (do
@@ -46,7 +34,7 @@
   (triad? '((111000 40 500 4 96) (111000 55 500 3 96) (111000 64 1000 2 96) (111000 72 1000 1 96))) => true)
 
 (fact "find triad beginning"
-  (create-complete-database '(b43500b))
+  (create-database-from '(b43500b))
   (find-triad-beginning) => 'b43500b-14)
 
 (fact "make name"
@@ -60,20 +48,20 @@
   @*lexicon-store* => {"bach-57-60-69-76" {:beats '(b206b-1)}})
 
 (fact "build events for beat"
-  (create-complete-database ['b5505b]) => true
+  (create-database-from ['b5505b]) => true
 
   (build-events-for-beat 60 'b5505b-60) => ())
 
 (fact "create complete database"
-  (create-complete-database ['b206b]) => true
+  (create-database-from ['b206b]) => true
 
   (keys ('b206b-1 @*beats-store*)) => '(:start-notes :destination-notes :events :voice-leading)
   (count (:events  ('b206b-1 @*beats-store*))) => 4)
 
 (facts "bugs"
   (fact "loading a database"
-    (create-complete-database '(b40900b)) => true
-    (create-complete-database '(b18806b)) => true))
+    (create-database-from '(b40900b)) => true
+    (create-database-from '(b18806b)) => true))
 
 (fact "get channel numbers from events"
   (get-channel-numbers-from-events '((0 57 1000 4 96) (0 60 1000 3 96))) => '(3 4))
@@ -170,10 +158,10 @@
   (wait-for-cadence? '((0 48 1000 4 96) (0 64 1000 3 96) (0 67 1000 2 96) (0 72 1000 1 96))) => false)
 
 (fact "check for parrellel"
-  (check-for-parallel '((0 49 1000 4 96) (0 65 1000 3 96) (0 68 1000 2 96) (0 73 1000 1 96)
+  (parallel? '((0 49 1000 4 96) (0 65 1000 3 96) (0 68 1000 2 96) (0 73 1000 1 96)
                         (1000 48 1000 4 96) (1000 64 1000 3 96) (1000 67 1000 2 96) (1000 72 1000 1 96))) => truthy
 
-  (check-for-parallel '((0 49 1000 4 96) (0 65 1000 3 96) (0 68 1000 2 96) (0 73 1000 1 96))) => false)
+  (parallel? '((0 49 1000 4 96) (0 65 1000 3 96) (0 68 1000 2 96) (0 73 1000 1 96))) => false)
 
 (future-facts "finished composing"
   (fact "when we are not finished"
@@ -183,10 +171,10 @@
   (fact "when we are finished"
     (finished-composing? '((0 52 0 4 96) (4001 52 15000 3 96)) true) => true))
 
-(fact "incf the beat"
-  (incf-beat "b35300b-42") => "b35300b-3"
-  (incf-beat 'b32100b-31) => "b32100b-2"
-  (incf-beat nil) => nil)
+(fact "inc the beat"
+  (inc-beat-number "b35300b-42") => "b35300b-3"
+  (inc-beat-number 'b32100b-31) => "b32100b-2"
+  (inc-beat-number nil) => nil)
 
 (fact "get db name"
   (get-db-name "b35300b-42") => "b35300b")
@@ -264,3 +252,6 @@
 
 (fact "find events duration"
   (find-events-duration '((53000 52 500 4 96) (53000 67 500 3 96) (53000 76 1000 2 96) (53000 84 1000 1 96) (53500 54 500 4 96) (53500 69 500 3 96)))  => 1000)
+
+(fact "find events duration"
+  (find-events-duration '((53000 52 500 4 96) (53000 67 500 3 96) (53000 76 1000 2 96) (53000 84 1000 1 96) (53500 54 500 4 96) (53500 69 500 3 96))) => 1000)
