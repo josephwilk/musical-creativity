@@ -339,15 +339,17 @@
              (project (concat (rest set) (list (+ 12 (first set))))
                       length (+ 1 times))))))
 
-(defn get-smallest-set [set]
+(defn get-smallest-set
   "Returns the set with the smallest outer boundaries."
+  [set]
   (let [projected-sets (project set)
         set-differentials (get-intervals projected-sets)
         sorted-differentials (sort < set-differentials)]
     (nth projected-sets (position (first sorted-differentials) set-differentials))))
 
-(defn triad? [events]
+(defn triad?
   "Checks to see if the events are a triad."
+  [events]
   (when-not (empty? events)
     (let [pitches (get-pitches events)
           pitches-class-set (create-pitch-class-set pitches)
@@ -358,8 +360,9 @@
            (and (> (- (third pitch-classes) (second pitch-classes)) 2)
                 (< (- (third pitch-classes) (second pitch-classes)) 5))))))
 
-(defn members-all [arrows target]
+(defn members-all?
   "Checks to see if arrows are all in target."
+  [arrows target]
   (every? #(some #{%} target) arrows))
 
 (defn find-triad-beginning
@@ -370,10 +373,10 @@
         on-beat (get-on-beat (:events beat) (ffirst (:events beat)))
         pcs (create-pitch-class-set (get-pitches on-beat))]
     (if (and (triad? on-beat)
-             (or (members-all '(0 4 8) pcs)
-                 (members-all '(0 4 7) pcs)
-                 (members-all '(0 5 8) pcs)
-                 (members-all '(2 7 11) pcs))
+             (or (members-all? '(0 4 8) pcs)
+                 (members-all? '(0 4 7) pcs)
+                 (members-all? '(0 5 8) pcs)
+                 (members-all? '(2 7 11) pcs))
              (<= (third (first (:events beat))) 1000)
              (= (count (:events beat)) 4))
       test
@@ -490,8 +493,9 @@
                                     (concat (remove-full-beat events-for-channel)
                                             (get-other-channels channel events))))))))
 
-(defn break-into-beats [events]
+(defn break-into-beats
   "Breaks events into beat-sized groupings."
+  [events]
   (sort-by-first-element
    (apply concat (chop-into-bites (sort-by-first-element events)))))
 
@@ -751,8 +755,9 @@
              (a-thousand? (third (first last-beat))))
       last-beat)))
 
-(defn get-db-n [exploded-lexicon]
+(defn get-db-n
   "Checks for dashes in the db-name."
+  [exploded-lexicon]
   (cond
    (= (first exploded-lexicon) '-)
    ()
@@ -762,8 +767,9 @@
    (cons (first exploded-lexicon)
          (get-db-n (rest exploded-lexicon)))))
 
-(defn get-db-name [lexicon]
+(defn get-db-name
   "Returns the database name."
+  [lexicon]
   (first (str/split lexicon #"-")))
 
 (defn inc-beat-number
@@ -1036,8 +1042,9 @@
       (recombinance))))
 
 (defn compose []
-  (let [events (recombinance)]
-    (map midi-to-event events)))
+  (let [events (recombinance)
+        sorted-events (sort (fn [x y] (< (first  x) (first y))) events)]
+    (map midi-to-event sorted-events)))
 
 (defn compose-original []
   (map midi-to-event
