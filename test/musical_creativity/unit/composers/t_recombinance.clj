@@ -73,8 +73,7 @@
 (facts "bugs"
   (fact "loading a database"
     (create-complete-database '(b40900b)) => true
-    (create-complete-database '(b18806b)) => true
-    (println @*beats-store*)))
+    (create-complete-database '(b18806b)) => true))
 
 (fact "get channel numbers from events"
   (get-channel-numbers-from-events '((0 57 1000 4 96) (0 60 1000 3 96))) => '(3 4))
@@ -84,8 +83,7 @@
   (second (collect-beats b206b)) => '([1000 59 1000 4 96] [1000 62 1000 3 96] [1000 67 1000 2 96] [1000 79 1000 1 96]))
 
 (fact "collect by timing"
-  (collect-by-timing 1000 '((0 57 1000 4 96) (1000 60 1000 3 96))) => '((0 57 1000 4 96))
-  (collect-by-timing 1000 '((0 57 3000 4 96) (2000 60 1000 3 96))) => '((0 57 1000 4 96)))
+  (collect-by-timing 1000 '((0 57 1000 4 96) (1000 60 1000 3 96))) => '((0 57 1000 4 96)))
 
 (fact "first place where all together"
   (first-place-where-all-together '((0 57 1000 4 96) (0 60 1000 3 96) (0 69 1000 2 96))) => 1000)
@@ -119,7 +117,7 @@
 
 (fact "get long phrases"
   (get-long-phrases '(6000 15000)) => ()
-  (get-long-phrases '(6000 35000 80000)) => '((6000 35000) (35000 80000)))
+  (get-long-phrases '(6000 35000 80000 80001)) => '((6000 35000) (35000 80000)))
 
 (fact "get last beat events"
   (get-last-beat-events '((18000 48 1000 4 96) (18000 64 1000 3 96) (18000 67 1000 2 96) (18000 72 1000 1 96)))
