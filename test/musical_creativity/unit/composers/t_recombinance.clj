@@ -41,27 +41,27 @@
   (make-name :b206b 1) => 'b206b-1)
 
 (fact "put beat into lexicon"
-  (reset! *beats-store* {'b206b-1 {:start-notes [57 60 69 76]}})
+  (reset! beats-store {'b206b-1 {:start-notes [57 60 69 76]}})
 
   (put-beat-into-lexicon 'b206b-1) => "bach-57-60-69-76"
 
-  @*lexicon-store* => {"bach-57-60-69-76" {:beats '(b206b-1)}})
+  @lexicon-store => {"bach-57-60-69-76" {:beats '(b206b-1)}})
 
 (fact "build events for beat"
-  (create-database-from ['b5505b]) => true
+  (create-database-from ['b5505b])
 
   (build-events-for-beat 60 'b5505b-60) => ())
 
 (fact "create complete database"
-  (create-database-from ['b206b]) => true
+  (create-database-from ['b206b])
 
-  (keys ('b206b-1 @*beats-store*)) => '(:start-notes :destination-notes :events :voice-leading)
-  (count (:events  ('b206b-1 @*beats-store*))) => 4)
+  (keys ('b206b-1 @beats-store)) => '(:start-notes :destination-notes :events :voice-leading)
+  (count (:events  ('b206b-1 @beats-store))) => 4)
 
 (facts "bugs"
   (fact "loading a database"
-    (create-database-from '(b40900b)) => true
-    (create-database-from '(b18806b)) => true))
+    (create-database-from '(b40900b))
+    (create-database-from '(b18806b))))
 
 (fact "get channel numbers from events"
   (get-channel-numbers-from-events '((0 57 1000 4 96) (0 60 1000 3 96))) => '(3 4))
