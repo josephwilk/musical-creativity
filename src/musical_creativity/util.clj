@@ -4,14 +4,11 @@
   "Filter a list while also mapping to a new value if that value evaluates to not false.
   equivalent to (map fn1 (filter fn2 list)) but not lazy"
   [predicate list]
-  (loop [items list
-         new-list []]
-    (if (empty? items)
-      new-list
-      (let [result (predicate (first items))]
-        (if result
-          (recur (rest items) (conj new-list result))
-          (recur (rest items) new-list))))))
+  (reduce (fn [new-list item]
+            (let [result (predicate item)]
+              (if result
+                (conj new-list result)
+                new-list))) [] list))
 
 (defn position [thing list]
   (let [index (.indexOf list thing)]
