@@ -5,11 +5,11 @@
    [musical-creativity.util    :refer :all]
    [clojure.string             :as str]))
 
-(def *beats-store* (atom {}))
+(def *beats-store*   (atom {}))
 (def *lexicon-store* (atom {}))
 
-(def *lexicons* (atom []))
-(def *history* (atom ()))
+(def *lexicons* (atom ()))
+(def *history*  (atom ()))
 
 (def *mix-names* ())
 (def *mix* ())
@@ -28,11 +28,10 @@
 (def bach-dominants ())
 (def bach-tonics ())
 
-(def bach-start-beats (atom ()))
+(def bach-start-beats   (atom ()))
 (def bach-compose-beats (atom ()))
-(def bach-rules (atom ()))
+(def bach-rules         (atom ()))
 (def bach [bach-compose-beats bach-start-beats bach-rules])
-(def bach-form [])
 
 (defn timepoint-of [event]
   (first event))
@@ -930,8 +929,6 @@
 (defn- sorted-by-beat [beats]
   (map (fn [beat]
          (get-pitches (get-on-beat beat (ffirst beat)))) beats))
-
-
 
 (defn parallel? [events]
   (let [beats (collect-beats (take 30 (sort-by-first-element events)))
