@@ -1,6 +1,6 @@
 (ns data.bach
   (:require
-   [data.bach.chorale-140  :refer :all]))
+   [data.bach.chorale-140 :refer :all]))
 
 (defn find-db [db-name]
   (-> (str "data.bach.chorale-140" "/" db-name)
