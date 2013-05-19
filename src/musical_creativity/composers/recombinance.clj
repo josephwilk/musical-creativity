@@ -5,33 +5,29 @@
    [musical-creativity.util    :refer :all]
    [clojure.string             :as str]))
 
-(def *beats-store*   (atom {}))
-(def *lexicon-store* (atom {}))
+(def beats-store   (atom {}))
+(def lexicon-store (atom {}))
 
-(def *lexicons* (atom ()))
-(def *history*  (atom ()))
+(def lexicons (atom ()))
+(def history  (atom ()))
 
-(def *mix-names* ())
-(def *mix* ())
+(def mix-names ())
+(def the-mixes ())
 
-(def *end?* (atom false))
-(def *early-exit?* (atom false))
-(def *compose-number* 0)
+(def end? (atom false))
+(def early-exit? (atom false))
 
-(def *tonic* (atom 'major))
-(def *previous-beat* (atom nil))
-(def *beat-size* 1000)
-(def *beats* 4)
+(def compose-number 0)
+(def tonic (atom 'major))
+(def previous-beat (atom nil))
+(def beat-size 1000)
+(def number-of-beats 4)
 
-(def *composer* 'bach)
-(def bach-dominants-tonics ())
-(def bach-dominants ())
-(def bach-tonics ())
+(def current-composer 'bach)
 
-(def bach-start-beats   (atom ()))
-(def bach-compose-beats (atom ()))
-(def bach-rules         (atom ()))
-(def bach [bach-compose-beats bach-start-beats bach-rules])
+(def start-beats-store   (atom ()))
+(def compose-beats-store (atom ()))
+(def rules-store         (atom ()))
 
 (defn timepoint-of [event]
   (first event))
@@ -99,18 +95,6 @@
 (defn hyphenate [note-numbers]
   (str/join "-" note-numbers))
 
-(defn- find-composer-beats-atom []
-  (var-get-from-str (str *composer* "-compose-beats")))
-
-(defn- find-composer-start-beats-atom []
-  (var-get-from-str (str *composer* "-start-beats")))
-
-(defn- find-composer-rules-atom []
-  (var-get-from-str (str *composer* "-rules")))
-
-(defn- find-composer []
-  (var-get-from-str (str *composer*)))
-
 (defn reduce-interval [interval]
   "Reduces the interval mod 12."
   (cond
@@ -160,24 +144,24 @@
     (swap! reference conj data)))
 
 (defn find-beat [name]
-  (@*beats-store* name))
+  (@beats-store name))
 
 (defn find-in-lexicon [name]
-  (@*lexicon-store* name))
+  (@lexicon-store name))
 
 (defn lexicon-contains? [lexicon-name]
   "Sees if the lexicon exists."
-  (contains? @*lexicon-store* lexicon-name))
+  (contains? @lexicon-store lexicon-name))
 
 (defn make-lexicon-name
   "Creates the appropriate lexicon name for the object."
-  ([note-numbers] (make-lexicon-name note-numbers *mix-names*))
+  ([note-numbers] (make-lexicon-name note-numbers mix-names))
   ([note-numbers names]
      (cond
-      (empty? *mix*)
-      (implode (cons *composer* (cons '- (hyphenate note-numbers))))
+      (empty? the-mixes)
+      (implode (cons current-composer (cons '- (hyphenate note-numbers))))
       (empty? names)
-      (implode (cons *composer* (cons '- (hyphenate note-numbers))))
+      (implode (cons current-composer (cons '- (hyphenate note-numbers))))
       (bound? (implode (cons (first names) (cons '- (hyphenate note-numbers)))))
       (implode (cons (first names) (cons '- (hyphenate note-numbers))))
       :else
@@ -190,10 +174,10 @@
         lexicon-name (make-lexicon-name (:start-notes beat))]
     (if (and (lexicon-contains? lexicon-name)
              (not (member beat-name (:beats (find-in-lexicon lexicon-name)))))
-      (reset! *lexicon-store* (update-in @*lexicon-store* [lexicon-name :beats] conj beat-name))
+      (reset! lexicon-store (update-in @lexicon-store [lexicon-name :beats] conj beat-name))
       (do
-        (reset! *lexicon-store* (assoc @*lexicon-store* lexicon-name {:beats (list beat-name)}))
-        (swap-unless-includes *lexicons* lexicon-name)))
+        (reset! lexicon-store (assoc @lexicon-store lexicon-name {:beats (list beat-name)}))
+        (swap-unless-includes lexicons lexicon-name)))
     lexicon-name))
 
 (defn return-beat
@@ -283,7 +267,7 @@
         rules (cons (get-rules start-notes destination-notes name)
                     (list name (ffirst (sort-by-first-element events))))]
 
-    (swap! (find-composer-rules-atom) conj rules)
+    (swap! rules-store conj rules)
 
     {:start-notes start-notes
      :destination-notes destination-notes
@@ -309,12 +293,12 @@
            (when-not (empty? beats)
              (let [name (make-name (first db-names) counter)
                    instance (make-beat name beats)]
-               (reset! *beats-store* (assoc @*beats-store* name instance))
+               (reset! beats-store (assoc @beats-store name instance))
                (put-beat-into-lexicon name)
-               (swap! (find-composer-beats-atom) conj name)
+               (swap! compose-beats-store conj name)
 
                (when start
-                 (swap! (find-composer-start-beats-atom) conj name))
+                 (swap! start-beats-store conj name))
 
                (recur (rest beats) (+ 1 counter) nil))))
          (create-database-from (rest db-names))))))
@@ -397,7 +381,7 @@
 (defn find-triad-beginning
   "Returns the db with a triad beginning."
   []
-  (let [test (choose-one @(first (find-composer)))
+  (let [test (choose-one @compose-beats-store)
         beat (find-beat test)
         on-beat (get-on-beat (:events beat) (ffirst (:events beat)))
         pcs (create-pitch-class-set (get-pitches on-beat))]
@@ -974,17 +958,17 @@
          (match-harmony (sort > (map second events)) '(60 63 67)))))))
 
 (defn- skip-generating-new-events? [counter current-beat]
-  (reset! *early-exit?* (empty? (:destination-notes (find-beat current-beat))))
+  (reset! early-exit? (empty? (:destination-notes (find-beat current-beat))))
   (or
-   @*early-exit?*
+   @early-exit?
    (if (and (> counter 36)
-            (if (= *tonic* 'minor)
-              (and (> (find-events-duration (:events (find-beat current-beat))) *beat-size*)
+            (if (= tonic 'minor)
+              (and (> (find-events-duration (:events (find-beat current-beat))) beat-size)
                    (match-tonic-minor (:events (find-beat current-beat))))
-              (and (> (find-events-duration (:events (find-beat current-beat))) *beat-size*)
+              (and (> (find-events-duration (:events (find-beat current-beat))) beat-size)
                    (match-bach-tonic? (:events (find-beat current-beat))))))
      (do
-       (reset! *end?* true)
+       (reset! end? true)
        true))))
 
 (defn build-events-for-beat [counter current-beat]
@@ -1002,10 +986,10 @@
             new-beat (choose-one
                       (if (empty? (rest beat-choices))
                         beat-choices
-                        (remove-from-list (list @*previous-beat* (inc-beat-number @*previous-beat*)) beat-choices)))]
+                        (remove-from-list (list @previous-beat (inc-beat-number @previous-beat)) beat-choices)))]
 
-        (swap! *history* conj current-beat)
-        (reset! *previous-beat* current-beat)
+        (swap! history conj current-beat)
+        (reset! previous-beat current-beat)
 
         (recur (concat events new-events)
                (+ 1 counter)
@@ -1015,27 +999,27 @@
   (let [current-beat (find-triad-beginning)
         current-beat-events (:events (find-beat current-beat))]
     (if (match-tonic-minor (take 4 current-beat-events))
-      (reset! *tonic* 'minor)
-      (reset! *tonic* 'major))
+      (reset! tonic 'minor)
+      (reset! tonic 'major))
 
     (let [events (build-events-for-beat counter current-beat)
           events-list (list current-beat-events)
           all-events (if-not (empty? events) (concat (list events) events-list) events-list)]
-      (swap! *history* conj current-beat)
+      (swap! history conj current-beat)
       (apply concat (re-time all-events)))))
 
 (defn compose-events
   ([] (compose-events 0))
   ([counter]
-     (reset! *end?* false)
-     (reset! *history* ())
+     (reset! end? false)
+     (reset! history ())
      (let [events (build-events counter)]
-       (reset! *history* (reverse @*history*))
-       (when @*end?* (swap! *history* conj (list (+ 1 *compose-number*))))
+       (reset! history (reverse @history))
+       (when @end? (swap! history conj (list (+ 1 compose-number))))
 
        (if (or
-            @*early-exit?*
-            (not (= *composer* 'bach)))
+            @early-exit?
+            (not (= current-composer 'bach)))
          ()
          events))))
 
@@ -1055,7 +1039,7 @@
         events (if-not (check-major-tonic (get-on-beat events (ffirst events)))
                  (delay-for-upbeat events)
                  events)
-        events (if (and (not early-exit?) (= *composer* 'bach))
+        events (if (and (not early-exit?) (= current-composer 'bach))
                  (cadence-collapse (transpose-to-bach-range events))
                  events)]
     events))
@@ -1063,8 +1047,8 @@
 (defn recombinance []
   (let [events (compose-events)]
     (if (and (valid-solution? events)
-             @*end?*)
-      (prepare-events events @*early-exit?*)
+             @end?)
+      (prepare-events events @early-exit?)
       (recombinance))))
 
 (defn- midi-to-event [midi]

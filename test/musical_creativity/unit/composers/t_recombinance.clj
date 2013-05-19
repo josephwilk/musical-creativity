@@ -6,11 +6,11 @@
    [musical-creativity.composers.recombinance :refer :all]))
 
 (namespace-state-changes (before :facts (do
-                                          (reset! *beats-store* {})
-                                          (reset! *lexicon-store* {})
-                                          (reset! bach-start-beats [])
-                                          (reset! bach-rules [])
-                                          (reset! bach-compose-beats []))))
+                                          (reset! beats-store {})
+                                          (reset! lexicon-store {})
+                                          (reset! start-beats-store [])
+                                          (reset! rules-store [])
+                                          (reset! compose-beats-store []))))
 
 (fact "make lexicon name"
   (make-lexicon-name '(57 60 69 76)) => "bach-57-60-69-76")
