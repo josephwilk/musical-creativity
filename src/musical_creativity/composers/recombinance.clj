@@ -70,9 +70,6 @@
 (defn remove-nils [list]
   (remove #(nil? %) list))
 
-(defn- var-get-from-str [name]
-  (var-get (ns-resolve 'musical-creativity.composers.recombinance (symbol name))))
-
 (defn make-name
   "Simple synonym for imploding the database name and number."
   [db-name counter]
@@ -81,8 +78,9 @@
 (defn hyphenate [note-numbers]
   (str/join "-" note-numbers))
 
-(defn reduce-interval [interval]
+(defn reduce-interval
   "Reduces the interval mod 12."
+  [interval]
   (cond
    (<= (math/abs interval) 12)
    interval
@@ -135,8 +133,9 @@
 (defn find-in-lexicon [name]
   (@lexicon-store name))
 
-(defn lexicon-contains? [lexicon-name]
+(defn lexicon-contains?
   "Sees if the lexicon exists."
+  [lexicon-name]
   (contains? @lexicon-store lexicon-name))
 
 (defn make-lexicon-name
@@ -221,8 +220,9 @@
          (list (channel-of event) (+ (timepoint-of event) (velocity-of event))))
        events))
 
-(defn first-place-where-all-together [events]
+(defn first-place-where-all-together
   "This looks ahead to get the first time they end together"
+  [events]
   (let [test (plot-timings-of-each-beat events)
         channels (get-channel-numbers-from-events events)
         ordered-timings-by-channel (map (fn [channel] (collect-timings-by-channel test channel)) channels)]
@@ -468,20 +468,22 @@
                       (drop 3 event))
               (chop event (+ begin-time 1000) (- duration 1000))))))
 
-(defn get-channel [channel music]
+(defn get-channel
   "Gets the nth channel of the music."
+  [channel music]
   (filter (fn [note] (= (channel-of note) channel)) music))
 
-(defn chop-into-bites [events]
+(defn chop-into-bites
   "Chops beats into groupings."
+  [events]
   (cond
    (empty? events)
    ()
-   (and (= (third (first events)) 1000)
+   (and (= (velocity-of (first events)) 1000)
         (a-thousand? (ffirst events)))
-   (cons (list (first events))
+   (cons (list (timepoint-of events))
          (chop-into-bites (rest events)))
-   (> (third (first events)) 1000)
+   (> (velocity-of (first events)) 1000)
    (cons (chop (first events))
          (chop-into-bites (concat (remainder (first events)) (rest events))))
    :else
@@ -540,8 +542,9 @@
      (map (fn [beat] (ffirst beat))
           (filter cadence-place? beats)))))
 
-(defn positions [number list]
+(defn positions
   "Shows the positions of number in list."
+  [number list]
   (let [indexed-list (map-indexed vector list)]
     (for [[index element] indexed-list :when (= number element)] index)))
 
@@ -684,42 +687,48 @@
      (cons distance-to-cadence
            (find-cadence-start-times (clear-to distance-to-cadence ordered-events))))))
 
-(defn transpose [amt events]
+(defn transpose
   "Transposes the events according to its first arg."
+  [amt events]
   (filter (fn [event]
             (not (= 0 (pitch-of event)))
             (concat (list (timepoint-of event))
                     (list (+ (pitch-of event) amt))
                     (drop  2 event))) events))
 
-(defn get-note-timing [event time]
+(defn get-note-timing
   "grunt work for get-beat-length"
+  [event time]
   (- (+ (timepoint-of event) (velocity-of event)) time))
 
 (defn get-beat-length [events]
   (let [time (ffirst events)]
     (first (sort > (map (fn [event] (get-note-timing event time)) events)))))
 
-(defn match-them [chord full-chord allowance]
+(defn match-chord?
   "Matches the chord with the list of pitches within the allowance."
+  [chord full-chord allowance]
   (cond
-   (empty? chord) true
+   (empty? chord)
+   true
    (and (not (member (first chord) full-chord))
         (= 0 allowance))
-   ()
+   nil
    (not (member (first chord) full-chord))
-   (match-them (rest chord) full-chord (- allowance 1))
+   (match-chord? (rest chord) full-chord (- allowance 1))
    :else
-   (match-them (rest chord) full-chord allowance)))
+   (match-chord? (rest chord) full-chord allowance)))
 
-(defn reduce-it [note base]
+(defn reduce-it
   "Reduces its first arg mod12 below its second arg."
+  [note base]
   (if (< note base)
     note
     (reduce-it (- note 12) base)))
 
-(defn project-octaves [note]
+(defn project-octaves
   "Projects its arg through a series of octaves."
+  [note]
   (let [base-note (reduce-it note 20)]
     (loop [results []
            current-note (reduce-it note 20)]
@@ -728,16 +737,18 @@
         (recur (conj results (+ 12 current-note))
                (+ 12 current-note))))))
 
-(defn match-harmony [one two]
+(defn match-harmony?
   "Checks to see if its args match mod-12."
-  (match-them (sort < one)
+  [one two]
+  (match-chord? (sort < one)
               (apply concat
                      (map (fn [note]
                             (project-octaves note)) two))
               (math/floor (/ (count one) 4))))
 
-(defn all-members [list target]
+(defn all-members?
   "Checks to see if its first arg members are present in second arg."
+  [list target]
   (clojure.set/superset? (set target) (set list)))
 
 (defn get-all-events-with-start-time-of
@@ -784,9 +795,9 @@
   [the-events]
   (let [events (get-last-beat-events (break-into-beats the-events))]
     (and (not (empty? events))
-         (all-members (map second events) (apply concat (map #(project-octaves %) '(60 64 67))))
-         (match-harmony (sort < (map second events)) '(60 64 67))
-         (match-harmony (sort > (map second events)) '(60 64 67)))))
+         (all-members? (map second events) (apply concat (map #(project-octaves %) '(60 64 67))))
+         (match-harmony? (sort < (map second events)) '(60 64 67))
+         (match-harmony? (sort > (map second events)) '(60 64 67)))))
 
 (defn find-events-duration
   "Returns the events duration."
@@ -943,9 +954,9 @@
     (when-not (empty? events)
       (let [projected-octaves (mapcat (fn [note] (project-octaves note)) '(60 63 67))]
         (and
-         (all-members (map second events) projected-octaves)
-         (match-harmony (sort < (map second events)) '(60 63 67))
-         (match-harmony (sort > (map second events)) '(60 63 67)))))))
+         (all-members? (map second events) projected-octaves)
+         (match-harmony? (sort < (map second events)) '(60 63 67))
+         (match-harmony? (sort > (map second events)) '(60 63 67)))))))
 
 (defn- skip-generating-new-events? [counter current-beat]
   (reset! early-exit? (empty? (:destination-notes (find-beat current-beat))))
