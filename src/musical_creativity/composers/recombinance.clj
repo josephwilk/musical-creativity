@@ -773,10 +773,9 @@
 
 (defn get-all-events-with-start-time-of
   [start-time events]
-  (mapcat #(str %)
-   (filter (fn [event]
-             (= (timepoint-of event) start-time))
-           events)))
+  (filter (fn [event]
+            (= (timepoint-of event) start-time))
+          events))
 
 (defn get-last-beat-events [events]
   (let [sorted-events (sort-by-first-element events)
