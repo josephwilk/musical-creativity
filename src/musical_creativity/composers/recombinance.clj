@@ -914,7 +914,7 @@
            (all? (create-pitch-class-set (get-pitches events)) '(0 3 7)))
        (= 0 (first (create-pitch-class-set (get-pitches (get-channel 4 (sort-by-first-element  events))))))))
 
-(defn check-mt
+(defn check-major-tonic
   "Returns the major tonic."
   [events]
   (get-tonic events))
@@ -1059,7 +1059,7 @@
 
 (defn prepare-events [events early-exit?]
   (let [events (ensure-necessary-cadences (sort-by-first-element events))
-        events (if-not (check-mt (get-on-beat events (ffirst events)))
+        events (if-not (check-major-tonic (get-on-beat events (ffirst events)))
                  (delay-for-upbeat events)
                  events)
         events (if (and (not early-exit?) (= *composer* 'bach))
