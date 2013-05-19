@@ -3,6 +3,7 @@
    [clojure.math.numeric-tower :as math]
    [data.bach                  :as bach]
    [musical-creativity.util    :refer :all]
+   [musical-creativity.events  :refer [pitch-of velocity-of timepoint-of channel-of midi-to-event]]
    [clojure.string             :as str]))
 
 (def beats-store   (atom {}))
@@ -28,21 +29,6 @@
 (def start-beats-store   (atom ()))
 (def compose-beats-store (atom ()))
 (def rules-store         (atom ()))
-
-(defn timepoint-of [event]
-  (first event))
-
-(defn pitch-of [event]
-  (second event))
-
-(defn velocity-of [event]
-  (third event))
-
-(defn channel-of [event]
-  (fourth event))
-
-(defn instrument-of [event]
-  (nth event 4))
 
 (defn remove-from-list [objects-to-be-remove list-of-objects]
   (remove #(some #{%} objects-to-be-remove) list-of-objects))
@@ -1050,12 +1036,6 @@
              @end?)
       (prepare-events events @early-exit?)
       (recombinance))))
-
-(defn- midi-to-event [midi]
-  {:time     (timepoint-of midi)
-   :pitch    (pitch-of midi)
-   :velocity (velocity-of midi)
-   :channel  (channel-of midi)})
 
 (defn compose []
   (let [events (recombinance)]

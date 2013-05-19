@@ -12,6 +12,27 @@
     (:pitch pitch)
     (opitch/note pitch)))
 
+(defn timepoint-of [event]
+  (nth event 0))
+
+(defn pitch-of [event]
+  (nth event 1))
+
+(defn velocity-of [event]
+  (nth event 2))
+
+(defn channel-of [event]
+  (nth event 3))
+
+(defn instrument-of [event]
+  (nth event 4))
+
+(defn midi-to-event [midi]
+  {:time     (timepoint-of midi)
+   :pitch    (pitch-of midi)
+   :velocity (velocity-of midi)
+   :channel  (channel-of midi)})
+
 (defn make-event [ontime data & [channel]]
   {:time ontime
    :log (:out data)
