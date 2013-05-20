@@ -545,7 +545,10 @@
   "finds the closest number in list to number."
   [number list]
   (let [test (map (fn [item] (math/abs (- number item))) list)]
-    (nth list (choose-one (positions (first (sort < test)) test)))))
+    (nth list
+         (choose-one
+          (positions
+           (first (sort <= test)) test)))))
 
 (defn find-best-on-time [on-times]
   (find-closest
