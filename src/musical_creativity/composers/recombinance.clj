@@ -778,15 +778,6 @@
           last-beat-digit (Integer/parseInt (str (last (explode beat))))]
       (str (get-db-name beat) "-" (inc last-beat-digit)))))
 
-(defn match-bach-tonic?
-  "Returns true if the events are tonic."
-  [the-events]
-  (let [events (get-last-beat-events (break-into-beats the-events))]
-    (and (not (empty? events))
-         (all-members? (map second events) (apply concat (map project-octaves '(60 64 67))))
-         (match-harmony? (sort < (map second events)) '(60 64 67))
-         (match-harmony? (sort > (map second events)) '(60 64 67)))))
-
 (defn find-events-duration
   "Returns the events duration."
   ([events] (find-events-duration events 0))
@@ -876,18 +867,6 @@
 (defn delay-for-upbeat [events]
   (reset-events-to events 3000))
 
-(defn get-tonic
-  "Returns the tonic."
-  [events]
-  (and (or (all? (create-pitch-class-set (get-pitches events)) '(0 4 7))
-           (all? (create-pitch-class-set (get-pitches events)) '(0 3 7)))
-       (zero? (first (create-pitch-class-set (get-pitches (events-with-channel 4 (sort-by-first-element  events))))))))
-
-(defn check-major-tonic
-  "Returns the major tonic."
-  [events]
-  (get-tonic events))
-
 (defn ensure-necessary-cadences
   "Ensures the cadences are proper."
   [ordered-events]
@@ -936,14 +915,31 @@
       :else
       (wait-for-cadence? (rest events) start-time))))
 
-(defn match-tonic-minor [the-events]
-  (let [events (get-last-beat-events (break-into-beats the-events))]
-    (when-not (empty? events)
-      (let [projected-octaves (mapcat (fn [note] (project-octaves note)) '(60 63 67))]
-        (and
-         (all-members? (map second events) projected-octaves)
-         (match-harmony? (sort < (map second events)) '(60 63 67))
-         (match-harmony? (sort > (map second events)) '(60 63 67)))))))
+(defn- match-tonic?
+  "Returns true if the events are tonic."
+  [last-beat-events projected-octaves small large]
+  (when-not (empty? last-beat-events)
+    (and
+     (all-members? (map second last-beat-events) projected-octaves)
+     (match-harmony? (sort < (map second last-beat-events)) small )
+     (match-harmony? (sort > (map second last-beat-events)) large))))
+
+(defn match-bach-tonic? [events]
+  (let [last-beat-events (get-last-beat-events (break-into-beats events))
+        projected-octaves (mapcat project-octaves '(60 64 67))]
+    (match-tonic? last-beat-events projected-octaves '(60 64 67) '(60 64 67))))
+
+(defn match-tonic-minor? [events]
+  (let [last-beat-events (get-last-beat-events (break-into-beats events))
+        projected-octaves (mapcat project-octaves '(60 63 67))]
+    (match-tonic? last-beat-events projected-octaves '(60 63 67) '(60 63 67))))
+
+(defn match-major-tonic? [events]
+  (let [pitches (get-pitches events)
+        channel-4-events (events-with-channel 4 (sort-by-first-element events))]
+    (and (or (all? (create-pitch-class-set pitches) '(0 4 7))
+             (all? (create-pitch-class-set pitches) '(0 3 7)))
+         (zero? (first (create-pitch-class-set (get-pitches channel-4-events)))))))
 
 (defn- skip-generating-new-events? [counter current-beat]
   (reset! early-exit? (empty? (:destination-notes (find-beat current-beat))))
@@ -952,7 +948,7 @@
    (if (and (> counter 36)
             (if (= tonic 'minor)
               (and (> (find-events-duration (:events (find-beat current-beat))) beat-size)
-                   (match-tonic-minor (:events (find-beat current-beat))))
+                   (match-tonic-minor? (:events (find-beat current-beat))))
               (and (> (find-events-duration (:events (find-beat current-beat))) beat-size)
                    (match-bach-tonic? (:events (find-beat current-beat))))))
      (do
@@ -986,7 +982,7 @@
 (defn- build-events [counter]
   (let [current-beat (find-triad-beginning)
         current-beat-events (:events (find-beat current-beat))]
-    (if (match-tonic-minor (take number-of-beats current-beat-events))
+    (if (match-tonic-minor? (take number-of-beats current-beat-events))
       (reset! tonic 'minor)
       (reset! tonic 'major))
 
@@ -1023,7 +1019,7 @@
 
 (defn prepare-events [events early-exit?]
   (let [events (ensure-necessary-cadences (sort-by-first-element events))
-        events (if-not (check-major-tonic (get-on-beat events (ffirst events)))
+        events (if-not (match-major-tonic? (get-on-beat events (ffirst events)))
                  (delay-for-upbeat events)
                  events)
         events (if (and (not early-exit?) (= current-composer 'bach))
