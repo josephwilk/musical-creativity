@@ -524,8 +524,8 @@
           (range 1 4)))
 
 (defn- cadence-place? [beat]
-  (and (on-beat? (take 4 beat) (ffirst beat))
-       (triad? (take 4 beat))
+  (and (on-beat? (take number-of-beats beat) (ffirst beat))
+       (triad? (take number-of-beats beat))
        (not-beyond-1000? beat)))
 
 (defn find-cadence-place
@@ -995,7 +995,7 @@
 (defn- build-events [counter]
   (let [current-beat (find-triad-beginning)
         current-beat-events (:events (find-beat current-beat))]
-    (if (match-tonic-minor (take 4 current-beat-events))
+    (if (match-tonic-minor (take number-of-beats current-beat-events))
       (reset! tonic 'minor)
       (reset! tonic 'major))
 
