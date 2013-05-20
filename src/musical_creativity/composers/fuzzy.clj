@@ -37,10 +37,6 @@
 
 (def last-solution (atom [0 0 0]))
 
-(def as-root-set  (atom [0 0 0 0 0 0 0 0 0 0 0 0]))
-(def as-third-set (atom [0 0 0 0 0 0 0 0 0 0 0 0]))
-(def as-fifth-set (atom [0 0 0 0 0 0 0 0 0 0 0 0]))
-
 ; pitch classes
 (def PC-C 0)
 (def PC-DFLAT 1)
@@ -83,8 +79,8 @@
 
 (defn common-tones-test
   "Applies common tone rules."
-  []
-  (common-tone-rules  @as-root-set @as-third-set @as-fifth-set old-chord-set))
+  [root-set third-set fifth-set old-chord-set]
+  (common-tone-rules  root-set third-set fifth-set old-chord-set))
 
 (defn common-tones
   "Sums the set intersections."
@@ -224,32 +220,31 @@
      '(0 0 0.05))))
 
 (defn build-solution-set [the-pc last-solution]
-  (-> [0 0 0]
-      (add-lists (common-tones-test))
-      (add-lists (last-solution-test last-solution))
-      (add-lists (favor-root-for-tonic the-pc))
-      (add-lists (dither))))
+  (let [root-set (make-set (as-root the-pc))
+        third-set (make-set (as-third the-pc))
+        fifth-set (make-set (as-fifth the-pc))
+        old-chord-set old-chord-set]
+
+    (-> [0 0 0]
+        (add-lists (common-tones-test root-set third-set fifth-set old-chord-set))
+        (add-lists (last-solution-test last-solution))
+        (add-lists (favor-root-for-tonic the-pc))
+        (add-lists (dither)))))
 
 (defn pick-chord-with-more-rules
   "Returns pitch-classes of a chord."
   [note]
-
   (let [the-pc (rem note 12)]
-    (reset! as-root-set (make-set (as-root the-pc)))
-    (reset! as-third-set (make-set (as-third the-pc)))
-    (reset! as-fifth-set (make-set (as-fifth the-pc)))
-
     (reset! last-solution (build-solution-set the-pc @last-solution))
-
     (case (ltop @last-solution)
       2 (as-fifth the-pc)
       1 (as-third the-pc)
 
       (as-root the-pc))))
 
-(defn add-oct
+(defn add-octave
   "Adds octave to the list."
-  ([the-list] (add-oct the-list 4))
+  ([the-list] (add-octave the-list 4))
   ([the-list the-octave]
      (map (fn [x] (+ x (* the-octave 12)))
              (ascend-list the-list))))
@@ -266,10 +261,11 @@
                  :velocity default-velocity}
                 (make-chord-event (rest pitch-list) time)))))
 
-(defn pick-and-play-more-rules-chord [note time]
+(defn pick-and-play-more-rules-chord
     "Returns a chord in event notation."
+    [note time]
     (make-chord-event
-     (add-oct
+     (add-octave
       (pick-chord-with-more-rules (rem note 12)) 4) time))
 
 (defn fuzzy
