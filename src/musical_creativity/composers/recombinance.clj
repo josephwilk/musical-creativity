@@ -366,7 +366,7 @@
                  (members-all? '(0 5 8) pcs)
                  (members-all? '(2 7 11) pcs))
              (<= (velocity-of (first (:events beat))) 1000)
-             (= (count (:events beat)) 4))
+             (= (count (:events beat)) number-of-beats))
       test
       (recur))))
 
@@ -754,7 +754,7 @@
         last-event (last sorted-events)
         begin-time (first last-event)
         last-beat (get-all-events-with-start-time-of begin-time events)]
-    (if (and (= (count last-beat) 4)
+    (if (and (= (count last-beat) number-of-beats)
              (a-thousand? (velocity-of (first last-beat))))
       last-beat)))
 
@@ -857,7 +857,7 @@
   (cond
    (empty? beats)
    ()
-   (and (= (count (first beats)) 4)
+   (and (= (count (first beats)) number-of-beats)
         (= (third (first (first beats))) 2000))
    (cons (make-1000s (first beats))
          (collapse (reset-beats (rest beats) 1000)))
@@ -912,8 +912,8 @@
 (defn parallel? [events]
   (let [beats (collect-beats (take 30 (sort-by-first-element events)))
         sorted-pitches-by-beat (sorted-by-beat beats)]
-    (and (= (count (first sorted-pitches-by-beat)) 4)
-         (= (count (second sorted-pitches-by-beat)) 4)
+    (and (= (count (first sorted-pitches-by-beat)) number-of-beats)
+         (= (count (second sorted-pitches-by-beat)) number-of-beats)
          (or (and (pos? (- (ffirst sorted-pitches-by-beat)
                         (first (second sorted-pitches-by-beat))))
                   (pos? (- (second (first sorted-pitches-by-beat))
