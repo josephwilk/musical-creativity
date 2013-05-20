@@ -126,12 +126,6 @@
            (< (second numbers) 0)))
     true))
 
-(defn member [value list]
-  (if (seq list)
-    (if (= value (first list))
-      list
-      (recur value (rest list)))))
-
 (defn sort-by-first-element [lists]
   (sort (fn [[x & _] [y & _]] (> x y))  lists))
 
