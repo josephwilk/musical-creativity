@@ -35,7 +35,6 @@
 
 (def old-chord-set [0 0 0 0 0 0 0 0 0 0 0 0])
 
-(def solution-set  (atom [0 0 0]))
 (def last-solution (atom [0 0 0]))
 
 (def as-root-set  (atom [0 0 0 0 0 0 0 0 0 0 0 0]))
@@ -82,7 +81,6 @@
     (cons (minumum (first lst1) (first lst2))
           (fz-intersect (rest lst1) (rest lst2)))))
 
-
 (defn common-tones-test
   "Applies common tone rules."
   []
@@ -104,16 +102,16 @@
 
 (defn top-n-positions
   "Returns positions of highest n values in list"
-  [values howmany]
+  [values how-many]
   (let [values-indexed (map-indexed vector values)
         sorted-list (sort (fn [[_ x] [_ y]] (> x y)) values-indexed)
         positions (map first sorted-list)]
-    (take howmany positions)))
+    (take how-many positions)))
 
 (defn ltop
   "Returns the topmost position of the list."
-  [thelist]
-  (first (top-n-positions thelist 1)))
+  [the-list]
+  (first (top-n-positions the-list 1)))
 
 (defn ror-n
   "Rotates 12 element list n steps to right."
@@ -123,33 +121,33 @@
 
 (defn third-above
   "Returns a third above the note."
-  [thenote]
-  (first (top-n-positions (fz-intersect current-scale (ror-n fz-up-3 thenote)) 1)))
+  [note]
+  (first (top-n-positions (fz-intersect current-scale (ror-n fz-up-3 note)) 1)))
 
 (defn fifth-above
   "Returns a fifth above the note."
-  [thenote]
-  (first (top-n-positions (fz-intersect current-scale (ror-n fz-up-5 thenote)) 1)))
+  [note]
+  (first (top-n-positions (fz-intersect current-scale (ror-n fz-up-5 note)) 1)))
 
 (defn third-below
   "Returns a third below the note."
-  [thenote]
-  (first (top-n-positions (fz-intersect current-scale (ror-n fz-down-3b thenote)) 1)))
+  [note]
+  (first (top-n-positions (fz-intersect current-scale (ror-n fz-down-3b note)) 1)))
 
 (defn fifth-below
   "Returns a fifth below the note."
-  [thenote]
-  (first (top-n-positions (fz-intersect current-scale (ror-n fz-down-5b thenote)) 1)))
+  [note]
+  (first (top-n-positions (fz-intersect current-scale (ror-n fz-down-5b note)) 1)))
 
 (defn as-third
   "Returns pitch-class chord with arg as third."
-  [thenote]
-  (list (third-below thenote) thenote (fifth-above (third-below thenote))))
+  [note]
+  (list (third-below note) note (fifth-above (third-below note))))
 
 (defn as-fifth
   "Returns pitch-class chord with arg as fifth."
-  [thenote]
-  (list (fifth-below thenote) (third-above (fifth-below thenote)) thenote))
+  [note]
+  (list (fifth-below note) (third-above (fifth-below note)) note))
 
 (defn ascend-list
   "Adds 12 to pitches lower than first one keeps chords in root position."
@@ -160,8 +158,8 @@
 
 (defn last-solution-test
   "Based on last-solution."
-  []
-  (let [test (first (top-n-positions @last-solution 1))]
+  [last-solution]
+  (let [test (first (top-n-positions last-solution 1))]
     (cond
      (= 0 test) '(0 1 1)
      (= 1 test) '(1 1 0)
@@ -202,8 +200,8 @@
 
 (defn as-root
   "Returns pitch-class chord with arg as root."
-  [thenote]
-  [thenote (third-above thenote) (fifth-above thenote)])
+  [note]
+  [note (third-above note) (fifth-above note)])
 
 (defn add-lists
   "Add two lists, member by member"
@@ -212,8 +210,8 @@
 
 (defn favor-root-for-tonic
   "Gives slight edge to root position for tonic"
-  [thePC]
-   (if (= 0 thePC) '(0.1 0 0) '(0 0 0)))
+  [the-pc]
+   (if (= 0 the-pc) '(0.1 0 0) '(0 0 0)))
 
 (defn dither
   "Random tie breaker"
@@ -225,37 +223,36 @@
      :else
      '(0 0 0.05))))
 
-(defn pick-chord-w-more-rules
-    "Returns pitch-classes of a chord."
-    [thenote]
+(defn build-solution-set [the-pc last-solution]
+  (-> [0 0 0]
+      (add-lists (common-tones-test))
+      (add-lists (last-solution-test last-solution))
+      (add-lists (favor-root-for-tonic the-pc))
+      (add-lists (dither))))
 
-    (let [the-pc (rem thenote 12)]
-      (reset! solution-set [0 0 0])
+(defn pick-chord-with-more-rules
+  "Returns pitch-classes of a chord."
+  [note]
 
-      (reset! as-root-set (make-set (as-root the-pc)))
-      (reset! as-third-set (make-set (as-third the-pc)))
-      (reset! as-fifth-set (make-set (as-fifth the-pc)))
+  (let [the-pc (rem note 12)]
+    (reset! as-root-set (make-set (as-root the-pc)))
+    (reset! as-third-set (make-set (as-third the-pc)))
+    (reset! as-fifth-set (make-set (as-fifth the-pc)))
 
-      (reset! solution-set (add-lists @solution-set (common-tones-test)))
+    (reset! last-solution (build-solution-set the-pc @last-solution))
 
-      (reset! solution-set (add-lists @solution-set (last-solution-test)))
-      (reset! solution-set (add-lists @solution-set (favor-root-for-tonic the-pc)))
-      (reset! solution-set (add-lists @solution-set (dither)))
+    (case (ltop @last-solution)
+      2 (as-fifth the-pc)
+      1 (as-third the-pc)
 
-      (reset! last-solution @solution-set)
-
-      (case (ltop @last-solution)
-        2 (as-fifth the-pc)
-        1 (as-third the-pc)
-
-        (as-root the-pc))))
+      (as-root the-pc))))
 
 (defn add-oct
   "Adds octave to the list."
-  ([theList] (add-oct theList 4))
-  ([theList the-octave]
+  ([the-list] (add-oct the-list 4))
+  ([the-list the-octave]
      (map (fn [x] (+ x (* the-octave 12)))
-             (ascend-list theList))))
+             (ascend-list the-list))))
 
 (defn make-chord-event
   "Simple notelist to chord."
@@ -269,11 +266,11 @@
                  :velocity default-velocity}
                 (make-chord-event (rest pitch-list) time)))))
 
-(defn pick-and-play-more-rules-chord [thenote time]
+(defn pick-and-play-more-rules-chord [note time]
     "Returns a chord in event notation."
     (make-chord-event
      (add-oct
-      (pick-chord-w-more-rules (rem thenote 12)) 4) time))
+      (pick-chord-with-more-rules (rem note 12)) 4) time))
 
 (defn fuzzy
   ([pcs] (fuzzy pcs 0))
