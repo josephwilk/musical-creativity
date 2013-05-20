@@ -69,7 +69,7 @@
     (create-database-from '(b18806b))))
 
 (fact "get channel numbers from events"
-  (get-channel-numbers-from-events '((0 57 1000 4 96) (0 60 1000 3 96))) => '(3 4))
+  (get-channel-numbers-from-events '((0 57 1000 4 96) (0 60 1000 3 96) (0 60 1000 1 96))) => '(1 3 4))
 
 (fact "collect beats"
   (first (collect-beats b206b)) => '([0 57 1000 4 96] [0 60 1000 3 96] [0 69 1000 2 96] [0 76 1000 1 96])
