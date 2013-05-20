@@ -521,7 +521,7 @@
   [beat]
   (every? (fn [channel]
             (not-beyond? (get-channel channel beat)))
-          (range 1 4)))
+          (range 1 5)))
 
 (defn- cadence-place? [beat]
   (and (on-beat? (take number-of-beats beat) (ffirst beat))
