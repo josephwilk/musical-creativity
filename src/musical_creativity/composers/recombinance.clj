@@ -39,6 +39,48 @@
 (defn explode [atom]
   (vec atom))
 
+(defn a-thousand? [number]
+  "Returns the number under 1000."
+  (= 0 (mod number 1000)))
+
+(defn make-lists-equal-length
+  [list1 list2]
+  (let [equal-pairs (map vector list1 list2)]
+    (list (map first equal-pairs) (map second equal-pairs))))
+
+(defn sort-by-first-element [lists]
+  (sort (fn [[x & _] [y & _]] (< x y))  lists))
+
+(defn all-members?
+  [arrows target]
+  (every? #(some #{%} target) arrows))
+
+(defn positions
+  "Shows the positions of number in list."
+  [number list]
+  (let [indexed-list (map-indexed vector list)]
+    (for [[index element] indexed-list :when (= number element)] index)))
+
+(defn find-closest
+  "finds the closest number in list to number."
+  [number list]
+  (let [test (map (fn [item] (math/abs (- number item))) list)]
+    (nth list
+         (choose-one
+          (positions
+           (first (sort <= test)) test)))))
+
+(defn all?
+  "Tests for presence of all of first arg in second arg."
+  [list1 list2]
+  (empty? (clojure.set/difference (set list1) (set list2))))
+
+(defn remove-all [stuff other-stuff]
+  (vec (clojure.set/difference (set other-stuff) (set stuff))))
+
+(defn hyphenate [numbers]
+  (str/join "-" numbers))
+
 (defn get-onset-notes
   "Gets the onset pitches for its arg."
   [events]
@@ -47,9 +89,6 @@
                                 (= (timepoint-of event) onbeat)) events)]
     (map second onbeat-events)))
 
-(defn sort-by-first-element [lists]
-  (sort (fn [[x & _] [y & _]] (< x y))  lists))
-
 (defn set-to-zero
   "Sets the events to zero."
   ([events] (set-to-zero events (ffirst events)))
@@ -57,17 +96,10 @@
      (map (fn [event]
             (assoc (vec event) 0 (- (timepoint-of event) subtract))) events)))
 
-(defn a-thousand? [number]
-  "Returns the number under 1000."
-  (= 0 (mod number 1000)))
-
 (defn make-name
   "Simple synonym for imploding the database name and number."
   [db-name counter]
   (symbol (str (name db-name)  "-" counter)))
-
-(defn hyphenate [note-numbers]
-  (str/join "-" note-numbers))
 
 (defn reduce-interval
   "Reduces the interval mod 12."
@@ -101,11 +133,6 @@
                                         (first start-notes) start-notes destination-notes name))]
         (recur (concat new-rule rules) (rest start-notes) (rest destination-notes))))))
 
-(defn make-lists-equal-length
-  [list1 list2]
-  (let [equal-pairs (map vector list1 list2)]
-    (list (map first equal-pairs) (map second equal-pairs))))
-
 (defn get-rules
   "Gets the intervals between adjacent sets of the two args."
   [start-notes destination-notes name]
@@ -135,11 +162,11 @@
   ([note-numbers names]
      (cond
       (empty? the-mixes)
-      (implode (cons current-composer (cons '- (hyphenate note-numbers))))
+      (str current-composer "-" (hyphenate note-numbers))
       (empty? names)
-      (implode (cons current-composer (cons '- (hyphenate note-numbers))))
-      (bound? (implode (cons (first names) (cons '- (hyphenate note-numbers)))))
-      (implode (cons (first names) (cons '- (hyphenate note-numbers))))
+      (str current-composer "-" (hyphenate note-numbers))
+      (bound? (str (first names) "-" (hyphenate note-numbers)))
+      (str (first names) "-" (hyphenate note-numbers))
       :else
       (make-lexicon-name note-numbers (shuffle (rest names))))))
 
@@ -349,22 +376,18 @@
            (and (> (- (third pitch-classes) (second pitch-classes)) 2)
                 (< (- (third pitch-classes) (second pitch-classes)) 5))))))
 
-(defn members-all?
-  [arrows target]
-  (every? #(some #{%} target) arrows))
-
 (defn find-triad-beginning
   "Returns the db with a triad beginning."
   []
   (let [test (choose-one @compose-beats-store)
         beat (find-beat test)
         on-beat (get-on-beat (:events beat) (ffirst (:events beat)))
-        pcs (create-pitch-class-set (get-pitches on-beat))]
+        pitch-class-set (create-pitch-class-set (get-pitches on-beat))]
     (if (and (triad? on-beat)
-             (or (members-all? '(0 4 8) pcs)
-                 (members-all? '(0 4 7) pcs)
-                 (members-all? '(0 5 8) pcs)
-                 (members-all? '(2 7 11) pcs))
+             (or (all-members? '(0 4 8) pitch-class-set)
+                 (all-members? '(0 4 7) pitch-class-set)
+                 (all-members? '(0 5 8) pitch-class-set)
+                 (all-members? '(2 7 11) pitch-class-set))
              (<= (velocity-of (first (:events beat))) 1000)
              (= (count (:events beat)) number-of-beats))
       test
@@ -535,21 +558,6 @@
     (seq
      (map ffirst (filter cadence-place? beats)))))
 
-(defn positions
-  "Shows the positions of number in list."
-  [number list]
-  (let [indexed-list (map-indexed vector list)]
-    (for [[index element] indexed-list :when (= number element)] index)))
-
-(defn find-closest
-  "finds the closest number in list to number."
-  [number list]
-  (let [test (map (fn [item] (math/abs (- number item))) list)]
-    (nth list
-         (choose-one
-          (positions
-           (first (sort <= test)) test)))))
-
 (defn find-best-on-time [on-times]
   (find-closest
    (+
@@ -564,9 +572,6 @@
                     (or (< (timepoint-of event) begin-time)
                         (>= (timepoint-of event) end-time)))
                   events)))
-
-(defn remove-all [stuff other-stuff]
-  (vec (clojure.set/difference (set other-stuff) (set stuff))))
 
 (defn- build-suitable-event [event]
   (if (>= (velocity-of event) 1000)
@@ -882,11 +887,6 @@
 
 (defn delay-for-upbeat [events]
   (reset-events-to events 3000))
-
-(defn all?
-  "Tests for presence of all of first arg in second arg."
-  [list1 list2]
-  (empty? (clojure.set/difference (set list1) (set list2))))
 
 (defn get-tonic
   "Returns the tonic."
