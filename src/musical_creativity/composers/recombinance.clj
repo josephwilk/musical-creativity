@@ -30,8 +30,8 @@
 (def compose-beats-store (atom ()))
 (def rules-store         (atom ()))
 
-(defn remove-from-list [objects-to-be-remove list-of-objects]
-  (remove #(some #{%} objects-to-be-remove) list-of-objects))
+(defn remove-from-list [remove-items coll]
+  (remove (set remove-items) coll))
 
 (defn implode [list]
   (str/join "" list))
@@ -45,7 +45,7 @@
   (let [onbeat (ffirst events)
         onbeat-events (filter (fn [event]
                                 (= (timepoint-of event) onbeat)) events)]
-    (map #(second %) onbeat-events)))
+    (map second onbeat-events)))
 
 (defn sort-by-first-element [lists]
   (sort (fn [[x & _] [y & _]] (< x y))  lists))
@@ -114,7 +114,7 @@
         test-destination-notes (second test)]
     (build-rules-for test-start-notes test-destination-notes name)))
 
-(defn swap-unless-includes [reference data]
+(defn swap-unless-includes! [reference data]
   (when-not (some #{data} @reference)
     (swap! reference conj data)))
 
@@ -152,7 +152,7 @@
       (reset! lexicon-store (update-in @lexicon-store [lexicon-name :beats] conj beat-name))
       (do
         (reset! lexicon-store (assoc @lexicon-store lexicon-name {:beats (list beat-name)}))
-        (swap-unless-includes lexicons lexicon-name)))
+        (swap-unless-includes! lexicons lexicon-name)))
     lexicon-name))
 
 (defn return-beat
@@ -274,7 +274,7 @@
 (defn create-database-from
   [db-names]
   (doall
-   (map #(create-database-from-beats %) db-names)))
+   (map create-database-from-beats db-names)))
 
 (defn on-beat?
   "Returns true if the events conform to ontime."
@@ -301,7 +301,7 @@
 (defn get-pitches
   "Gets the pitches from its arg."
   [events]
-  (map #(pitch-of %) events))
+  (map pitch-of events))
 
 (defn get-interval
   "Returns the intervals between set members."
@@ -350,7 +350,6 @@
                 (< (- (third pitch-classes) (second pitch-classes)) 5))))))
 
 (defn members-all?
-  "Checks to see if arrows are all in target."
   [arrows target]
   (every? #(some #{%} target) arrows))
 
@@ -366,7 +365,7 @@
                  (members-all? '(0 4 7) pcs)
                  (members-all? '(0 5 8) pcs)
                  (members-all? '(2 7 11) pcs))
-             (<= (third (first (:events beat))) 1000)
+             (<= (velocity-of (first (:events beat))) 1000)
              (= (count (:events beat)) 4))
       test
       (recur))))
@@ -401,10 +400,11 @@
                     (list (- 1000 duration))
                     (drop  3 (first events))))
       :else
-      (cons (first events)
-            (get-full-beat (rest events)
-                           (+ begin-time (velocity-of (first events)))
-                           (+ (third (first events)) duration))))))
+      (let [event (first events)]
+        (cons event
+              (get-full-beat (rest events)
+                             (+ begin-time (velocity-of event))
+                             (+ (velocity-of event) duration)))))))
 
 (defn remainders
   "Returns remainders of beats."
@@ -413,17 +413,17 @@
      (cond
       (empty? events)
       ()
-      (= (+ duration (third (first events))) 1000)
+      (= (+ duration (velocity-of (first events))) 1000)
       ()
-      (> (+ duration (third (first events))) 1000)
+      (> (+ duration (velocity-of (first events))) 1000)
       (list (concat (list (+ begin-time (- 1000 duration)))
-                    (list (second (first events)))
-                    (list (- (third (first events)) (- 1000 duration)))
-                    (drop  3 (first events))))
+                    (list (pitch-of (first events)))
+                    (list (- (velocity-of (first events)) (- 1000 duration)))
+                    (drop 3 (first events))))
       :else
       (remainders (rest events)
-                  (+ begin-time (third (first events)))
-                  (+ (third (first events)) duration)))))
+                  (+ begin-time (velocity-of (first events)))
+                  (+ (velocity-of (first events)) duration)))))
 
 (defn remove-full-beat
   "Removes one full beat from the events arg."
@@ -444,7 +444,7 @@
   [channel-not-to-get events]
   (cond
    (empty? events) ()
-   (= (fourth (first events)) channel-not-to-get)
+   (= (channel-of (first events)) channel-not-to-get)
    (get-other-channels channel-not-to-get (rest events))
    :else
    (cons (first events)
@@ -533,8 +533,7 @@
   [ordered-events]
   (let [beats (collect-beats ordered-events)]
     (seq
-     (map (fn [beat] (ffirst beat))
-          (filter cadence-place? beats)))))
+     (map ffirst (filter cadence-place? beats)))))
 
 (defn positions
   "Shows the positions of number in list."
@@ -578,7 +577,7 @@
      (cond
       (nil? (seq beat))
       ()
-      (= (third (first beat)) 1000)
+      (= (velocity-of (first beat)) 1000)
       (cons (first beat)
             (resolve-beat (rest beat) on-time))
       :else
@@ -697,7 +696,7 @@
 
 (defn get-beat-length [events]
   (let [time (ffirst events)]
-    (first (sort > (map (fn [event] (get-note-timing event time)) events)))))
+    (first (sort > (map #(get-note-timing % time) events)))))
 
 (defn match-chord?
   "Matches the chord with the list of pitches within the allowance."
@@ -736,8 +735,7 @@
   [one two]
   (match-chord? (sort < one)
               (apply concat
-                     (map (fn [note]
-                            (project-octaves note)) two))
+                     (map project-octaves two))
               (math/floor (/ (count one) 4))))
 
 (defn all-members?
@@ -757,7 +755,7 @@
         begin-time (first last-event)
         last-beat (get-all-events-with-start-time-of begin-time events)]
     (if (and (= (count last-beat) 4)
-             (a-thousand? (third (first last-beat))))
+             (a-thousand? (velocity-of (first last-beat))))
       last-beat)))
 
 (defn get-db-n
@@ -789,7 +787,7 @@
   [the-events]
   (let [events (get-last-beat-events (break-into-beats the-events))]
     (and (not (empty? events))
-         (all-members? (map second events) (apply concat (map #(project-octaves %) '(60 64 67))))
+         (all-members? (map second events) (apply concat (map project-octaves '(60 64 67))))
          (match-harmony? (sort < (map second events)) '(60 64 67))
          (match-harmony? (sort > (map second events)) '(60 64 67)))))
 
@@ -824,8 +822,8 @@
 (defn highest-lowest-notes
   "Returns the highest and lowest pitches of its arg."
   [events]
-  (list (first (sort > (map (fn [event] (pitch-of event)) (get-channel 1 events))))
-        (first (sort < (map (fn [event] (pitch-of event)) (let [test (get-channel 4 events)]
+  (list (first (sort > (map pitch-of (get-channel 1 events))))
+        (first (sort < (map pitch-of (let [test (get-channel 4 events)]
                                                           (if (empty? test) (get-channel 2 events) test)))))))
 
 (defn put-it-in-the-middle [extremes]
@@ -848,7 +846,9 @@
   "Resets the beats appropriately."
   [beats subtraction]
   (if (empty? beats)()
-      (cons (map (fn [event] (concat (list (- (timepoint-of event) subtraction)) (rest event)) ) (first beats))
+      (cons (map (fn [event]
+                   (concat (list (- (timepoint-of event) subtraction)) (rest event)))
+                 (first beats))
             (reset-beats (rest beats) subtraction))))
 
 (defn collapse
@@ -873,7 +873,9 @@
 (defn reset-events-to
   "Resets the events for the delayed beat."
   [events begin-time]
-  (map (fn [event] (cons (+ begin-time (timepoint-of event))(rest event))) (set-to-zero events)))
+  (map (fn [event]
+         (cons (+ begin-time (timepoint-of event)) (rest event)))
+       (set-to-zero events)))
 
 (defn delay-for-upbeat [events]
   (reset-events-to events 3000))
@@ -1012,9 +1014,8 @@
        (reset! history (reverse @history))
        (when @end? (swap! history conj (list (inc compose-number))))
 
-       (if (or
-            @early-exit?
-            (not= current-composer 'bach))
+       (if (or @early-exit?
+               (not= current-composer 'bach))
          ()
          events))))
 
@@ -1022,7 +1023,7 @@
   (if (empty? events)
     false
     (let [last-event (last (sort-by-first-element events))
-          event-sum (+ (first last-event) (third last-event))]
+          event-sum (+ (timepoint-of last-event) (velocity-of last-event))]
       (and
        (>= event-sum 15000)
        (<= event-sum 200000)
