@@ -41,7 +41,7 @@
 
 (defn a-thousand? [number]
   "Returns the number under 1000."
-  (= 0 (mod number 1000)))
+  (zero? (mod number 1000)))
 
 (defn make-lists-equal-length
   [list1 list2]
@@ -692,7 +692,7 @@
   "Transposes the events according to its first arg."
   [amt events]
   (filter (fn [event]
-            (not= 0 (pitch-of event))
+            (not (zero? (pitch-of event)))
             (concat (list (timepoint-of event))
                     (list (+ (pitch-of event) amt))
                     (drop  2 event))) events))
@@ -713,7 +713,7 @@
    (empty? chord)
    true
    (and (not (member (first chord) full-chord))
-        (= 0 allowance))
+        (zero? allowance))
    nil
    (not (member (first chord) full-chord))
    (match-chord? (rest chord) full-chord (dec allowance))
@@ -765,18 +765,6 @@
     (if (and (= (count last-beat) number-of-beats)
              (a-thousand? (velocity-of (first last-beat))))
       last-beat)))
-
-(defn get-db-n
-  "Checks for dashes in the db-name."
-  [exploded-lexicon]
-  (cond
-   (= (first exploded-lexicon) '-)
-   ()
-   (empty? exploded-lexicon)
-   ()
-   :else
-   (cons (first exploded-lexicon)
-         (get-db-n (rest exploded-lexicon)))))
 
 (defn get-db-name
   "Returns the database name."
@@ -893,7 +881,7 @@
   [events]
   (and (or (all? (create-pitch-class-set (get-pitches events)) '(0 4 7))
            (all? (create-pitch-class-set (get-pitches events)) '(0 3 7)))
-       (= 0 (first (create-pitch-class-set (get-pitches (get-channel 4 (sort-by-first-element  events))))))))
+       (zero? (first (create-pitch-class-set (get-pitches (get-channel 4 (sort-by-first-element  events))))))))
 
 (defn check-major-tonic
   "Returns the major tonic."
@@ -904,7 +892,7 @@
   "Ensures the cadences are proper."
   [ordered-events]
   (let [cadence-start-times (find-cadence-start-times ordered-events)
-        cadence-start-times (if-not (= 0 (first cadence-start-times)) (cons 0 cadence-start-times) cadence-start-times)
+        cadence-start-times (if-not (zero? (first cadence-start-times)) (cons 0 cadence-start-times) cadence-start-times)
         long-phrases (get-long-phrases cadence-start-times)]
     (discover-cadences long-phrases ordered-events)))
 
@@ -1053,6 +1041,9 @@
 (defn compose []
   (let [events (recombinance)
         sorted-events (sort (fn [e1 e2] (< (timepoint-of e1) (timepoint-of e2))) events)]
+
+    (println @history)
+
     (map midi-to-event sorted-events)))
 
 (defn compose-original []
