@@ -395,7 +395,7 @@
       ()
       (= (+ duration (velocity-of (first events))) 1000)
       (list (first events))
-      (> (+ duration (third (first events))) 1000)
+      (> (+ duration (velocity-of (first events))) 1000)
       (list (concat (take 2 (first events))
                     (list (- 1000 duration))
                     (drop  3 (first events))))
@@ -858,7 +858,7 @@
    (empty? beats)
    ()
    (and (= (count (first beats)) number-of-beats)
-        (= (third (first (first beats))) 2000))
+        (= (third (ffirst beats)) 2000))
    (cons (make-1000s (first beats))
          (collapse (reset-beats (rest beats) 1000)))
    :else
