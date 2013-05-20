@@ -119,11 +119,11 @@
 
 (defn opposite-sign? [numbers]
   (if (or (and
-           (< (first numbers) 0)
-           (> (second numbers)) 0)
+           (neg? (first numbers))
+           (pos? (second numbers)))
           (and
-           (> (first numbers) 0)
-           (< (second numbers) 0)))
+           (pos? (first numbers))
+           (neg? (second numbers))))
     true))
 
 (defn sort-by-first-element [lists]
@@ -164,12 +164,12 @@
   "translates rules into more readable pitch names."
   [first-note rule]
   (list (translate-notes first-note (second rule))
-        (translate-notes (get-diatonic-note first-note (first rule) major-scale)(third rule))))
+        (translate-notes (get-diatonic-note first-note (first rule) major-scale) (third rule))))
 
 (defn evaluate-pitch-names
   "evaluates the pitch names of its arg into midi note numbers."
   [voices]
-  (map (fn [x] (map music/note x)) voices))
+  (map (fn [voice] (map music/note voice)) voices))
 
 (defn print-working
   [cantus-firmus last-notes]
@@ -253,9 +253,9 @@
       (empty? verticals)
       []
       (member number verticals)
-      (get-complement (rest verticals) (+ 1 number))
+      (get-complement (rest verticals) (inc number))
       :else
-      (cons number (get-complement verticals (+ 1 number))))))
+      (cons number (get-complement verticals (inc number))))))
 
 (defn project-octaves [numbers]
   (letfn [(octaves-out-from [number]
@@ -350,7 +350,7 @@
    (reduce-to-within-octave (+ interval 7))
    (> (math/abs interval) 7)
    (- interval 7)
-   (= 0 interval)
+   (zero? interval)
    -7
    :else
    interval))
@@ -440,9 +440,10 @@
 
  (defn simultaneous-leaps? [cantus-firmus choice last-notes]
    "tests for the presence of simultaneous leaps."
-   (let [cantus-firmus-to-here  (take (+ 1 (count last-notes)) cantus-firmus)]
+   (let [cantus-firmus-to-here  (take (inc (count last-notes)) cantus-firmus)]
      (cond
-      (or (not (>= (count cantus-firmus-to-here) 2))(not (>= (count last-notes) 1)))
+      (or (not (>= (count cantus-firmus-to-here) 2))
+          (not (>= (count last-notes) 1)))
       nil
       (and (skip? (take-last 2 cantus-firmus-to-here))
            (skip? (take-last 2 (concat last-notes (list choice)))))
@@ -453,7 +454,7 @@
 (defn parallel-octaves-and-fifths?
   "tests for parallel octaves and fifths."
   [cantus-firmus choice last-notes]
-  (let [next-position (+ 1 (count last-notes))
+  (let [next-position (inc (count last-notes))
         cantus-firmus-to-here (take next-position cantus-firmus)]
     (cond
      (or (not (>= (count cantus-firmus-to-here) 2))
@@ -491,7 +492,7 @@
  (defn direct-fifths?
    "tests for direct fifths between the two lines."
    [cantus-firmus choice last-notes]
-   (let [cantus-firmus-to-here  (take (+ 1 (count last-notes)) cantus-firmus)]
+   (let [cantus-firmus-to-here  (take (inc (count last-notes)) cantus-firmus)]
      (cond
       (or (not (>= (count cantus-firmus-to-here) 2))
           (not (>= (count last-notes) 1)))
@@ -506,9 +507,10 @@
 (defn consecutive-motions?
   "tests to see if there are more than two consecutive save-direction motions."
   [cantus-firmus choice last-notes]
-  (let [cantus-firmus-to-here  (take (+ 1 (count last-notes)) cantus-firmus)]
+  (let [cantus-firmus-to-here  (take (inc (count last-notes)) cantus-firmus)]
     (cond
-     (or (not (> (count cantus-firmus-to-here) 3))(not (> (count last-notes) 2)))
+     (or (not (> (count cantus-firmus-to-here) 3))
+         (not (> (count last-notes) 2)))
      nil
      (let [last-four-cf (take-last 4 cantus-firmus-to-here)
            last-four-newline (take-last 4 (concat last-notes (list choice)))]
@@ -524,7 +526,7 @@
 
  (defn choice-fits-goals-and-current-rules? [choice cantus-firmus last-notes]
    (let [current-rule (create-rule cantus-firmus (concat last-notes (list choice)))
-         next-position (+ 1 (count last-notes))
+         next-position (inc (count last-notes))
          current-cantus-firmus (take next-position cantus-firmus)]
      (and (not (consult-rules current-rule))
           (not (vertical-dissonance?         (nth cantus-firmus (count last-notes)) choice))
@@ -593,12 +595,12 @@
       (cons (+ (first rule)
                (- (first (second rule)))
                (first (third rule)))
-            (map #(rest %) (rest rule))))))
+            (map rest (rest rule))))))
 
 (defn make-freer-rule [amount cf-notes rule]
   "adds the appropriate number of nils to the new line for look-ahead matching."
-  (if (= 0 amount) rule
-      (make-freer-rule (- amount 1)
+  (if (zero? amount) rule
+      (make-freer-rule (dec amount)
                        (rest cf-notes)
                        (list (first rule)
                              (concat (second rule)(list (first cf-notes)))
@@ -606,7 +608,7 @@
 
 (defn create-relevant-cf-notes [last-notes cantus-firmus]
   "creates the set of forward reaching cf notes."
-  (take 2 (drop (- (count last-notes) 1) cantus-firmus)))
+  (take 2 (drop (dec (count last-notes)) cantus-firmus)))
 
 (defn look-ahead [amount cantus-firmus last-notes rule rules]
   "the top-level function for looking ahead."
@@ -671,7 +673,7 @@
   (when logging?
     (print-working cantus-firmus @new-line))
   (let [new-choices (shuffle (create-choices major-scale test))
-        new-length (- length 1)
+        new-length (dec length)
         new-last-notes (concat last-notes (list test))]
     (create-new-line cantus-firmus scale new-choices new-last-notes new-length)))
 
@@ -708,10 +710,10 @@
   (reset! seed-notes (map music/note '(:C3 :F3 :E3 :D3 :B2 :A2 :G2 :F2))))
 
 (defn models-changed? []
-  (not (= (count @models) @past-model-count)))
+  (not= (count @models) @past-model-count))
 
 (defn cantus-firmus-changed? [cantus-firmus]
-  (not (= last-cantus-firmus cantus-firmus)))
+  (not= last-cantus-firmus cantus-firmus))
 
 (defn voices-from-solution [solution cantus-firmus]
   (let [voices (list (take (count solution) cantus-firmus) solution)
