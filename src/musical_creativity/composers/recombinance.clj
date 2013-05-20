@@ -484,10 +484,11 @@
                       (drop 3 event))
               (chop event (+ begin-time 1000) (- duration 1000))))))
 
-(defn get-channel
+
+(defn events-with-channel
   "Gets the nth channel of the music."
-  [channel music]
-  (filter (fn [note] (= (channel-of note) channel)) music))
+  [channel events]
+  (filter #(= (channel-of %) channel) events))
 
 (defn chop-into-bites
   "Chops beats into groupings."
@@ -505,7 +506,7 @@
    :else
    (let [event (first events)
          channel (channel-of event)
-         events-for-channel (get-channel channel events)]
+         events-for-channel (events-with-channel channel events)]
      (cons (get-full-beat events-for-channel)
            (chop-into-bites (concat (remainders events-for-channel)
                                     (concat (remove-full-beat events-for-channel)
@@ -542,7 +543,7 @@
   "Returns true if the beat does not contain events beyond the incept time."
   [beat]
   (every? (fn [channel]
-            (not-beyond? (get-channel channel beat)))
+            (not-beyond? (events-with-channel channel beat)))
           (range 1 5)))
 
 (defn- cadence-place? [beat]
@@ -588,10 +589,10 @@
       (cons (first beat)
             (resolve-beat (rest beat) on-time))
       :else
-      (let [on-beat-candidate (get-on-beat (get-channel (channel-of (first beat)) beat) on-time)
+      (let [on-beat-candidate (get-on-beat (events-with-channel (channel-of (first beat)) beat) on-time)
             on-beat-event (first on-beat-candidate)]
         (cons (build-suitable-event on-beat-event)
-              (resolve-beat (remove-all (get-channel (channel-of (first beat)) beat) beat) on-time))))))
+              (resolve-beat (remove-all (events-with-channel (channel-of (first beat)) beat) beat) on-time))))))
 
 (defn discover-cadence
   "Discovers an appropriate cadence."
@@ -606,16 +607,16 @@
                (remove-region best-location-for-new-cadence (+ best-location-for-new-cadence 1000) ordered-events))))))
 
 (defn all-match-velocity? [velocity ordered-events start-time]
-  (and (let [channel-1-event (first (get-channel 1 ordered-events))]
+  (and (let [channel-1-event (first (events-with-channel 1 ordered-events))]
          (and (= (velocity-of channel-1-event) velocity)
               (= start-time (timepoint-of channel-1-event))))
-       (let [channel-2-event (first (get-channel 2 ordered-events))]
+       (let [channel-2-event (first (events-with-channel 2 ordered-events))]
          (and (= (velocity-of channel-2-event) velocity)
               (= start-time (timepoint-of channel-2-event))))
-       (let [channel-3-event (first (get-channel 3 ordered-events))]
+       (let [channel-3-event (first (events-with-channel 3 ordered-events))]
          (and (= (velocity-of channel-3-event) velocity)
               (= start-time (timepoint-of channel-3-event))))
-       (let [channel-4-event (first (get-channel 4 ordered-events))]
+       (let [channel-4-event (first (events-with-channel 4 ordered-events))]
          (and (= (velocity-of channel-4-event) velocity)
               (= start-time (timepoint-of channel-4-event))))))
 
@@ -817,9 +818,9 @@
 (defn highest-lowest-notes
   "Returns the highest and lowest pitches of its arg."
   [events]
-  (list (first (sort > (map pitch-of (get-channel 1 events))))
-        (first (sort < (map pitch-of (let [test (get-channel 4 events)]
-                                                          (if (empty? test) (get-channel 2 events) test)))))))
+  (list (first (sort > (map pitch-of (events-with-channel 1 events))))
+        (first (sort < (map pitch-of (let [test (events-with-channel 4 events)]
+                                                          (if (empty? test) (events-with-channel 2 events) test)))))))
 
 (defn put-it-in-the-middle [extremes]
   "Gets the average."
@@ -880,7 +881,7 @@
   [events]
   (and (or (all? (create-pitch-class-set (get-pitches events)) '(0 4 7))
            (all? (create-pitch-class-set (get-pitches events)) '(0 3 7)))
-       (zero? (first (create-pitch-class-set (get-pitches (get-channel 4 (sort-by-first-element  events))))))))
+       (zero? (first (create-pitch-class-set (get-pitches (events-with-channel 4 (sort-by-first-element  events))))))))
 
 (defn check-major-tonic
   "Returns the major tonic."
