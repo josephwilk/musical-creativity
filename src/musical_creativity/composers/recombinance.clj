@@ -61,15 +61,6 @@
   "Returns the number under 1000."
   (= 0 (mod number 1000)))
 
-(defn member [value list]
-  (if (seq list)
-    (if (= value (first list))
-      list
-      (recur value (rest list)))))
-
-(defn remove-nils [list]
-  (remove #(nil? %) list))
-
 (defn make-name
   "Simple synonym for imploding the database name and number."
   [db-name counter]
@@ -152,8 +143,7 @@
       :else
       (make-lexicon-name note-numbers (shuffle (rest names))))))
 
-(defn put-beat-into-lexicon
-  "Puts the beat arg into the appropriate lexicon."
+(defn add-beat-to-lexicon!
   [beat-name]
   (let [beat (find-beat beat-name)
         lexicon-name (make-lexicon-name (:start-notes beat))]
@@ -171,7 +161,7 @@
   ([channel-events start-time]
      (some (fn [event]
              (when (and (a-thousand? (timepoint-of event))
-                        (not (= start-time (timepoint-of event))))
+                        (not= start-time (timepoint-of event)))
                (/ (- (timepoint-of event) start-time) 1000)))
            channel-events)))
 
@@ -210,7 +200,6 @@
         (second (last-first all-channels)))))
 
 (defn collect-timings-by-channel
-  "collects the timings of the channel indicated in second arg"
   [timings channel]
   (filter #(= (first %) channel) timings))
 
@@ -261,7 +250,7 @@
      :voice-leading (first rules)}))
 
 (defn start-beats [db-name]
-  (remove-nils
+  (remove nil?
    (collect-beats
     (set-to-zero
      (sort-by-first-element (bach/find-db db-name))))))
@@ -274,13 +263,13 @@
       (let [name (make-name db-name counter)
             instance (make-beat name beats)]
         (reset! beats-store (assoc @beats-store name instance))
-        (put-beat-into-lexicon name)
+        (add-beat-to-lexicon! name)
         (swap! compose-beats-store conj name)
 
         (when start
           (swap! start-beats-store conj name))
 
-        (recur (rest beats) (+ 1 counter) nil)))))
+        (recur (rest beats) (inc counter) nil)))))
 
 (defn create-database-from
   [db-names]
@@ -337,7 +326,7 @@
        ()
        (cons set
              (project (concat (rest set) (list (+ 12 (first set))))
-                      length (+ 1 times))))))
+                      length (inc times))))))
 
 (defn get-smallest-set
   "Returns the set with the smallest outer boundaries."
@@ -443,12 +432,12 @@
      (cond
       (empty? events)
       ()
-      (>= (+ duration (third (first events))) 1000)
+      (>= (+ duration (velocity-of (first events))) 1000)
       (rest events)
       :else
       (remove-full-beat (rest events)
-                        (+ begin-time (third (first events)))
-                        (+ (third (first events)) duration)))))
+                        (+ begin-time (velocity-of (first events)))
+                        (+ (velocity-of (first events)) duration)))))
 
 (defn get-other-channels
   "Returns all but the first arg channeled events."
@@ -696,7 +685,7 @@
   "Transposes the events according to its first arg."
   [amt events]
   (filter (fn [event]
-            (not (= 0 (pitch-of event)))
+            (not= 0 (pitch-of event))
             (concat (list (timepoint-of event))
                     (list (+ (pitch-of event) amt))
                     (drop  2 event))) events))
@@ -720,7 +709,7 @@
         (= 0 allowance))
    nil
    (not (member (first chord) full-chord))
-   (match-chord? (rest chord) full-chord (- allowance 1))
+   (match-chord? (rest chord) full-chord (dec allowance))
    :else
    (match-chord? (rest chord) full-chord allowance)))
 
@@ -790,10 +779,10 @@
 
 (defn inc-beat-number
   [beat]
-  (when-not (nil? beat)
+  (when beat
     (let [beat (str beat)
           last-beat-digit (Integer/parseInt (str (last (explode beat))))]
-      (str (get-db-name beat) "-" (+ 1 last-beat-digit)))))
+      (str (get-db-name beat) "-" (inc last-beat-digit)))))
 
 (defn match-bach-tonic?
   "Returns true if the events are tonic."
@@ -923,22 +912,22 @@
         sorted-pitches-by-beat (sorted-by-beat beats)]
     (and (= (count (first sorted-pitches-by-beat)) 4)
          (= (count (second sorted-pitches-by-beat)) 4)
-         (or (and (> (- (ffirst sorted-pitches-by-beat)
-                        (first (second sorted-pitches-by-beat))) 0)
-                  (> (- (second (first sorted-pitches-by-beat))
-                        (second (second sorted-pitches-by-beat))) 0)
-                  (> (- (third (first sorted-pitches-by-beat))
-                        (third (second sorted-pitches-by-beat))) 0)
-                  (> (- (fourth (first sorted-pitches-by-beat))
-                        (fourth (second sorted-pitches-by-beat)))) 0)
-             (and (< (- (ffirst sorted-pitches-by-beat)
-                        (first (second sorted-pitches-by-beat))) 0)
-                  (< (- (second (first sorted-pitches-by-beat))
-                        (second (second sorted-pitches-by-beat))) 0)
-                  (< (- (third (first sorted-pitches-by-beat))
-                        (third (second sorted-pitches-by-beat))) 0)
-                  (< (- (fourth (first sorted-pitches-by-beat))
-                        (fourth (second sorted-pitches-by-beat))) 0))))))
+         (or (and (pos? (- (ffirst sorted-pitches-by-beat)
+                        (first (second sorted-pitches-by-beat))))
+                  (pos? (- (second (first sorted-pitches-by-beat))
+                        (second (second sorted-pitches-by-beat))))
+                  (pos? (- (third (first sorted-pitches-by-beat))
+                        (third (second sorted-pitches-by-beat))))
+                  (pos? (- (fourth (first sorted-pitches-by-beat))
+                        (fourth (second sorted-pitches-by-beat)))))
+             (and (neg? (- (ffirst sorted-pitches-by-beat)
+                        (first (second sorted-pitches-by-beat))))
+                  (neg? (- (second (first sorted-pitches-by-beat))
+                        (second (second sorted-pitches-by-beat))))
+                  (neg? (- (third (first sorted-pitches-by-beat))
+                        (third (second sorted-pitches-by-beat))))
+                  (neg? (- (fourth (first sorted-pitches-by-beat))
+                        (fourth (second sorted-pitches-by-beat)))))))))
 
 (defn wait-for-cadence?
   "Ensures the cadence is the proper length."
@@ -998,7 +987,7 @@
         (reset! previous-beat current-beat)
 
         (recur (concat events new-events)
-               (+ 1 counter)
+               (inc counter)
                new-beat)))))
 
 (defn- build-events [counter]
@@ -1021,11 +1010,11 @@
      (reset! history ())
      (let [events (build-events counter)]
        (reset! history (reverse @history))
-       (when @end? (swap! history conj (list (+ 1 compose-number))))
+       (when @end? (swap! history conj (list (inc compose-number))))
 
        (if (or
             @early-exit?
-            (not (= current-composer 'bach)))
+            (not= current-composer 'bach))
          ()
          events))))
 

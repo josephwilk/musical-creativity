@@ -10,6 +10,12 @@
                 (conj new-list result)
                 new-list))) [] list))
 
+(defn member [value list]
+  (if (seq list)
+    (if (= value (first list))
+      list
+      (recur value (rest list)))))
+
 (defn position [thing list]
   (let [index (.indexOf list thing)]
     (when (>= index 0) index)))
