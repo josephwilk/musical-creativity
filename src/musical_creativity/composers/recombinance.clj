@@ -199,11 +199,10 @@
     (sort < (distinct pitch-classes))))
 
 (defn get-channel-numbers-from-events
-  "simply gets the channel numbers from the music"
   ([events] (get-channel-numbers-from-events events []))
   ([events channels]
      (filtermap (fn [event]
-                  (when (not (member (fourth (first events)) channels))
+                  (when-not (member (channel-of event) channels)
                     (channel-of event)))
                 (reverse events))))
 
