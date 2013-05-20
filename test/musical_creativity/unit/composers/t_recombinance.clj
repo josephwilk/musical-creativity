@@ -43,7 +43,7 @@
 (fact "put beat into lexicon"
   (reset! beats-store {'b206b-1 {:start-notes [57 60 69 76]}})
 
-  (put-beat-into-lexicon 'b206b-1) => "bach-57-60-69-76"
+  (add-beat-to-lexicon! 'b206b-1) => "bach-57-60-69-76"
 
   @lexicon-store => {"bach-57-60-69-76" {:beats '(b206b-1)}})
 
@@ -123,7 +123,7 @@
   => falsey)
 
 (fact "match harmony"
-  (match-harmony '(48 67 72 76) '(60 64 67)) => truthy)
+  (match-harmony? '(48 67 72 76) '(60 64 67)) => truthy)
 
 (fact "project octaves"
   (project-octaves 60) => '(24 36 48 60 72 84 96 108 120 132))
@@ -132,9 +132,9 @@
   (reduce-it 60 20) => 12)
 
 (fact "all members"
-  (all-members '(48 67 72 76) '(24 36 48 60 72 84 96 108 120 132 28 40 52 64 76 88 100 112 124 31 43 55 67 79 91 103 115 127))
+  (all-members? '(48 67 72 76) '(24 36 48 60 72 84 96 108 120 132 28 40 52 64 76 88 100 112 124 31 43 55 67 79 91 103 115 127))
   => truthy
-  (all-members '(20 30) '(29 20)) => falsey)
+  (all-members? '(20 30) '(29 20)) => falsey)
 
 (fact "chop"
   (chop '(20000 48 2000 4 96)) => '((20000 48 1000 4 96) (21000 48 1000 4 96)))
@@ -255,3 +255,6 @@
 
 (fact "find events duration"
   (find-events-duration '((53000 52 500 4 96) (53000 67 500 3 96) (53000 76 1000 2 96) (53000 84 1000 1 96) (53500 54 500 4 96) (53500 69 500 3 96))) => 1000)
+
+(fact "find closest takes the largest close number"
+  (find-closest 6 '(1 2 3 5 7 8)) => 7)
