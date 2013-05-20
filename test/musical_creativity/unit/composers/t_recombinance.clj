@@ -52,11 +52,16 @@
 
   (build-events-for-beat 60 'b5505b-60) => ())
 
-(fact "create complete database"
-  (create-database-from ['b206b])
+(facts "create complete database"
+  (fact "beats are stored"
+    (create-database-from ['b206b])
 
-  (keys ('b206b-1 @beats-store)) => '(:start-notes :destination-notes :events :voice-leading)
-  (count (:events  ('b206b-1 @beats-store))) => 4)
+    (keys ('b206b-1 @beats-store)) => '(:start-notes :destination-notes :events :voice-leading)
+    (count (:events  ('b206b-1 @beats-store))) => 4)
+
+  (fact "lexicon stores beat names"
+    (create-database-from ['b206b])
+    (@lexicon-store "bach-48-64-67-72") => {:beats '(b206b-20 b206b-8)}))
 
 (facts "bugs"
   (fact "loading a database"
@@ -165,11 +170,11 @@
 
 (future-facts "finished composing"
   (fact "when we are not finished"
-    (finished-composing? '((0 52 1000 4 96) (0 60 1000 3 96) (0 67 500 2 96) (0 67 500 1 96) (1000 52 1000 4 96) (1000 60 1000 3 96) (1000 67 500 2 96) (1000 67 500 1 96)) true) => false
-    (finished-composing? () true) => false)
+    (valid-solution? '((0 52 1000 4 96) (0 60 1000 3 96) (0 67 500 2 96) (0 67 500 1 96) (1000 52 1000 4 96) (1000 60 1000 3 96) (1000 67 500 2 96) (1000 67 500 1 96))) => false
+    (valid-solution? ()) => false)
 
   (fact "when we are finished"
-    (finished-composing? '((0 52 0 4 96) (4001 52 15000 3 96)) true) => true))
+    (valid-solution? '((0 52 0 4 96) (4001 52 15000 3 96))) => true))
 
 (fact "inc the beat"
   (inc-beat-number "b35300b-42") => "b35300b-3"
@@ -255,6 +260,3 @@
 
 (fact "find events duration"
   (find-events-duration '((53000 52 500 4 96) (53000 67 500 3 96) (53000 76 1000 2 96) (53000 84 1000 1 96) (53500 54 500 4 96) (53500 69 500 3 96))) => 1000)
-
-(fact "find closest takes the largest close number"
-  (find-closest 6 '(1 2 3 5 7 8)) => 7)
