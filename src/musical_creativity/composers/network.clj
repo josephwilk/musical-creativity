@@ -118,7 +118,6 @@
 (defn make-events
   ([pitch-groupings] (make-events pitch-groupings 0))
   ([pitch-groupings ontime]
-
      (events/make pitch-groupings 0 800)))
 
 (defn translate-into-events [output-pitch-lists]
@@ -132,7 +131,7 @@
         sum
         (recur (+ sum (* (aget vector length-index)
                          (aget vector length-index)))
-               (+ length-index 1) )))))
+               (inc length-index) )))))
 
 (defn l2-norm-of-a-vector
   [vector]
@@ -198,7 +197,7 @@
       (do
         (let [new-max1 (if (< max1 (aget a1 input-index)) (aget a1 input-index) max1)
               new-max2 (if (< max2 (aget a2 input-index)) (aget a2 input-index) max2)]
-             (recur (+ 1 input-index)
+             (recur (inc input-index)
                     new-max1
                     new-max2))))))
 
@@ -248,14 +247,14 @@
       (loop [input-index 0
              sum 0.0]
         (if (< input-index @number-of-inputs)
-          (recur (+ 1 input-index)
+          (recur (inc input-index)
                  (+ sum (* (aget @array-7 input-index)
                            (aget @wup input-index output-index))))
           (aset @output-array output-index sum)))
 
       (when (aget @reset output-index)
         (aset @output-array output-index -0.1))
-      (recur (+ 1 output-index)))))
+      (recur (inc output-index)))))
 
 (defn update-weights []
   (let [largest-output (find-the-largest-output @output-array @reset)]
@@ -320,7 +319,7 @@
   (fn [input-pattern]
     (set-learning-pattern input-pattern)
     (dotimes [n number]
-      (reset! learning-cycle-counter (+ 1 @learning-cycle-counter))
+      (reset! learning-cycle-counter (inc @learning-cycle-counter))
       (run-one-full-cycle))
 
     (let [largest-output (find-the-largest-output @output-array @reset)

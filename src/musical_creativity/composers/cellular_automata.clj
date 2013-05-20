@@ -116,6 +116,6 @@
   (reset! events [])
   (let [rules (or rules default-rules)
         the-events (create-rows 25 default-start rules 0)
-        the-events (map #(:pitch %)  the-events)
+        the-events (map :pitch the-events)
         the-events (events/make the-events)]
         (remove nil? the-events)))
