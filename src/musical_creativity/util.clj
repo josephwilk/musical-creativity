@@ -10,21 +10,25 @@
                 (conj new-list result)
                 new-list))) [] list))
 
-(defn member [value list]
+(defn member
+  "returns tail of list beginning with value otherwise nil"
+  [value list]
   (if (seq list)
     (if (= value (first list))
       list
       (recur value (rest list)))))
 
 (defn position [thing list]
+  "returns position of thing in list or nil"
   (let [index (.indexOf list thing)]
     (when (>= index 0) index)))
 
 (defn choose-one [list]
+  "randomly pick a value from the list"
   (nth list (rand-int (count list))))
 
 (defn last-first
-  "Returns first atom of last item in the list."
+  "First item of last element in list (first (last list))"
   [list]
   (let [last-item (last list)]
     (if (seq? last-item)
