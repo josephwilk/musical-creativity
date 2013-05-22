@@ -53,6 +53,20 @@
 
 (declare common-tone-rules fz-un third-above fifth-above)
 
+(defn minumum
+  "Returns the minimum of its two args."
+  [x y]
+  (if (and x y)
+    (min x  y)
+    0))
+
+(defn maximum
+  "Returns the maximum of its two args."
+  [x y]
+  (if (and x y)
+    (max x  y)
+    0))
+
 (defn fz-complement
   "Returns fuzzy complement (1 - membership) of a list."
   ([alist] (fz-complement alist 1.0))
@@ -61,13 +75,6 @@
        nil
        (cons (- 1 (first alist))
              (fz-complement (rest alist) compvalue)))))
-
-(defn minumum
-  "Returns the minimum of its two args."
-  [x y]
-  (if (and x y)
-    (min x  y)
-    0))
 
 (defn fz-intersect
   "Returns fuzzy intersection (minimums) of two lists"
@@ -109,7 +116,7 @@
   [the-list]
   (first (top-n-positions the-list 1)))
 
-(defn ror-n
+(defn rotate-n
   "Rotates 12 element list n steps to right."
   [lst n]
   (let [shift-by (- 12 n)]
@@ -118,22 +125,34 @@
 (defn third-above
   "Returns a third above the note."
   [note]
-  (first (top-n-positions (fz-intersect current-scale (ror-n fz-up-3 note)) 1)))
+  (first
+   (top-n-positions
+    (fz-intersect current-scale
+                  (rotate-n fz-up-3 note)) 1)))
 
 (defn fifth-above
   "Returns a fifth above the note."
   [note]
-  (first (top-n-positions (fz-intersect current-scale (ror-n fz-up-5 note)) 1)))
+  (first
+   (top-n-positions
+    (fz-intersect current-scale
+                  (rotate-n fz-up-5 note)) 1)))
 
 (defn third-below
   "Returns a third below the note."
   [note]
-  (first (top-n-positions (fz-intersect current-scale (ror-n fz-down-3b note)) 1)))
+  (first
+   (top-n-positions
+    (fz-intersect current-scale
+                  (rotate-n fz-down-3b note)) 1)))
 
 (defn fifth-below
   "Returns a fifth below the note."
   [note]
-  (first (top-n-positions (fz-intersect current-scale (ror-n fz-down-5b note)) 1)))
+  (first
+   (top-n-positions
+    (fz-intersect current-scale
+                  (rotate-n fz-down-5b note)) 1)))
 
 (defn as-third
   "Returns pitch-class chord with arg as third."
@@ -149,7 +168,7 @@
   "Adds 12 to pitches lower than first one keeps chords in root position."
   [thelist]
   (let [root (first thelist)]
-    (map (fn [x] (if (< x root) (+ x 12) x))
+    (map (fn [pitch] (if (< pitch root) (+ pitch 12) pitch))
             thelist)))
 
 (defn last-solution-test
@@ -161,13 +180,6 @@
      (= 1 test) '(1 1 0)
      :else
      '(1 0 0))))
-
-(defn maximum
-  "Returns the maximum of its two args."
-  [x y]
-  (if (and x y)
-    (max x  y)
-    0))
 
 (defn fz-u
   "Returns fuzzy union (maximums) of many lists."
@@ -191,7 +203,7 @@
 (defn make-set [pitch-list]
   (if (empty? pitch-list)
     [0 0 0 0 0 0 0 0 0 0 0 0]
-    (fz-union (ror-n fz-note (first pitch-list))
+    (fz-union (rotate-n fz-note (first pitch-list))
               (make-set (rest pitch-list)))))
 
 (defn as-root
@@ -207,7 +219,9 @@
 (defn favor-root-for-tonic
   "Gives slight edge to root position for tonic"
   [the-pc]
-   (if (= 0 the-pc) '(0.1 0 0) '(0 0 0)))
+  (if (= 0 the-pc)
+    '(0.1 0 0)
+    '(0 0 0)))
 
 (defn dither
   "Random tie breaker"
@@ -246,34 +260,36 @@
   "Adds octave to the list."
   ([the-list] (add-octave the-list 4))
   ([the-list the-octave]
-     (map (fn [x] (+ x (* the-octave 12)))
+     (map (fn [pitch] (+ pitch (* the-octave 12)))
              (ascend-list the-list))))
+
+(defn make-event [pitch time]
+  {:time time
+   :pitch pitch
+   :duration default-duration
+   :channel default-channel
+   :velocity default-velocity})
 
 (defn make-chord-event
   "Simple notelist to chord."
   ([pitch-list] (make-chord-event pitch-list 0))
   ([pitch-list time]
-      (if (empty? pitch-list) []
-          (cons {:time time
-                 :pitch (first pitch-list)
-                 :duration default-duration
-                 :channel default-channel
-                 :velocity default-velocity}
-                (make-chord-event (rest pitch-list) time)))))
+     (map #(make-event % time) pitch-list)))
 
 (defn pick-and-play-more-rules-chord
     "Returns a chord in event notation."
     [note time]
-    (make-chord-event
-     (add-octave
-      (pick-chord-with-more-rules (rem note 12)) 4) time))
+    (let [chord (pick-chord-with-more-rules (rem note 12))]
+      (make-chord-event
+       (add-octave chord 4) time)))
 
 (defn fuzzy
   ([pcs] (fuzzy pcs 0))
   ([pcs time]
-     (if (empty? pcs) []
-         (concat (pick-and-play-more-rules-chord (first pcs) time)
-                 (fuzzy (rest pcs) (+ time 1000))))))
+     (if (empty? pcs)
+       []
+       (concat (pick-and-play-more-rules-chord (first pcs) time)
+               (fuzzy (rest pcs) (+ time 1000))))))
 
 (defn compose []
   (events/make (fuzzy [0 4 7 5 7 11 0])))
