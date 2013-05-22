@@ -2,7 +2,6 @@
   (:require
    [musical-creativity.events :as events]))
 
-; idevault values
 (def default-duration 1000)
 (def default-channel 1)
 (def default-velocity 127)
@@ -17,7 +16,6 @@
 (def fz-note        [1 0 0 0 0 0 0 0 0 0 0 0])
 (def current-scale major-scale)
 
-; intervals up
 (def fz-up-2 [0 0.9 1 0 0 0 0 0 0 0 0 0])
 (def fz-up-3 [0 0 0 1 0.9 0 0 0 0 0 0 0])
 (def fz-up-4 [0 0 0 0 0 1 0.5 0 0 0 0 0])
@@ -25,7 +23,6 @@
 (def fz-up-6 [0 0 0 0 0 0 0 0 1 0.9 0 0])
 (def fz-up-7 [0 0 0 0 0 0 0 0 0 0 0.9 1])
 
-;intervals down
 (def fz-down-2b [0 0 0 0 0 0 0 0 0 0 1 0.9])
 (def fz-down-3b [0 0 0 0 0 0 0 0 0.9 1 0 0])
 (def fz-down-4b [0 0 0 0 0 0 0.5 1 0 0 0 0])
@@ -66,6 +63,11 @@
   (if (and x y)
     (max x  y)
     0))
+
+(defn add-lists
+  "Add two lists, member by member"
+   [list1 list2]
+     (map + list1 list2))
 
 (defn fz-complement
   "Returns fuzzy complement (1 - membership) of a list."
@@ -111,16 +113,16 @@
         positions (map first sorted-list)]
     (take how-many positions)))
 
-(defn ltop
+(defn top-position
   "Returns the topmost position of the list."
-  [the-list]
-  (first (top-n-positions the-list 1)))
+  [list]
+  (first (top-n-positions list 1)))
 
 (defn rotate-n
   "Rotates 12 element list n steps to right."
-  [lst n]
+  [list n]
   (let [shift-by (- 12 n)]
-      (concat (subvec lst shift-by) (subvec lst 0 shift-by))))
+      (concat (subvec list shift-by) (subvec list 0 shift-by))))
 
 (defn third-above
   "Returns a third above the note."
@@ -166,10 +168,10 @@
 
 (defn ascend-list
   "Adds 12 to pitches lower than first one keeps chords in root position."
-  [thelist]
-  (let [root (first thelist)]
+  [pitches]
+  (let [root (first pitches)]
     (map (fn [pitch] (if (< pitch root) (+ pitch 12) pitch))
-            thelist)))
+            pitches)))
 
 (defn last-solution-test
   "Based on last-solution."
@@ -183,10 +185,10 @@
 
 (defn fz-u
   "Returns fuzzy union (maximums) of many lists."
-  [the-lists]
-  (if (empty? (rest the-lists))
-    (first the-lists)
-    (fz-un (first the-lists) (fz-u (rest the-lists)))))
+  [lists]
+  (if (empty? (rest lists))
+    (first lists)
+    (fz-un (first lists) (fz-u (rest lists)))))
 
 (defn fz-union
   "Returns fuzzy union (maximums) of any number of lists"
@@ -211,15 +213,10 @@
   [note]
   [note (third-above note) (fifth-above note)])
 
-(defn add-lists
-  "Add two lists, member by member"
-   [list1 list2]
-     (map + list1 list2))
-
 (defn favor-root-for-tonic
   "Gives slight edge to root position for tonic"
-  [the-pc]
-  (if (= 0 the-pc)
+  [pitch-class]
+  (if (= 0 pitch-class)
     '(0.1 0 0)
     '(0 0 0)))
 
@@ -233,35 +230,35 @@
      :else
      '(0 0 0.05))))
 
-(defn build-solution-set [the-pc last-solution]
-  (let [root-set (make-set (as-root the-pc))
-        third-set (make-set (as-third the-pc))
-        fifth-set (make-set (as-fifth the-pc))
+(defn build-solution-set [pitch-class last-solution]
+  (let [root-set (make-set (as-root pitch-class))
+        third-set (make-set (as-third pitch-class))
+        fifth-set (make-set (as-fifth pitch-class))
         old-chord-set old-chord-set]
 
     (-> [0 0 0]
         (add-lists (common-tones-test root-set third-set fifth-set old-chord-set))
         (add-lists (last-solution-test last-solution))
-        (add-lists (favor-root-for-tonic the-pc))
+        (add-lists (favor-root-for-tonic pitch-class))
         (add-lists (dither)))))
 
 (defn pick-chord-with-more-rules
   "Returns pitch-classes of a chord."
   [note]
-  (let [the-pc (rem note 12)]
-    (reset! last-solution (build-solution-set the-pc @last-solution))
-    (case (ltop @last-solution)
-      2 (as-fifth the-pc)
-      1 (as-third the-pc)
+  (let [pitch-class (rem note 12)]
+    (reset! last-solution (build-solution-set pitch-class @last-solution))
+    (case (top-position @last-solution)
+      2 (as-fifth pitch-class)
+      1 (as-third pitch-class)
 
-      (as-root the-pc))))
+      (as-root pitch-class))))
 
 (defn add-octave
   "Adds octave to the list."
-  ([the-list] (add-octave the-list 4))
-  ([the-list the-octave]
-     (map (fn [pitch] (+ pitch (* the-octave 12)))
-             (ascend-list the-list))))
+  ([pitches] (add-octave pitches 4))
+  ([pitches octave]
+     (map (fn [pitch] (+ pitch (* octave 12)))
+             (ascend-list pitches))))
 
 (defn make-event [pitch time]
   {:time time
@@ -284,12 +281,12 @@
        (add-octave chord 4) time)))
 
 (defn fuzzy
-  ([pcs] (fuzzy pcs 0))
-  ([pcs time]
-     (if (empty? pcs)
+  ([pitch-classes] (fuzzy pitch-classes 0))
+  ([pitch-classes time]
+     (if (empty? pitch-classes)
        []
-       (concat (pick-and-play-more-rules-chord (first pcs) time)
-               (fuzzy (rest pcs) (+ time 1000))))))
+       (concat (pick-and-play-more-rules-chord (first pitch-classes) time)
+               (fuzzy (rest pitch-classes) (+ time 1000))))))
 
 (defn compose []
-  (events/make (fuzzy [0 4 7 5 7 11 0])))
+  (events/make (fuzzy [PC-C PC-E PC-G PC-F PC-G PC-B PC-C])))
