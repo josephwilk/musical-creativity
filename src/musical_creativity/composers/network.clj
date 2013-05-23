@@ -23,13 +23,13 @@
                             (0.0 0.1 0.2 0.25 0.2)
                             (0.0 0.0 0.1 0.2 0.25))))
 
-(def array-1 (atom (double-array @number-of-inputs)))
-(def array-2 (atom (double-array @number-of-inputs)))
-(def array-3 (atom (double-array @number-of-inputs)))
-(def array-4 (atom (double-array @number-of-inputs)))
-(def array-5 (atom (double-array @number-of-inputs)))
-(def array-6 (atom (double-array @number-of-inputs)))
-(def array-7 (atom (double-array @number-of-inputs)))
+(def layer-1 (atom (double-array @number-of-inputs)))
+(def layer-2 (atom (double-array @number-of-inputs)))
+(def layer-3 (atom (double-array @number-of-inputs)))
+(def layer-4 (atom (double-array @number-of-inputs)))
+(def layer-5 (atom (double-array @number-of-inputs)))
+(def layer-6 (atom (double-array @number-of-inputs)))
+(def layer-7 (atom (double-array @number-of-inputs)))
 
 (def output-array (atom (double-array @number-of-outputs)))
 
@@ -86,13 +86,13 @@
 
 (defn find-the-largest-output
   [array reset]
-  (let [array-with-indexes (map-indexed vector array)]
+  (let [layer-with-indexes (map-indexed vector array)]
     (first (reduce (fn [[max-pos max-value] [new-position new-item]]
                      (if (and
                           (> new-item max-value)
                           (not (nth reset new-position)))
                        [new-position new-item]
-                       [max-pos max-value])) array-with-indexes))))
+                       [max-pos max-value])) layer-with-indexes))))
 
 (defn make-note-decimals [note-patterns]
   (map (fn [patterns]
@@ -131,11 +131,11 @@
     (+ (math/sqrt total-sum) 0.001)))
 
 (defn calculate-ref [_]
-  (* 3.0 (l2-norm-of-a-vector @array-4)))
+  (* 3.0 (l2-norm-of-a-vector @layer-4)))
 
 (defn check-for-f2-reset []
   (let [res (ref 0.0)
-        n1 (+ (l2-norm-of-a-vector @array-7) e)]
+        n1 (+ (l2-norm-of-a-vector @layer-7) e)]
     (if (and
          (> n1 0.2)
          (not @skip-reset))
@@ -158,7 +158,7 @@
           (aset @reset output-index false))))
     (reset! skip-reset false)))
 
-(defn check-array-value
+(defn check-layer-value
   "returns d if (aref y index) is the largest value in array output-array and (aref output-array index) has not been reset."
   [index array reset]
   (let [maximum-index (find-the-largest-output array reset)]
@@ -172,7 +172,7 @@
 (defn- wdown-total-sum-fn [input-index]
   (fn [output-index sum]
     (+ sum
-       (* (check-array-value output-index @output-array @reset)
+       (* (check-layer-value output-index @output-array @reset)
           (aget @wdown output-index input-index)))))
 
 (defn sigmoid-threshold-function [test]
@@ -198,38 +198,38 @@
    (map (fn [input-index]
           (let [total-sum
                 (reduce (wdown-total-sum-fn input-index) (range 0 (dec @number-of-outputs)))]
-            (aset @array-7 input-index (+ (aget @array-5 input-index) total-sum))))
+            (aset @layer-7 input-index (+ (aget @layer-5 input-index) total-sum))))
         (range 0 (dec @number-of-inputs))))
-  (let [norm (+ (l2-norm-of-a-vector @array-7) e)]
+  (let [norm (+ (l2-norm-of-a-vector @layer-7) e)]
     (doall (map (fn [input-index]
-                  (aset @array-6 input-index (/ (aget @array-7 input-index) norm)))
+                  (aset @layer-6 input-index (/ (aget @layer-7 input-index) norm)))
                 (range 0 (dec @number-of-inputs)))))
 
-  (let [norm (l2-norm-of-a-vector @array-3)]
+  (let [norm (l2-norm-of-a-vector @layer-3)]
     (doall (map (fn [input-index]
-                  (aset @array-5 input-index (/ (aget @array-3 input-index) norm)))
+                  (aset @layer-5 input-index (/ (aget @layer-3 input-index) norm)))
                 (range 0 (dec @number-of-inputs))))
 
     (dotimes [input-index (dec @number-of-inputs)]
-      (let [new-value (sigmoid-threshold-function (+ (aget @array-2 input-index)
-                                                     (* b (sigmoid-threshold-function (aget @array-6 input-index)))))]
-        (aset @array-3 input-index new-value)))
+      (let [new-value (sigmoid-threshold-function (+ (aget @layer-2 input-index)
+                                                     (* b (sigmoid-threshold-function (aget @layer-6 input-index)))))]
+        (aset @layer-3 input-index new-value)))
 
     (dotimes [input-index (dec @number-of-inputs)]
-      (aset @array-2 input-index (/ (aget @array-1 input-index) norm))))
+      (aset @layer-2 input-index (/ (aget @layer-1 input-index) norm))))
 
-  ; update array-2 using eq. 9:
-  (let [norm (+ (l2-norm-of-a-vector @array-1) e)]
+  ; update layer-2 using eq. 9:
+  (let [norm (+ (l2-norm-of-a-vector @layer-1) e)]
     (dotimes [input-index (dec @number-of-inputs)]
-      (aset @array-2 input-index (/ (aget @array-1 input-index) norm))))
+      (aset @layer-2 input-index (/ (aget @layer-1 input-index) norm))))
 
-  (let [[max1 max2] (find-maxes-in @array-5 @array-7)
+  (let [[max1 max2] (find-maxes-in @layer-5 @layer-7)
         max1 (+ max1 0.001)
         max2 (+ max2 0.001)]
     (dotimes [input-index (dec @number-of-inputs)]
-      (aset @array-4 input-index
-            (- (/ (aget @array-5 input-index) max1)
-               (/ (aget @array-7 input-index) max2))))))
+      (aset @layer-4 input-index
+            (- (/ (aget @layer-5 input-index) max1)
+               (/ (aget @layer-7 input-index) max2))))))
 
 (declare run-one-full-cycle)
 
@@ -240,7 +240,7 @@
              sum 0.0]
         (if (< input-index @number-of-inputs)
           (recur (inc input-index)
-                 (+ sum (* (aget @array-7 input-index)
+                 (+ sum (* (aget @layer-7 input-index)
                            (aget @wup input-index output-index))))
           (aset @output-array output-index sum)))
 
@@ -250,19 +250,19 @@
 
 (defn update-weights []
   (let [largest-output (find-the-largest-output @output-array @reset)]
-    (if (> (check-array-value largest-output @output-array @reset) 0.02)
+    (if (> (check-layer-value largest-output @output-array @reset) 0.02)
       (dotimes [increment (dec @number-of-inputs)]
         (aset @wdown largest-output increment
               (+
                (aget @wdown largest-output increment)
                (* downlr d
-                  (- (aget @array-7 increment) (aget @wdown largest-output increment)))))
+                  (- (aget @layer-7 increment) (aget @wdown largest-output increment)))))
 
         (aset @wup increment largest-output
               (+
                (aget @wup increment largest-output)
                (* uplr d
-                  (- (aget @array-7 increment) (aget @wup increment largest-output)))))))))
+                  (- (aget @layer-7 increment) (aget @wup increment largest-output)))))))))
 
 (defn competitive-learning-at-f2 []
   (let [largest-output (find-the-largest-output @output-array @reset)]
@@ -281,13 +281,13 @@
 
 (defn zero-activations []
   (dotimes [input-index (dec @number-of-inputs)]
-    (aset @array-1 input-index 0.0)
-    (aset @array-2 input-index 0.0)
-    (aset @array-3 input-index 0.0)
-    (aset @array-4 input-index 0.0)
-    (aset @array-5 input-index 0.0)
-    (aset @array-6 input-index 0.0)
-    (aset @array-7 input-index 0.0))
+    (aset @layer-1 input-index 0.0)
+    (aset @layer-2 input-index 0.0)
+    (aset @layer-3 input-index 0.0)
+    (aset @layer-4 input-index 0.0)
+    (aset @layer-5 input-index 0.0)
+    (aset @layer-6 input-index 0.0)
+    (aset @layer-7 input-index 0.0))
   (dotimes [output-index (dec @number-of-outputs)]
     (aset @output-array output-index 0.0)
     (aset @reset output-index true)
@@ -315,7 +315,7 @@
       (run-one-full-cycle))
 
     (let [largest-output (find-the-largest-output @output-array @reset)
-          new-category (list (vec @array-7) largest-output)]
+          new-category (list (vec @layer-7) largest-output)]
       new-category)))
 
 (defn learn-the-patterns
@@ -337,13 +337,13 @@
   (reset! number-of-outputs number-outputs)
 
   (reset! input (double-array number-inputs))
-  (reset! array-1 (double-array number-inputs))
-  (reset! array-2 (double-array number-inputs))
-  (reset! array-3 (double-array number-inputs))
-  (reset! array-4 (double-array number-inputs))
-  (reset! array-5 (double-array number-inputs))
-  (reset! array-6 (double-array number-inputs))
-  (reset! array-7 (double-array number-inputs))
+  (reset! layer-1 (double-array number-inputs))
+  (reset! layer-2 (double-array number-inputs))
+  (reset! layer-3 (double-array number-inputs))
+  (reset! layer-4 (double-array number-inputs))
+  (reset! layer-5 (double-array number-inputs))
+  (reset! layer-6 (double-array number-inputs))
+  (reset! layer-7 (double-array number-inputs))
 
   (reset! resetval (double-array 1))
 
