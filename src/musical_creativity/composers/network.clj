@@ -115,14 +115,6 @@
 (defn translate-to-decimals [pitch-lists]
   (mapcat translate-decimals pitch-lists))
 
-(defn make-events
-  ([pitch-groupings] (make-events pitch-groupings 0))
-  ([pitch-groupings ontime]
-     (events/make pitch-groupings 0 800)))
-
-(defn translate-into-events [output-pitch-lists]
-  (make-events output-pitch-lists))
-
 (defn total-sum [vector]
   (let [vector-length (count vector)]
     (loop [sum 0.0
