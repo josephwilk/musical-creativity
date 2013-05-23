@@ -150,9 +150,9 @@
         (reset! maximum-index (find-the-largest-output @output-array @reset))
         (aset @reset @maximum-index true)
         (aset @reset-counter @maximum-index 80))
-      (dotimes [output-index (- @number-of-outputs 1)]
-        (aset @reset-counter output-index (- (aget @reset-counter output-index) 1))
-        (when (< (aget @reset-counter output-index) 0)
+      (dotimes [output-index (dec @number-of-outputs)]
+        (aset @reset-counter output-index (dec (aget @reset-counter output-index)))
+        (when (neg? (aget @reset-counter output-index))
           (when (aget @reset output-index)
             (reset! skip-reset true))
           (aset @reset output-index false))))
@@ -197,36 +197,36 @@
   (doall
    (map (fn [input-index]
           (let [total-sum
-                (reduce (wdown-total-sum-fn input-index) (range 0 (- @number-of-outputs 1)))]
+                (reduce (wdown-total-sum-fn input-index) (range 0 (dec @number-of-outputs)))]
             (aset @array-7 input-index (+ (aget @array-5 input-index) total-sum))))
-        (range 0 (- @number-of-inputs 1))))
+        (range 0 (dec @number-of-inputs))))
   (let [norm (+ (l2-norm-of-a-vector @array-7) e)]
     (doall (map (fn [input-index]
                   (aset @array-6 input-index (/ (aget @array-7 input-index) norm)))
-                (range 0 (- @number-of-inputs 1)))))
+                (range 0 (dec @number-of-inputs)))))
 
   (let [norm (l2-norm-of-a-vector @array-3)]
     (doall (map (fn [input-index]
                   (aset @array-5 input-index (/ (aget @array-3 input-index) norm)))
-                (range 0 (- @number-of-inputs 1))))
+                (range 0 (dec @number-of-inputs))))
 
-    (dotimes [input-index (- @number-of-inputs 1)]
+    (dotimes [input-index (dec @number-of-inputs)]
       (let [new-value (sigmoid-threshold-function (+ (aget @array-2 input-index)
                                                      (* b (sigmoid-threshold-function (aget @array-6 input-index)))))]
         (aset @array-3 input-index new-value)))
 
-    (dotimes [input-index (- @number-of-inputs 1)]
+    (dotimes [input-index (dec @number-of-inputs)]
       (aset @array-2 input-index (/ (aget @array-1 input-index) norm))))
 
   ; update array-2 using eq. 9:
   (let [norm (+ (l2-norm-of-a-vector @array-1) e)]
-    (dotimes [input-index (- @number-of-inputs 1)]
+    (dotimes [input-index (dec @number-of-inputs)]
       (aset @array-2 input-index (/ (aget @array-1 input-index) norm))))
 
   (let [[max1 max2] (find-maxes-in @array-5 @array-7)
         max1 (+ max1 0.001)
         max2 (+ max2 0.001)]
-    (dotimes [input-index (- @number-of-inputs 1)]
+    (dotimes [input-index (dec @number-of-inputs)]
       (aset @array-4 input-index
             (- (/ (aget @array-5 input-index) max1)
                (/ (aget @array-7 input-index) max2))))))
@@ -251,7 +251,7 @@
 (defn update-weights []
   (let [largest-output (find-the-largest-output @output-array @reset)]
     (if (> (check-array-value largest-output @output-array @reset) 0.02)
-      (dotimes [increment (- @number-of-inputs 1)]
+      (dotimes [increment (dec @number-of-inputs)]
         (aset @wdown largest-output increment
               (+
                (aget @wdown largest-output increment)
@@ -267,7 +267,7 @@
 (defn competitive-learning-at-f2 []
   (let [largest-output (find-the-largest-output @output-array @reset)]
     (if (> (aget @output-array largest-output) reset-threshold)
-      (dotimes [output-index (- @number-of-outputs 1)]
+      (dotimes [output-index (dec @number-of-outputs)]
         (if-not (= output-index largest-output)
           (aset @output-array output-index 0.0))))))
 
@@ -280,7 +280,7 @@
   (competitive-learning-at-f2))
 
 (defn zero-activations []
-  (dotimes [input-index (- @number-of-inputs 1)]
+  (dotimes [input-index (dec @number-of-inputs)]
     (aset @array-1 input-index 0.0)
     (aset @array-2 input-index 0.0)
     (aset @array-3 input-index 0.0)
@@ -288,7 +288,7 @@
     (aset @array-5 input-index 0.0)
     (aset @array-6 input-index 0.0)
     (aset @array-7 input-index 0.0))
-  (dotimes [output-index (- @number-of-outputs 1)]
+  (dotimes [output-index (dec @number-of-outputs)]
     (aset @output-array output-index 0.0)
     (aset @reset output-index true)
     (aset @reset-counter output-index 0)))
@@ -326,8 +326,8 @@
 
 (defn initialize-the-network []
   (zero-activations)
-  (dotimes [output-index (- @number-of-outputs 1)]
-    (dotimes [input-index (- @number-of-inputs 1)]
+  (dotimes [output-index (dec @number-of-outputs)]
+    (dotimes [input-index (dec @number-of-inputs)]
       (aset @wup input-index output-index (random-floating-point 0.05 0.1))
       (aset @wdown output-index input-index (random-floating-point 0.01 0.03)))
     (aset @number-of-categories output-index 0)))
