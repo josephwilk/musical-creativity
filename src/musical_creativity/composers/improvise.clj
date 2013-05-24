@@ -12,12 +12,13 @@
 
 (def *database-names* (atom ()))
 
-(def *lexicons* ())
-(def *groupings* ())
+(def *lexicons* (atom ()))
+(def *groupings* (atom ()))
+
 (def seed 1)
-(def *grouping-names* ())
-(def *first-groupings* ())
-(def destination-name ())
+(def *grouping-names* (atom ()))
+(def *first-groupings* (atom ()))
+(def destination-name (atom ()))
 (def tied-events ())
 (def *save-groupings* ())
 
@@ -99,89 +100,103 @@
 
 (defn remove-it [event events]
   "removes the first arg from the second arg once based on the first two elements."
-  (cond (nil? events)()
-        (and
-         (= (first event)(ffirst events))
-         (= (second event) (get-first-pitch events)))
-        (rest events)
-        :else (cons (first events)(remove-it event (rest events)))))
+  (cond
+   (empty? events)()
+   (and
+    (= (first event)(ffirst events))
+    (= (second event) (get-first-pitch events)))
+   (rest events)
+   :else
+   (cons (first events)(remove-it event (rest events)))))
 
 (defn remove-all [remove-events events]
   "a non-destructive way to remove a series of events from a list
           of events."
-  (if (nil? remove-events) events
-      (remove-all (rest remove-events)
-                  (remove-it (first remove-events) events))))
+  (if (empty? remove-events)
+    events
+    (remove-all (rest remove-events)
+                (remove-it (first remove-events) events))))
 
 (defn set-timings
   "resets the timings of the groupings so they will play consecutively."
   ([new-timings old-timings groupings] (set-timings new-timings old-timings groupings 0))
   ([new-timings old-timings groupings current-time]
-      (if (or (nil? new-timings)(nil? groupings)(nil? (second (first new-timings))))()
-          (cons (map (fn [x](concat  (list current-time)
-                                         (list (second x))
-                                         (list (* (/ (third x)(- (second (first old-timings))(first (first old-timings))))
-                                                  (- (second (first new-timings))(first (first new-timings)))))
-                                         (drop  3 x)))
-                        (first groupings))
-                (set-timings (rest new-timings)
-                             (rest old-timings)
-                             (rest groupings)
-                             (+ current-time (- (second (first new-timings))(ffirst new-timings))))))))
+      (if (or (empty? new-timings)
+              (empty? groupings)
+              (empty? (second (first new-timings))))
+        ()
+        (cons (map (fn [x](concat  (list current-time)
+                                   (list (second x))
+                                   (list (* (/ (third x)(- (second (first old-timings))(first (first old-timings))))
+                                            (- (second (first new-timings))(first (first new-timings)))))
+                                   (drop  3 x)))
+                   (first groupings))
+              (set-timings (rest new-timings)
+                           (rest old-timings)
+                           (rest groupings)
+                           (+ current-time (- (second (first new-timings))(ffirst new-timings))))))))
 
 (defn find-next-new-ontime
   "finds the next new ontime past the onset events."
   ([events] (find-next-new-ontime events (ffirst events)))
   ([events time]
-      (cond (nil? events)()
-            (> (ffirst events) time) (ffirst events)
-            :else (find-next-new-ontime (rest events) time))))
+      (cond
+       (empty? events)
+       nil
+       (> (ffirst events) time)
+       (ffirst events)
+       :else
+       (find-next-new-ontime (rest events) time))))
 
 (defn get-all-simultaneous-attacks
   "returns all of the events with the same initial ontime at the nead of events."
   ([events] (get-all-simultaneous-attacks events (ffirst events)))
   ([events time]
-      (if (or (nil? events)(not (= time (ffirst events)))) ()
+      (if (or (empty? events)(not (= time (ffirst events)))) ()
           (cons (first events)
                 (get-all-simultaneous-attacks (rest events) time)))))
 
 (defn clip [cutoff-time grouping]
   "clips the endings off of events which extend beyond the entrance of a new event."
   (cond
-   (or (nil? cutoff-time)(nil? grouping))()
-   (<= (+ (ffirst grouping)(third (first grouping))) cutoff-time)
+   (or (nil? cutoff-time) (empty? grouping))
+   ()
+   (<= (+ (ffirst grouping) (third (first grouping))) cutoff-time)
    (cons (first grouping)
          (clip cutoff-time (rest grouping)))
-   :else (cons (concat  (take 2 (first grouping))
-                        (list (- cutoff-time (ffirst grouping)))
-                        (drop  3 (first grouping))
-                        (list 'tie))
-               (clip cutoff-time (rest grouping)))))
+   :else
+   (cons (concat  (take 2 (first grouping))
+                  (list (- cutoff-time (ffirst grouping)))
+                  (drop  3 (first grouping))
+                  (list 'tie))
+         (clip cutoff-time (rest grouping)))))
 
 (defn remainder [cutoff-time grouping]
   "returns the remainder of the events which extend beyond the entrance of a new event."
   (cond
-   (nil? grouping)()
+   (empty? grouping)
+   ()
    (<= (+ (ffirst grouping)(third (first grouping))) cutoff-time)
    (remainder cutoff-time (rest grouping))
-   :else (cons (concat  (list cutoff-time)
-                        (list (second (first grouping)))
-                        (list (- (third (first grouping))(- cutoff-time (ffirst grouping))))
-                        (drop 3 (first grouping)))
-               (remainder cutoff-time (rest grouping)))))
+   :else
+   (cons (concat  (list cutoff-time)
+                  (list (second (first grouping)))
+                  (list (- (third (first grouping))(- cutoff-time (ffirst grouping))))
+                  (drop 3 (first grouping)))
+         (remainder cutoff-time (rest grouping)))))
 
 (defn collect-groupings
   "top level function to collect groupings from the database."
   ([events] (collect-groupings events 0))
   ([events cut]
-      (if (nil? (find-next-new-ontime events))
-        (list (list (list cut (+ (ffirst events) (third (first events)))) events))
-        (let [cutoff-time (find-next-new-ontime events)
-              grouping (get-all-simultaneous-attacks events)
-              clipped-grouping (clip cutoff-time grouping)]
-          (cons (list (list (ffirst events) cutoff-time) clipped-grouping)
-                (collect-groupings (concat  (remainder cutoff-time grouping)
-                                            (remove-all grouping events))
+     (if (nil? (find-next-new-ontime events))
+       (list (list (list cut (+ (ffirst events) (third (first events)))) events))
+       (let [cutoff-time (find-next-new-ontime events)
+             grouping (get-all-simultaneous-attacks events)
+             clipped-grouping (clip cutoff-time grouping)]
+         (cons (list (list (ffirst events) cutoff-time) clipped-grouping)
+               (collect-groupings (concat (remainder cutoff-time grouping)
+                                          (remove-all grouping events))
                                    cutoff-time))))))
 
 
@@ -189,7 +204,7 @@
   "connects tied events and returns their joined composites."
   (loop [events events
          tied-events ()]
-    (if (nil? events)
+    (if (empty? events)
       tied-events
       (do
         (let [new-tied-events (when (= (last-first (first events)))
@@ -214,7 +229,7 @@
   "chooses randomly from its list arg but avoids the end and rests."
   (let [test (nth (rand-int (count list))
                   list)]
-    (cond (nil? (rest list)) (first list)
+    (cond (empty? (rest list)) (first list)
           (and
            (not (= (:destination (eval test)) 'end))
            (not (zero? (get-first-pitch (:events (eval test)))))
@@ -225,7 +240,7 @@
 
 (defn check-for-only-ends [groupings]
   "checks to see if the grouping contains only ending objects."
-  (cond (nil? groupings) true
+  (cond (empty? groupings) true
         (= (:destination (eval (first groupings))) 'end)
         (check-for-only-ends (rest groupings))
         :else ()))
@@ -264,6 +279,11 @@
                         (if (= next-choice 'end) (list chosen-grouping)
                             (cons chosen-grouping (sequence-through-groupings next-choice))))))))
 
+(defn find-in-lexicon [name]
+  (@*lexicon-store* name))
+
+(defn find-in-grouping [name]
+  (@*groupings-store* name))
 
 (def lexicon
   {:grouping-names []
@@ -276,11 +296,11 @@
    :events []
    :lexicon []})
 
-(defn interspace-hyphens [list]
+(defn interspace-hyphens [col]
   "places hyphens between the various symbols in its lits arg."
-  (if (nil? (rest list)) list
-      (concat (list (first list) '-)
-              (interspace-hyphens (rest list)))))
+  (if (empty? (rest col))
+    col
+    (concat (list (first col) "-") (interspace-hyphens (rest col)))))
 
 (defn make-new-name-of-object [name pitches]
   "creates the names of objects that follow other objects."
@@ -304,48 +324,45 @@
   ([source beginning]
      (reset! *grouping-names* ())
      (reset! destination-name ())
-     (let [groupings *groupings*]
-       (loop [blah []]
-         (if (nil? groupings)
-           blah
-           (do
-             (reset! test groupings)
-             (reset! name (make-name-of-object source (map second (second (first groupings)))))
-             (reset! destination-name (if (nil? (second groupings)) 'end
-                                             (make-new-name-of-object source (map second (second (second groupings))))))
-             (let [new-grouping (set name {:name source
-                                                   :timing (first (first groupings))
-                                                   :destination destination-name
-                                           :events (second (first groupings))})]
+     (let [groupings @*groupings*]
+       (loop [groupings groupings
+              beginning true]
+         (if (empty? groupings)
+           true
+           (let [name (make-name-of-object source (map second (second (first groupings))))]
+                 ;(reset! test groupings)
+
+             (reset! destination-name (if (nil? (second groupings))
+                                        'end
+                                        (make-new-name-of-object source (map second (second (second groupings))))))
+             (let [new-grouping {:name source
+                                 :timing (first (first groupings))
+                                 :destination destination-name
+                                 :events (second (first groupings))}]
 
                (reset! *groupings-store* (assoc @*groupings-store* name new-grouping)))
 
-             (reset! *grouping-names* (concat  *grouping-names* (list name)))
-             (if beginning (do (reset! *first-groupings* (concat  *first-groupings* (list name)))
-                                     (reset! beginning ())))
-             (reset! groupings (rest groupings)))
+             (reset! *grouping-names* (concat  @*grouping-names* (list name)))
+             (when beginning
+               (reset! *first-groupings* (concat  @*first-groupings* (list name))))
 
-             )
-
-           )
-        )
-
-     *grouping-names*))
+             (recur (rest groupings) false)))))
+     @*grouping-names*))
 
 (defn create-database-and-put-into-lexicons [source events]
   "pujts the various data into each object and then the object itself into the proper lexicon."
    (reset! *groupings* (collect-groupings events))
    (create-database source)
    (doall (map (fn [grouping])
-               (let [lexicon-name (make-name-of-lexicon (map second (:events (eval grouping))))]
+               (let [lexicon-name (make-name-of-lexicon (map second (:events (@*groupings-store* grouping))))]
                  (if (bound? lexicon-name)
                    (do
-                     (reset! (:grouping-names (eval lexicon-name))
-                             (cons grouping (:grouping-names (eval lexicon-name))))
+                     (reset! (:grouping-names (find-in-lexicon lexicon-name))
+                             (cons grouping (:grouping-names (find-in-lexicon lexicon-name))))
                      (reset! (lexicon (eval grouping)) lexicon-name))
                    (do
                      (reset! *lexicon-store* (assoc @*lexicon-store* lexicon-name {:grouping-names (list grouping)}))
-                     (reset! (lexicon (eval grouping)) lexicon-name)
+                     (reset! (:lexicon (find-in-grouping grouping)) lexicon-name)
                      (reset! *lexicons* (concat  *lexicons* (list lexicon-name))))))
                *grouping-names*))
    *lexicons*)
