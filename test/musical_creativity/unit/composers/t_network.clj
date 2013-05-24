@@ -44,7 +44,7 @@
   =>  '(((0.0 0.1 0.2 0.25 0.35) 1) ((0.0 0.2 0.25 0.35 0.4) 1)))
 
 (fact "check array value"
-  (check-array-value 0 (double-array 4 1.0) (boolean-array 4 false)) => d)
+  (check-layer-value 0 (double-array 4 1.0) (boolean-array 4 false)) => d)
 
 (fact "l2 norm of a vector"
   (l2-norm-of-a-vector (double-array 5 0.0)) => 0.001
