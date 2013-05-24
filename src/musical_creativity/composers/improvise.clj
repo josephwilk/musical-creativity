@@ -88,9 +88,9 @@
 
 (defn select [choice]
   "selects randomly from objects in the same lexicon."
-  (if (zero? (get-first-pitch (:events (eval choice))))
+  (if (zero? (get-first-pitch (:events (find-in-grouping choice))))
     choice
-    (choose-one (:grouping-names (eval (:lexicon (eval choice)))))))
+    (choose-one (:grouping-names (find-in-lexicon (:lexicon (find-in-grouping choice)))))))
 
 (defn add-them [event events]
   "creates one event from two based on tie."
@@ -231,9 +231,9 @@
                   list)]
     (cond (empty? (rest list)) (first list)
           (and
-           (not (= (:destination (eval test)) 'end))
-           (not (zero? (get-first-pitch (:events (eval test)))))
-           (not (= test (:last-choice (eval (:lexicon (eval test))))))
+           (not (= (:destination (find-in-grouping test)) 'end))
+           (not (zero? (get-first-pitch (:events (find-in-grouping test)))))
+           (not (= test (:last-choice (find-in-lexicon (:lexicon (find-in-grouping test))))))
            (and (> (count list) 1)(not (= *the-last-first-choice* test))))
           test
           :else (choose-beginning-grouping list))))
@@ -241,7 +241,7 @@
 (defn check-for-only-ends [groupings]
   "checks to see if the grouping contains only ending objects."
   (cond (empty? groupings) true
-        (= (:destination (eval (first groupings))) 'end)
+        (= (:destination (find-in-grouping (first groupings))) 'end)
         (check-for-only-ends (rest groupings))
         :else ()))
 
@@ -249,7 +249,7 @@
   "removes lexicons that contain only final groupings."
   (cond (empty? lexicons)
         ()
-        (check-for-only-ends (:grouping-names (eval (first lexicons))))
+        (check-for-only-ends (:grouping-names (find-in-lexicon (first lexicons))))
         (remove-ends (rest lexicons))
         :else
         (cons (first lexicons) (remove-ends (rest lexicons)))))
@@ -257,25 +257,25 @@
 (defn sequence-through-groupings [choice]
   "collects properly connected groupings."
   (cond (= choice 'end)()
-        (= (:destination (eval choice)) 'end)
+        (= (:destination (find-in-grouping choice)) 'end)
         (list choice)
         :else (let [new-choice (select choice)]
                 (cons new-choice
-                      (sequence-through-groupings (:destination (eval new-choice)))))))
+                      (sequence-through-groupings (:destination (find-in-grouping new-choice)))))))
 
 
 (defn choose-a-random-start-grouping [lexicons]
   "returns a randomly chosen object for begining a recombination."
   (reset! *the-last-first-choice*
         (choose-beginning-grouping
-         (:grouping-names (eval (choose-one (remove-ends lexicons)))))))
+         (:grouping-names (find-in-lexicon (choose-one (remove-ends lexicons)))))))
 
 (defn improvise-it []
   "recombines the groupings, applies a new overall duration set, and makes the data playable."
   (reset! *new-work*
           (reduce-ties (make-playable
                         (let [chosen-grouping (choose-a-random-start-grouping *lexicons*)
-                              next-choice (:destination (eval chosen-grouping))]
+                              next-choice (:destination (find-in-grouping chosen-grouping))]
                         (if (= next-choice 'end) (list chosen-grouping)
                             (cons chosen-grouping (sequence-through-groupings next-choice))))))))
 
@@ -317,7 +317,6 @@
            where the bracketed number is the order."
   (implode (concat  '(lexicon-) (interspace-hyphens pitches))))
 
-
 (defn create-database
   "the low-level function for creating instances of grouping objects."
   ([source] (create-database source true))
@@ -349,17 +348,20 @@
              (recur (rest groupings) false)))))
      @*grouping-names*))
 
+(defn contains-in-lexicon? [name]
+  (contains? @*lexicon-store* name))
+
 (defn create-database-and-put-into-lexicons [source events]
   "pujts the various data into each object and then the object itself into the proper lexicon."
    (reset! *groupings* (collect-groupings events))
    (create-database source)
    (doall (map (fn [grouping])
                (let [lexicon-name (make-name-of-lexicon (map second (:events (@*groupings-store* grouping))))]
-                 (if (bound? lexicon-name)
+                 (if (contains-in-lexicon? lexicon-name)
                    (do
                      (reset! (:grouping-names (find-in-lexicon lexicon-name))
                              (cons grouping (:grouping-names (find-in-lexicon lexicon-name))))
-                     (reset! (lexicon (eval grouping)) lexicon-name))
+                     (reset! (:lexicon (find-in-grouping grouping)) lexicon-name))
                    (do
                      (reset! *lexicon-store* (assoc @*lexicon-store* lexicon-name {:grouping-names (list grouping)}))
                      (reset! (:lexicon (find-in-grouping grouping)) lexicon-name)
