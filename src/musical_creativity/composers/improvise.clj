@@ -1,7 +1,8 @@
 (ns musical-creativity.composers.improvise
   (:require
    [musical-creativity.util :refer :all]
-   [clojure.string :as str]))
+   [clojure.string :as str]
+   [data.forgray :refer :all]))
 
 (def *lexicon-store* (atom {}))
 (def *groupings-store* (atom {}))
