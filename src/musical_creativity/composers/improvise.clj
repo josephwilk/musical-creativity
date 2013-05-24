@@ -9,15 +9,15 @@
 
 (def *new-work* ())
 (def *the-last-first-choice* ())
-(def *database-names* ())
+
+(def *database-names* (atom ()))
+
 (def *lexicons* ())
 (def *groupings* ())
 (def seed 1)
 (def *grouping-names* ())
 (def *first-groupings* ())
-(def test ())
 (def destination-name ())
-(def name ())
 (def tied-events ())
 (def *save-groupings* ())
 
@@ -70,15 +70,8 @@
   (if (and (>= number (first range))
            (<= number (third range))) true))
 
-(defn all-equal [set-1 set-2]
-  "this function voids the need to rebuild the database when improvise is called with the same names."
-  (cond
-   (and (nil? set-1)(nil? set-2))
-   true
-   (member (first set-1) set-2)
-   (all-equal (rest set-1) (remove (first set-1) set-2))
-   :else
-   ()))
+(defn all-equal? [set-1 set-2]
+  (= set-1 set-2))
 
 (defn get-complementary-events [event events]
   "finds the complementary event to one with a tie as its final element."
@@ -191,16 +184,6 @@
                                             (remove-all grouping events))
                                    cutoff-time))))))
 
-(defn make-playable [contiguous-groupings]
-  "makes the object groupings into playable events as well as recombining them with a different database timing sequence. "
-  (reduce-ties
-   (sort <
-            (apply concat
-                   (set-timings (map first
-                                        (collect-groupings (eval (choose-one *database-names*))))
-                                (map (fn [x](:timing (eval x))) contiguous-groupings)
-                                (map (fn [x](:events (eval x))) contiguous-groupings))))))
-
 
 (defn reduce-ties [events]
   "connects tied events and returns their joined composites."
@@ -216,6 +199,16 @@
                   new-tied-events (butlast (add-them (first events-without-tied) new-tied-events))]
               (recur (rest events-without-tied) (concat tied-events new-tied-events)))
             (recur (rest events) (concat tied-events (first events)))))))))
+
+(defn make-playable [contiguous-groupings]
+  "makes the object groupings into playable events as well as recombining them with a different database timing sequence. "
+  (reduce-ties
+   (sort <
+            (apply concat
+                   (set-timings (map first
+                                        (collect-groupings (eval (choose-one *database-names*))))
+                                (map (fn [x](:timing (eval x))) contiguous-groupings)
+                                (map (fn [x](:events (eval x))) contiguous-groupings))))))
 
 (defn choose-beginning-grouping [list]
   "chooses randomly from its list arg but avoids the end and rests."
@@ -239,10 +232,12 @@
 
 (defn remove-ends [lexicons]
   "removes lexicons that contain only final groupings."
-  (cond (nil? lexicons)()
+  (cond (empty? lexicons)
+        ()
         (check-for-only-ends (:grouping-names (eval (first lexicons))))
         (remove-ends (rest lexicons))
-        :else (cons (first lexicons)(remove-ends (rest lexicons)))))
+        :else
+        (cons (first lexicons) (remove-ends (rest lexicons)))))
 
 (defn sequence-through-groupings [choice]
   "collects properly connected groupings."
@@ -258,7 +253,7 @@
   "returns a randomly chosen object for begining a recombination."
   (reset! *the-last-first-choice*
         (choose-beginning-grouping
-         (:grouping-names (eval (choose (remove-ends lexicons)))))))
+         (:grouping-names (eval (choose-one (remove-ends lexicons)))))))
 
 (defn improvise-it []
   "recombines the groupings, applies a new overall duration set, and makes the data playable."
@@ -310,9 +305,7 @@
      (reset! *grouping-names* ())
      (reset! destination-name ())
      (let [groupings *groupings*]
-
        (loop [blah []]
-
          (if (nil? groupings)
            blah
            (do
@@ -323,7 +316,10 @@
              (let [new-grouping (set name {:name source
                                                    :timing (first (first groupings))
                                                    :destination destination-name
-                                                   :events (second (first groupings))})])
+                                           :events (second (first groupings))})]
+
+               (reset! *groupings-store* (assoc @*groupings-store* name new-grouping)))
+
              (reset! *grouping-names* (concat  *grouping-names* (list name)))
              (if beginning (do (reset! *first-groupings* (concat  *first-groupings* (list name)))
                                      (reset! beginning ())))
@@ -344,24 +340,22 @@
                (let [lexicon-name (make-name-of-lexicon (map second (:events (eval grouping))))]
                  (if (bound? lexicon-name)
                    (do
-                    (reset! (:grouping-names (eval lexicon-name))
-                            (cons grouping (:grouping-names (eval lexicon-name))))
-                    (reset! (lexicon (eval grouping)) lexicon-name))
-                   (do (set lexicon-name
-                            {:grouping-names (list grouping)})
-                          (reset! (lexicon (eval grouping)) lexicon-name)
-                          (reset! *lexicons* (concat  *lexicons* (list lexicon-name)))))
-                 ) *grouping-names*
-))
+                     (reset! (:grouping-names (eval lexicon-name))
+                             (cons grouping (:grouping-names (eval lexicon-name))))
+                     (reset! (lexicon (eval grouping)) lexicon-name))
+                   (do
+                     (reset! *lexicon-store* (assoc @*lexicon-store* lexicon-name {:grouping-names (list grouping)}))
+                     (reset! (lexicon (eval grouping)) lexicon-name)
+                     (reset! *lexicons* (concat  *lexicons* (list lexicon-name))))))
+               *grouping-names*))
    *lexicons*)
 
 (defn create-a-complete-database [names-of-eventlists]
-  "top-level of the database creating program."
-  (reset!  *database-names* (distinct (concat  names-of-eventlists *database-names*)))
-  (doall (map (fn [event-list-name]
-                (create-database-and-put-into-lexicons event-list-name (eval event-list-name))
-                ) names-of-eventlists)
-        )
+  (reset! *database-names* (distinct (concat names-of-eventlists @*database-names*)))
+  (doall
+   (map (fn [event-list-name]
+          (create-database-and-put-into-lexicons event-list-name (var-get (ns-resolve 'data.forgray event-list-name))))
+        names-of-eventlists))
   true)
 
 (defn remove-data []
@@ -376,11 +370,9 @@
   (reset! name ()))
 
 (defn improvise [databases]
-  "this fcn creates a new database if necessary (i.e., new names in its arg) and runs improvise-it."
-  (if (all-equal databases *database-names*)
-    (improvise-it)
-    (do (create-a-complete-database databases)
-           (improvise-it))))
+  (when-not (all-equal? databases @*database-names*)
+    (create-a-complete-database databases))
+  (improvise-it))
 
 (defn compose []
-  (improvise 'forgray))
+  (improvise '(forgray)))
