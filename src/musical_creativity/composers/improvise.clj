@@ -74,6 +74,23 @@
 (defn all-equal? [set-1 set-2]
   (= set-1 set-2))
 
+(defn find-in-lexicon [name]
+  (@*lexicon-store* name))
+
+(defn find-in-grouping [name]
+  (@*groupings-store* name))
+
+(def lexicon
+  {:grouping-names []
+   :last-choice []})
+
+(def grouping
+  {:name nil
+   :timing nil
+   :destination []
+   :events []
+   :lexicon []})
+
 (defn get-complementary-events [event events]
   "finds the complementary event to one with a tie as its final element."
   (cond (nil? events) nil
@@ -278,23 +295,6 @@
                               next-choice (:destination (find-in-grouping chosen-grouping))]
                         (if (= next-choice 'end) (list chosen-grouping)
                             (cons chosen-grouping (sequence-through-groupings next-choice))))))))
-
-(defn find-in-lexicon [name]
-  (@*lexicon-store* name))
-
-(defn find-in-grouping [name]
-  (@*groupings-store* name))
-
-(def lexicon
-  {:grouping-names []
-   :last-choice []})
-
-(def grouping
-  {:name nil
-   :timing nil
-   :destination []
-   :events []
-   :lexicon []})
 
 (defn interspace-hyphens [col]
   "places hyphens between the various symbols in its lits arg."
