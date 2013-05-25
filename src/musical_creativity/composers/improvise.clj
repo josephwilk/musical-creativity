@@ -261,15 +261,10 @@
         (check-for-only-ends (rest groupings))
         :else ()))
 
-(defn remove-ends [lexicons]
+(defn remove-ends
   "removes lexicons that contain only final groupings."
-  (cond
-   (empty? lexicons)
-   ()
-   (check-for-only-ends (:grouping-names (find-in-lexicon (first lexicons))))
-   (remove-ends (rest lexicons))
-   :else
-   (cons (first lexicons) (remove-ends (rest lexicons)))))
+  [lexicons]
+  (remove #(check-for-only-ends (:grouping-names (find-in-lexicon %))) lexicons))
 
 (defn sequence-through-groupings [choice]
   "collects properly connected groupings."
