@@ -18,7 +18,6 @@
 (def seed 1)
 (def *grouping-names* (atom ()))
 (def *first-groupings* (atom ()))
-(def destination-name (atom ()))
 (def tied-events ())
 (def *save-groupings* ())
 
@@ -284,12 +283,13 @@
 
 (defn choose-a-random-start-grouping [lexicons]
   "returns a randomly chosen object for begining a recombination."
-  (reset! *the-last-first-choice*
-          (choose-beginning-grouping
-           (:grouping-names (find-in-lexicon (choose-one (remove-ends lexicons)))))))
+  (let [grouping-names (:grouping-names (find-in-lexicon (choose-one (remove-ends lexicons))))]
+    (reset! *the-last-first-choice* (choose-beginning-grouping grouping-names)))
+  @*the-last-first-choice*)
 
-(defn improvise-it []
+(defn improvise-it
   "recombines the groupings, applies a new overall duration set, and makes the data playable."
+  []
   (reset! *new-work*
           (reduce-ties (make-playable
                         (let [chosen-grouping (choose-a-random-start-grouping @*lexicons*)
@@ -323,18 +323,15 @@
   ([source] (create-database source true))
   ([source beginning]
      (reset! *grouping-names* ())
-     (reset! destination-name ())
      (let [groupings @*groupings*]
        (loop [groupings groupings
               beginning true]
          (if (empty? groupings)
            true
-           (let [name (make-name-of-object source (map second (second (first groupings))))]
-                 ;(reset! test groupings)
-
-             (reset! destination-name (if (nil? (second groupings))
+           (let [name (make-name-of-object source (map second (second (first groupings))))
+                 destination-name (if (nil? (second groupings))
                                         'end
-                                        (make-new-name-of-object source (map second (second (second groupings))))))
+                                        (make-new-name-of-object source (map second (second (second groupings)))))]
              (let [new-grouping {:name source
                                  :timing (first (first groupings))
                                  :destination destination-name
@@ -345,7 +342,6 @@
              (reset! *grouping-names* (concat  @*grouping-names* (list name)))
              (when beginning
                (reset! *first-groupings* (concat  @*first-groupings* (list name))))
-
              (recur (rest groupings) false)))))
      @*grouping-names*))
 
