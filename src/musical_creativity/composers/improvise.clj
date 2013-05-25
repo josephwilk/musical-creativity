@@ -237,7 +237,7 @@
    (sort <
             (apply concat
                    (set-timings (map first
-                                        (collect-groupings (eval (choose-one *database-names*))))
+                                        (collect-groupings (eval (choose-one @*database-names*))))
                                 (map (fn [x](:timing (eval x))) contiguous-groupings)
                                 (map (fn [x](:events (eval x))) contiguous-groupings))))))
 
@@ -374,7 +374,7 @@
                        (store-lexicon! grouping lexicon-name)
                        (reset! *lexicons* (concat  @*lexicons* (list lexicon-name)))))))
                @*grouping-names*))
-   *lexicons*)
+   @*lexicons*)
 
 (defn create-a-complete-database [names-of-eventlists]
   (reset! *database-names* (distinct (concat names-of-eventlists @*database-names*)))
