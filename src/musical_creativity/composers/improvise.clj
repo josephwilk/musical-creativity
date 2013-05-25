@@ -1,7 +1,7 @@
 (ns musical-creativity.composers.improvise
   (:require
    [musical-creativity.util :refer :all]
-   [musical-creativity.events :as events]
+   [musical-creativity.events :refer :all]
    [clojure.string :as str]
    [data.forgray :refer :all]))
 
@@ -47,9 +47,9 @@
 (defn explode [atom]
   (vec atom))
 
-(defn get-first-pitch [events]
+(defn get-first-pitch [[event & _]]
   "returns the first pitch in events."
-  (second (first events)))
+  (pitch-of event))
 
 (defn within-range [number range]
   "returns t if the number is within or equal to the boundaries of the range arg."
@@ -392,4 +392,4 @@
   (improvise-it))
 
 (defn compose []
-  (map events/midi-to-event (improvise '(forgray))))
+  (map midi-to-event (improvise '(forgray))))
