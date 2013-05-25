@@ -1,6 +1,7 @@
 (ns musical-creativity.composers.improvise
   (:require
    [musical-creativity.util :refer :all]
+   [musical-creativity.events :as events]
    [clojure.string :as str]
    [data.forgray :refer :all]))
 
@@ -77,6 +78,21 @@
    :destination []
    :events []
    :lexicon []})
+
+(defn interspace-hyphens [col]
+  "places hyphens between the various symbols in its lits arg."
+  (str/join "-" col))
+
+(defn make-new-name-of-object [name pitches]
+  "creates the names of objects that follow other objects."
+  (str name "[" (inc seed) "]" "-" (interspace-hyphens pitches)))
+
+(defn make-name-of-object [name pitches]
+  "makes names for objects."
+  (str name "[" (inc seed) "]" "-" (interspace-hyphens pitches)))
+
+(defn make-name-of-lexicon [pitches]
+  (str "lexicon-" (interspace-hyphens pitches)))
 
 (defn get-complementary-events
   "finds the complementary event to one with a tie as its final element."
@@ -205,31 +221,34 @@
                                           (remove-all grouping events))
                                    cutoff-time))))))
 
-
-(defn reduce-ties [events]
+(defn reduce-ties
   "connects tied events and returns their joined composites."
+  [events]
   (loop [events events
          tied-events ()]
     (if (empty? events)
       tied-events
-      (do
-        (let [new-tied-events (when (= (last (first events)) 'tie)
-                                (get-complementary-events (first events) (rest events)))]
-          (if new-tied-events
-            (let [events-without-tied (cons (first events) (remove-all new-tied-events (rest events)))
-                  new-tied-events (butlast (add-them (first events-without-tied) new-tied-events))]
-              (recur (rest events-without-tied) (concat tied-events new-tied-events)))
-            (recur (rest events) (concat tied-events (first events)))))))))
+      (let [event (first events)
+            new-tied-events (when (= (last event) 'tie)
+                              (get-complementary-events event (rest events)))]
+        (if new-tied-events
+          (let [events-without-tied (cons  event (remove-all new-tied-events (rest events)))
+                new-tied-events (butlast (add-them (first events-without-tied) new-tied-events))]
+            (recur (rest events-without-tied) (concat tied-events (list new-tied-events))))
+          (recur (rest events) (concat tied-events (list event))))))))
+
+
+(defn- timings [contiguous-groupings]
+  (set-timings (map first (collect-groupings (resolve-db (choose-one @*database-names*))))
+                 (map (fn [grouping-name] (:timing (find-in-grouping grouping-name))) contiguous-groupings)
+                 (map (fn [grouping-name] (:events (find-in-grouping grouping-name))) contiguous-groupings)))
 
 (defn make-playable
   "makes the object groupings into playable events as well as recombining them with a different database timing sequence. "
   [contiguous-groupings]
   (reduce-ties
    (sort-by-first-element
-         (apply concat
-                (set-timings (map first (collect-groupings (resolve-db (choose-one @*database-names*))))
-                             (map (fn [grouping-name] (:timing (find-in-grouping grouping-name))) contiguous-groupings)
-                             (map (fn [grouping-name] (:events (find-in-grouping grouping-name))) contiguous-groupings))))))
+    (apply concat (timings contiguous-groupings)))))
 
 (defn choose-beginning-grouping
   "chooses randomly from its list arg but avoids the end and rests."
@@ -275,21 +294,6 @@
     (reset! *the-last-first-choice* (choose-beginning-grouping grouping-names)))
   @*the-last-first-choice*)
 
-(defn interspace-hyphens [col]
-  "places hyphens between the various symbols in its lits arg."
-  (str/join "-" col))
-
-(defn make-new-name-of-object [name pitches]
-  "creates the names of objects that follow other objects."
-  (str name "[" (inc seed) "]" "-" (interspace-hyphens pitches)))
-
-(defn make-name-of-object [name pitches]
-  "makes names for objects."
-  (str name "[" (inc seed) "]" "-" (interspace-hyphens pitches)))
-
-(defn make-name-of-lexicon [pitches]
-  (str "lexicon-" (interspace-hyphens pitches)))
-
 (defn create-database
   ([source] (create-database source true))
   ([source beginning]
@@ -330,6 +334,9 @@
         updated-grouping (assoc grouping-record :lexicon lexicon-name)]
     (reset! *groupings-store* (assoc @*groupings-store* grouping updated-grouping))))
 
+(defn store-lexicon-name! [lexicon-name]
+  (reset! *lexicons* (concat  @*lexicons* (list lexicon-name))))
+
 (defn create-database-and-put-into-lexicons [source events]
   "pujts the various data into each object and then the object itself into the proper lexicon."
    (reset! *groupings* (collect-groupings events))
@@ -343,7 +350,7 @@
                      (do
                        (store-grouping! lexicon-name grouping)
                        (store-lexicon! grouping lexicon-name)
-                       (reset! *lexicons* (concat  @*lexicons* (list lexicon-name)))))))
+                       (store-lexicon-name! lexicon-name)))))
                @*grouping-names*))
    @*lexicons*)
 
@@ -355,7 +362,7 @@
         names-of-eventlists))
   true)
 
-(defn remove-data []
+(defn remove-data! []
   "cleans up databases for starting over."
   (reset! *first-groupings* ())
   (reset! *lexicons* ())
@@ -376,9 +383,8 @@
 (defn improvise-it
   "recombines the groupings, applies a new overall duration set, and makes the data playable."
   []
-  (reduce-ties
-   (make-playable
-    (choose-grouping))))
+  (let [events (make-playable (choose-grouping))]
+    (reduce-ties events)))
 
 (defn improvise [databases]
   (when-not (all-equal? databases @*database-names*)
@@ -386,4 +392,4 @@
   (improvise-it))
 
 (defn compose []
-  (improvise '(forgray)))
+  (map events/midi-to-event (improvise '(forgray))))
