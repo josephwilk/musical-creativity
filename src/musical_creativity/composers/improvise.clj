@@ -62,6 +62,9 @@
 (defn find-in-grouping [name]
   (@*groupings-store* name))
 
+(defn resolve-db [name]
+  (var-get (ns-resolve 'data.forgray name)))
+
 (def new-lexicon
   {:grouping-names []
    :last-choice []})
