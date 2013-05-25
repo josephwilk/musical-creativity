@@ -7,7 +7,6 @@
 (def *lexicon-store* (atom {}))
 (def *groupings-store* (atom {}))
 
-(def *new-work* (atom ()))
 (def *the-last-first-choice* (atom ()))
 
 (def *database-names* (atom ()))
@@ -378,12 +377,11 @@
 (defn improvise-it
   "recombines the groupings, applies a new overall duration set, and makes the data playable."
   []
-  (reset! *new-work*
-          (reduce-ties (make-playable
-                        (let [chosen-grouping (choose-a-random-start-grouping @*lexicons*)
-                              next-choice (:destination (find-in-grouping chosen-grouping))]
-                        (if (= next-choice 'end) (list chosen-grouping)
-                            (cons chosen-grouping (sequence-through-groupings next-choice))))))))
+  (reduce-ties (make-playable
+                (let [chosen-grouping (choose-a-random-start-grouping @*lexicons*)
+                      next-choice (:destination (find-in-grouping chosen-grouping))]
+                  (if (= next-choice 'end) (list chosen-grouping)
+                      (cons chosen-grouping (sequence-through-groupings next-choice)))))))
 
 (defn improvise [databases]
   (when-not (all-equal? databases @*database-names*)
