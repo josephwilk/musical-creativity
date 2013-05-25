@@ -37,6 +37,8 @@
 (def *channel-15* (atom 1))
 (def *channel-16* (atom 1))
 
+(defn sort-by-first-element [lists]
+  (sort (fn [[x & _] [y & _]] (< x y))  lists))
 
 (defn implode [list]
   (str/join "" list))
@@ -76,17 +78,21 @@
    :events []
    :lexicon []})
 
-(defn get-complementary-events [event events]
+(defn get-complementary-events
   "finds the complementary event to one with a tie as its final element."
-  (cond (nil? events) nil
-        (and
-         (= (second event)(get-first-pitch events))
-         (within-range (+ (first event)(third event))
-                       (list (ffirst events) true (ffirst events)))
-         (= (last-first event) 'tie))
-        (cons (first events)
-              (get-complementary-events (first events) (rest events)))
-        :else (get-complementary-events event (rest events))))
+  [event events]
+  (cond
+   (empty? events)
+   nil
+   (and
+    (= (second event) (get-first-pitch events))
+    (within-range (+ (first event) (third event))
+                  (list (ffirst events) true (ffirst events)))
+    (= (last-first event) 'tie))
+   (cons (first events)
+         (get-complementary-events (first events) (rest events)))
+   :else
+   (get-complementary-events event (rest events))))
 
 (defn select [choice]
   "selects randomly from objects in the same lexicon."
@@ -100,43 +106,41 @@
           (list (apply + (map third (cons event events))))
           (drop  3 event)))
 
-(defn remove-it [event events]
+(defn remove-it [remove-event events]
   "removes the first arg from the second arg once based on the first two elements."
   (cond
-   (empty? events)()
+   (empty? events)
+   ()
    (and
-    (= (first event)(ffirst events))
-    (= (second event) (get-first-pitch events)))
+    (= (first remove-event) (ffirst events))
+    (= (second remove-event) (get-first-pitch events)))
    (rest events)
    :else
-   (cons (first events)(remove-it event (rest events)))))
+   (cons (first events) (remove-it remove-event (rest events)))))
 
 (defn remove-all [remove-events events]
-  "a non-destructive way to remove a series of events from a list
-          of events."
   (if (empty? remove-events)
     events
-    (remove-all (rest remove-events)
-                (remove-it (first remove-events) events))))
+    (remove-all (rest remove-events) (remove-it (first remove-events) events))))
 
 (defn set-timings
   "resets the timings of the groupings so they will play consecutively."
   ([new-timings old-timings groupings] (set-timings new-timings old-timings groupings 0))
   ([new-timings old-timings groupings current-time]
-      (if (or (empty? new-timings)
-              (empty? groupings)
-              (empty? (second (first new-timings))))
-        ()
-        (cons (map (fn [x](concat  (list current-time)
-                                   (list (second x))
-                                   (list (* (/ (third x)(- (second (first old-timings))(first (first old-timings))))
-                                            (- (second (first new-timings))(first (first new-timings)))))
-                                   (drop  3 x)))
-                   (first groupings))
-              (set-timings (rest new-timings)
-                           (rest old-timings)
-                           (rest groupings)
-                           (+ current-time (- (second (first new-timings))(ffirst new-timings))))))))
+     (if (or (empty? new-timings)
+             (empty? groupings)
+             (nil? (second (first new-timings))))
+       ()
+       (cons (map (fn [x](concat  (list current-time)
+                                  (list (second x))
+                                  (list (* (/ (third x) (- (second (first old-timings)) (first (first old-timings))))
+                                           (- (second (first new-timings)) (first (first new-timings)))))
+                                  (drop  3 x)))
+                  (first groupings))
+             (set-timings (rest new-timings)
+                          (rest old-timings)
+                          (rest groupings)
+                          (+ current-time (- (second (first new-timings)) (ffirst new-timings))))))))
 
 (defn find-next-new-ontime
   "finds the next new ontime past the onset events."
@@ -154,7 +158,7 @@
   "returns all of the events with the same initial ontime at the nead of events."
   ([events] (get-all-simultaneous-attacks events (ffirst events)))
   ([events time]
-      (if (or (empty? events)(not (= time (ffirst events)))) ()
+      (if (or (empty? events) (not (= time (ffirst events)))) ()
           (cons (first events)
                 (get-all-simultaneous-attacks (rest events) time)))))
 
@@ -178,12 +182,12 @@
   (cond
    (empty? grouping)
    ()
-   (<= (+ (ffirst grouping)(third (first grouping))) cutoff-time)
+   (<= (+ (ffirst grouping) (third (first grouping))) cutoff-time)
    (remainder cutoff-time (rest grouping))
    :else
    (cons (concat  (list cutoff-time)
                   (list (second (first grouping)))
-                  (list (- (third (first grouping))(- cutoff-time (ffirst grouping))))
+                  (list (- (third (first grouping)) (- cutoff-time (ffirst grouping))))
                   (drop 3 (first grouping)))
          (remainder cutoff-time (rest grouping)))))
 
@@ -209,7 +213,7 @@
     (if (empty? events)
       tied-events
       (do
-        (let [new-tied-events (when (= (last-first (first events)) 'tie)
+        (let [new-tied-events (when (= (last (first events)) 'tie)
                                 (get-complementary-events (first events) (rest events)))]
           (if new-tied-events
             (let [events-without-tied (cons (first events) (remove-all new-tied-events (rest events)))
@@ -217,35 +221,34 @@
               (recur (rest events-without-tied) (concat tied-events new-tied-events)))
             (recur (rest events) (concat tied-events (first events)))))))))
 
-(defn make-playable [contiguous-groupings]
+(defn make-playable
   "makes the object groupings into playable events as well as recombining them with a different database timing sequence. "
+  [contiguous-groupings]
   (reduce-ties
-   (sort <
-            (apply concat
-                   (set-timings (map first
-                                        (collect-groupings (eval (choose-one @*database-names*))))
-                                (map (fn [x](:timing (eval x))) contiguous-groupings)
-                                (map (fn [x](:events (eval x))) contiguous-groupings))))))
+   (sort-by-first-element
+         (apply concat
+                (set-timings (map first (collect-groupings (resolve-db (choose-one @*database-names*))))
+                             (map (fn [grouping-name] (:timing (find-in-grouping grouping-name))) contiguous-groupings)
+                             (map (fn [grouping-name] (:events (find-in-grouping grouping-name))) contiguous-groupings))))))
 
-(defn choose-beginning-grouping [list]
+(defn choose-beginning-grouping
   "chooses randomly from its list arg but avoids the end and rests."
-  (let [test (nth (rand-int (count list))
-                  list)]
-    (cond (empty? (rest list)) (first list)
-          (and
-           (not (= (:destination (find-in-grouping test)) 'end))
-           (not (zero? (get-first-pitch (:events (find-in-grouping test)))))
-           (not (= test (:last-choice (find-in-lexicon (:lexicon (find-in-grouping test))))))
-           (and (> (count list) 1)(not (= @*the-last-first-choice* test))))
-          test
-          :else (choose-beginning-grouping list))))
+  [col]
+  (let [test (nth col (rand-int (count col)))]
+    (cond
+     (empty? (rest col)) (first col)
+     (and
+      (not= (:destination (find-in-grouping test)) 'end)
+      (not (zero? (get-first-pitch (:events (find-in-grouping test)))))
+      (not= test (:last-choice (find-in-lexicon (:lexicon (find-in-grouping test)))))
+      (and (> (count col) 1) (not= @*the-last-first-choice* test)))
+     test
+     :else (choose-beginning-grouping col))))
 
 (defn check-for-only-ends [groupings]
   "checks to see if the grouping contains only ending objects."
-  (cond (empty? groupings) true
-        (= (:destination (find-in-grouping (first groupings))) 'end)
-        (check-for-only-ends (rest groupings))
-        :else ()))
+  (every? (fn [grouping]
+            (= (:destination (find-in-grouping grouping)) 'end)) groupings))
 
 (defn remove-ends
   "removes lexicons that contain only final groupings."
@@ -266,7 +269,8 @@
 (defn choose-a-random-start-grouping
   "returns a randomly chosen object for begining a recombination."
   [lexicons]
-  (let [lexicon-name (choose-one (remove-ends lexicons))
+  (let [lexicon-without-ends (remove-ends lexicons)
+        lexicon-name (choose-one lexicon-without-ends)
         grouping-names (:grouping-names (find-in-lexicon lexicon-name))]
     (reset! *the-last-first-choice* (choose-beginning-grouping grouping-names)))
   @*the-last-first-choice*)
@@ -287,7 +291,6 @@
   (str "lexicon-" (interspace-hyphens pitches)))
 
 (defn create-database
-  "the low-level function for creating instances of grouping objects."
   ([source] (create-database source true))
   ([source beginning]
      (reset! *grouping-names* ())
@@ -348,7 +351,7 @@
   (reset! *database-names* (distinct (concat names-of-eventlists @*database-names*)))
   (doall
    (map (fn [event-list-name]
-          (create-database-and-put-into-lexicons event-list-name (var-get (ns-resolve 'data.forgray event-list-name))))
+          (create-database-and-put-into-lexicons event-list-name (resolve-db event-list-name)))
         names-of-eventlists))
   true)
 
@@ -363,14 +366,19 @@
   (reset! test ())
   (reset! name ()))
 
+(defn choose-grouping []
+  (let [chosen-grouping (choose-a-random-start-grouping @*lexicons*)
+        next-choice (:destination (find-in-grouping chosen-grouping))]
+    (if (= next-choice 'end)
+      (list chosen-grouping)
+      (cons chosen-grouping (sequence-through-groupings next-choice)))))
+
 (defn improvise-it
   "recombines the groupings, applies a new overall duration set, and makes the data playable."
   []
-  (reduce-ties (make-playable
-                (let [chosen-grouping (choose-a-random-start-grouping @*lexicons*)
-                      next-choice (:destination (find-in-grouping chosen-grouping))]
-                  (if (= next-choice 'end) (list chosen-grouping)
-                      (cons chosen-grouping (sequence-through-groupings next-choice)))))))
+  (reduce-ties
+   (make-playable
+    (choose-grouping))))
 
 (defn improvise [databases]
   (when-not (all-equal? databases @*database-names*)
