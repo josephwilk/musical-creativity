@@ -3,7 +3,8 @@
    [musical-creativity.util :refer :all]
    [musical-creativity.events :refer :all]
    [clojure.string :as str]
-   [data.forgray :refer :all]))
+   [data.forgray :refer :all]
+   [data.georgiaiam :refer :all]))
 
 (def *lexicon-store* (atom {}))
 (def *groupings-store* (atom {}))
@@ -67,6 +68,7 @@
 
 (defn resolve-db [name]
   (var-get (ns-resolve 'data.forgray name)))
+  (var-get (resolve db)))
 
 (def new-lexicon
   {:grouping-names []
