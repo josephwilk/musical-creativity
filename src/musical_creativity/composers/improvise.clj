@@ -37,22 +37,6 @@
 (def *channel-15* (atom 1))
 (def *channel-16* (atom 1))
 
-(reset! *channel-1* 1)
-(reset! *channel-2* 1)
-(reset! *channel-3* 1)
-(reset! *channel-4* 1)
-(reset! *channel-5* 1)
-(reset! *channel-6* 1)
-(reset! *channel-7* 1)
-(reset! *channel-8* 1)
-(reset! *channel-9* 1)
-(reset! *channel-10* 1)
-(reset! *channel-11* 1)
-(reset! *channel-12* 1)
-(reset! *channel-13* 1)
-(reset! *channel-14* 1)
-(reset! *channel-15* 1)
-(reset! *channel-16* 1)
 
 (defn implode [list]
   (str/join "" list))
