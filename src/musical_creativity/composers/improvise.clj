@@ -19,7 +19,7 @@
 (def *grouping-names* (atom ()))
 (def *first-groupings* (atom ()))
 (def tied-events ())
-(def *save-groupings* ())
+(def *save-groupings* (atom ()))
 
 (def *channel-1* (atom 1))
 (def *channel-2* (atom 1))
@@ -137,19 +137,15 @@
   "creates one event from two based on tie."
   (concat (take 2 event)
           (list (apply + (map third (cons event events))))
-          (drop  3 event)))
+          (drop 3 event)))
 
-(defn remove-it [remove-event events]
-  "removes the first arg from the second arg once based on the first two elements."
-  (cond
-   (empty? events)
-   ()
-   (and
-    (= (first remove-event) (ffirst events))
-    (= (second remove-event) (get-first-pitch events)))
-   (rest events)
-   :else
-   (cons (first events) (remove-it remove-event (rest events)))))
+(defn remove-it
+  [remove-event events]
+  (remove (fn [event]
+            (and
+             (= (timepoint-of remove-event) (timepoint-of event))
+             (= (pitch-of remove-event) (pitch-of event))))
+          events))
 
 (defn remove-all [remove-events events]
   (if (empty? remove-events)
@@ -218,10 +214,10 @@
    (<= (+ (ffirst grouping) (third (first grouping))) cutoff-time)
    (remainder cutoff-time (rest grouping))
    :else
-   (cons (concat  (list cutoff-time)
-                  (list (second (first grouping)))
-                  (list (- (third (first grouping)) (- cutoff-time (ffirst grouping))))
-                  (drop 3 (first grouping)))
+   (cons (concat (list cutoff-time)
+                 (list (second (first grouping)))
+                 (list (- (third (first grouping)) (- cutoff-time (ffirst grouping))))
+                 (drop 3 (first grouping)))
          (remainder cutoff-time (rest grouping)))))
 
 (defn collect-groupings
@@ -369,9 +365,7 @@
   (reset! *grouping-names* ())
   (reset! *groupings* ())
   (reset! *save-groupings* ())
-  (reset! *database-names* ())
-  (reset! test ())
-  (reset! name ()))
+  (reset! *database-names* ()))
 
 (defn choose-grouping []
   (let [chosen-grouping (choose-a-random-start-grouping @*lexicons*)
