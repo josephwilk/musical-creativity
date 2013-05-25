@@ -283,16 +283,6 @@
     (reset! *the-last-first-choice* (choose-beginning-grouping grouping-names)))
   @*the-last-first-choice*)
 
-(defn improvise-it
-  "recombines the groupings, applies a new overall duration set, and makes the data playable."
-  []
-  (reset! *new-work*
-          (reduce-ties (make-playable
-                        (let [chosen-grouping (choose-a-random-start-grouping @*lexicons*)
-                              next-choice (:destination (find-in-grouping chosen-grouping))]
-                        (if (= next-choice 'end) (list chosen-grouping)
-                            (cons chosen-grouping (sequence-through-groupings next-choice))))))))
-
 (defn interspace-hyphens [col]
   "places hyphens between the various symbols in its lits arg."
   (str/join "-" col))
@@ -384,6 +374,16 @@
   (reset! *database-names* ())
   (reset! test ())
   (reset! name ()))
+
+(defn improvise-it
+  "recombines the groupings, applies a new overall duration set, and makes the data playable."
+  []
+  (reset! *new-work*
+          (reduce-ties (make-playable
+                        (let [chosen-grouping (choose-a-random-start-grouping @*lexicons*)
+                              next-choice (:destination (find-in-grouping chosen-grouping))]
+                        (if (= next-choice 'end) (list chosen-grouping)
+                            (cons chosen-grouping (sequence-through-groupings next-choice))))))))
 
 (defn improvise [databases]
   (when-not (all-equal? databases @*database-names*)
