@@ -96,7 +96,7 @@
          (= (second event)(get-first-pitch events))
          (within-range (+ (first event)(third event))
                        (list (ffirst events) true (ffirst events)))
-         (= (last-first event)))
+         (= (last-first event) 'tie))
         (cons (first events)
               (get-complementary-events (first events) (rest events)))
         :else (get-complementary-events event (rest events))))
@@ -222,7 +222,7 @@
     (if (empty? events)
       tied-events
       (do
-        (let [new-tied-events (when (= (last-first (first events)))
+        (let [new-tied-events (when (= (last-first (first events)) 'tie)
                                 (get-complementary-events (first events) (rest events)))]
           (if new-tied-events
             (let [events-without-tied (cons (first events) (remove-all new-tied-events (rest events)))
@@ -267,12 +267,14 @@
 
 (defn sequence-through-groupings [choice]
   "collects properly connected groupings."
-  (cond (= choice 'end)()
-        (= (:destination (find-in-grouping choice)) 'end)
-        (list choice)
-        :else (let [new-choice (select choice)]
-                (cons new-choice
-                      (sequence-through-groupings (:destination (find-in-grouping new-choice)))))))
+  (cond
+   (= choice 'end)
+   ()
+   (= (:destination (find-in-grouping choice)) 'end)
+   (list choice)
+   :else (let [new-choice (select choice)]
+           (cons new-choice
+                 (sequence-through-groupings (:destination (find-in-grouping new-choice)))))))
 
 (defn choose-a-random-start-grouping
   "returns a randomly chosen object for begining a recombination."
