@@ -280,10 +280,11 @@
                 (cons new-choice
                       (sequence-through-groupings (:destination (find-in-grouping new-choice)))))))
 
-
-(defn choose-a-random-start-grouping [lexicons]
+(defn choose-a-random-start-grouping
   "returns a randomly chosen object for begining a recombination."
-  (let [grouping-names (:grouping-names (find-in-lexicon (choose-one (remove-ends lexicons))))]
+  [lexicons]
+  (let [lexicon-name (choose-one (remove-ends lexicons))
+        grouping-names (:grouping-names (find-in-lexicon lexicon-name))]
     (reset! *the-last-first-choice* (choose-beginning-grouping grouping-names)))
   @*the-last-first-choice*)
 
@@ -299,24 +300,18 @@
 
 (defn interspace-hyphens [col]
   "places hyphens between the various symbols in its lits arg."
-  (if (empty? (rest col))
-    col
-    (concat (list (first col) "-") (interspace-hyphens (rest col)))))
+  (str/join "-" col))
 
 (defn make-new-name-of-object [name pitches]
   "creates the names of objects that follow other objects."
-  (implode (concat  (list name "[" (inc seed) "]" "-")  (interspace-hyphens pitches))))
+  (str name "[" (inc seed) "]" "-" (interspace-hyphens pitches)))
 
 (defn make-name-of-object [name pitches]
   "makes names for objects."
-  (implode (concat   (list name "[" (inc seed) "]" "-")
-                     (interspace-hyphens pitches))))
+  (str name "[" (inc seed) "]" "-" (interspace-hyphens pitches)))
 
 (defn make-name-of-lexicon [pitches]
-        " calling (make-name-of-lexicon (0))
-            make-name-of-lexicon returned lexicon-[1]-0
-           where the bracketed number is the order."
-  (implode (concat  '(lexicon-) (interspace-hyphens pitches))))
+  (str "lexicon-" (interspace-hyphens pitches)))
 
 (defn create-database
   "the low-level function for creating instances of grouping objects."
@@ -351,7 +346,7 @@
 (defn store-grouping! [lexicon-name grouping]
   (let [lexicon-record (or (@*lexicon-store* lexicon-name) new-lexicon)
         grouping-names (:grouping-names lexicon-record)
-        updated-lexicon (assoc lexicon-record :grouping-names (concat grouping grouping-names))]
+        updated-lexicon (assoc lexicon-record :grouping-names (cons grouping grouping-names))]
     (reset! *lexicon-store* (assoc @*lexicon-store* lexicon-name updated-lexicon))))
 
 (defn store-lexicon! [grouping lexicon-name]
