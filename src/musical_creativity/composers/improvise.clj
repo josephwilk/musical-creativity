@@ -94,6 +94,23 @@
 (defn make-name-of-lexicon [pitches]
   (str "lexicon-" (interspace-hyphens pitches)))
 
+(defn contains-in-lexicon? [name]
+  (contains? @*lexicon-store* name))
+
+(defn store-grouping! [lexicon-name grouping]
+  (let [lexicon-record (or (@*lexicon-store* lexicon-name) new-lexicon)
+        grouping-names (:grouping-names lexicon-record)
+        updated-lexicon (assoc lexicon-record :grouping-names (cons grouping grouping-names))]
+    (reset! *lexicon-store* (assoc @*lexicon-store* lexicon-name updated-lexicon))))
+
+(defn store-lexicon! [grouping lexicon-name]
+  (let [grouping-record (or (find-in-grouping grouping) new-grouping)
+        updated-grouping (assoc grouping-record :lexicon lexicon-name)]
+    (reset! *groupings-store* (assoc @*groupings-store* grouping updated-grouping))))
+
+(defn store-lexicon-name! [lexicon-name]
+  (reset! *lexicons* (concat  @*lexicons* (list lexicon-name))))
+
 (defn get-complementary-events
   "finds the complementary event to one with a tie as its final element."
   [event events]
@@ -319,23 +336,6 @@
                (reset! *first-groupings* (concat  @*first-groupings* (list name))))
              (recur (rest groupings) false)))))
      @*grouping-names*))
-
-(defn contains-in-lexicon? [name]
-  (contains? @*lexicon-store* name))
-
-(defn store-grouping! [lexicon-name grouping]
-  (let [lexicon-record (or (@*lexicon-store* lexicon-name) new-lexicon)
-        grouping-names (:grouping-names lexicon-record)
-        updated-lexicon (assoc lexicon-record :grouping-names (cons grouping grouping-names))]
-    (reset! *lexicon-store* (assoc @*lexicon-store* lexicon-name updated-lexicon))))
-
-(defn store-lexicon! [grouping lexicon-name]
-  (let [grouping-record (or (find-in-grouping grouping) new-grouping)
-        updated-grouping (assoc grouping-record :lexicon lexicon-name)]
-    (reset! *groupings-store* (assoc @*groupings-store* grouping updated-grouping))))
-
-(defn store-lexicon-name! [lexicon-name]
-  (reset! *lexicons* (concat  @*lexicons* (list lexicon-name))))
 
 (defn create-database-and-put-into-lexicons [source events]
   "pujts the various data into each object and then the object itself into the proper lexicon."
