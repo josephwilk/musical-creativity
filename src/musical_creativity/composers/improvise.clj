@@ -22,23 +22,6 @@
 (def tied-events ())
 (def *save-groupings* (atom ()))
 
-(def *channel-1* (atom 1))
-(def *channel-2* (atom 1))
-(def *channel-3* (atom 1))
-(def *channel-4* (atom 1))
-(def *channel-5* (atom 1))
-(def *channel-6* (atom 1))
-(def *channel-7* (atom 1))
-(def *channel-8* (atom 1))
-(def *channel-9* (atom 1))
-(def *channel-10* (atom 1))
-(def *channel-11* (atom 1))
-(def *channel-12* (atom 1))
-(def *channel-13* (atom 1))
-(def *channel-14* (atom 1))
-(def *channel-15* (atom 1))
-(def *channel-16* (atom 1))
-
 (defn sort-by-first-element [lists]
   (sort (fn [[x & _] [y & _]] (< x y))  lists))
 
