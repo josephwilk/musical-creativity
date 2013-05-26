@@ -176,13 +176,8 @@
   "finds the next new ontime past the onset events."
   ([events] (find-next-new-ontime events (ffirst events)))
   ([events time]
-      (cond
-       (empty? events)
-       nil
-       (> (ffirst events) time)
-       (ffirst events)
-       :else
-       (find-next-new-ontime (rest events) time))))
+     (some (fn [event]
+             (when (> (first event) time) (first event))) events)))
 
 (defn get-all-simultaneous-attacks
   "returns all of the events with the same initial ontime at the nead of events."
