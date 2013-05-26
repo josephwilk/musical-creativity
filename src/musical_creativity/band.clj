@@ -1,16 +1,23 @@
 (ns musical-creativity.band
   (:require
-   [overtone.live :refer :all]))
+   [overtone.live :refer :all]
+   [overtone.inst.synth :refer :all]
+   [overtone.inst.sampled-piano :as piano]
+   [overtone.inst.drum :as drum]))
 
-(defn bass-and-lead [pitch])
-(defn applause [pitch])
-(defn chiffer [pitch])
-(defn melodic-tom [pitch])
-(defn taiko-drum [pitch])
-(defn fifth-saw-wave [pitch])
-(defn bowed [pitch])
-(defn halo [pitch])
-(defn piano [pitch])
+(defn piano-fn [pitch]
+  (piano/sampled-piano pitch))
+(defn flute-fn [pitch]
+  (println :flute)
+  (simple-flute (midi->hz pitch)))
+(defn bass-fn  [pitch]
+  (println :bass)
+  (bass (midi->hz pitch)))
+(defn tom-fn [pitch]
+  (println :tom)
+  (drum/tom (midi->hz pitch)))
+(defn kick-fn [pitch]
+  (drum/kick (midi->hz pitch)))
 
 ;(10 20 25 26 41 50 52 55 56 58 59 60 61 62 63 64 65 66 67 68 69 70 71
 ;72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94
@@ -18,9 +25,12 @@
 ;115 117 118 119 120 121 123 125 126 127)
 
 (defn find-instrument [id]
-  (condp id
-
-    :else piano))
+  (case id
+    ;74 flute-fn
+    88 bass-fn
+    118 tom-fn
+    119 kick-fn
+    piano-fn))
 
 (defn play-event [event start-time player-fn]
   (let [pitch-to-play (:pitch event)
