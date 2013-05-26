@@ -4,4 +4,4 @@
    [musical-creativity.composers.improvise :refer :all]))
 
 (fact "compose"
-  (compose))
+  (count (compose)) => #(> % 0))
