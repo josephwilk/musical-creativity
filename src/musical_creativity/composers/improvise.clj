@@ -124,13 +124,16 @@
           (list (apply + (map third (cons event events))))
           (drop 3 event)))
 
-(defn remove-it
-  [remove-event events]
-  (remove (fn [event]
-            (and
-             (= (timepoint-of remove-event) (timepoint-of event))
-             (= (pitch-of remove-event) (pitch-of event))))
-          events))
+(defn remove-it [remove-event events]
+  (cond
+   (empty? events)
+   ()
+   (and
+    (= (first remove-event) (ffirst events))
+    (= (second remove-event) (second (first events))))
+   (rest events)
+   :else
+   (cons (first events) (remove-it remove-event (rest events)))))
 
 (defn remove-all [remove-events events]
   (if (empty? remove-events)
