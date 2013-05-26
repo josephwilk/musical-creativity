@@ -49,8 +49,8 @@
 (defn find-in-grouping [name]
   (@*groupings-store* name))
 
-(defn resolve-db [name]
-  (var-get (resolve name)))
+(defn resolve-db [db]
+  (var-get (resolve db)))
 
 (def new-lexicon
   {:grouping-names []
