@@ -3,8 +3,9 @@
    [musical-creativity.util :refer :all]
    [musical-creativity.events :refer :all]
    [clojure.string :as str]
+   [data.georgiaiam :refer :all]
    [data.forgray :refer :all]
-   [data.georgiaiam :refer :all]))
+   [data.fourbros :refer :all]))
 
 (def *lexicon-store* (atom {}))
 (def *groupings-store* (atom {}))
