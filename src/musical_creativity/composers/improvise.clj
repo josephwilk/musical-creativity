@@ -67,8 +67,7 @@
   (@*groupings-store* name))
 
 (defn resolve-db [name]
-  (var-get (ns-resolve 'data.forgray name)))
-  (var-get (resolve db)))
+  (var-get (resolve name)))
 
 (def new-lexicon
   {:grouping-names []
