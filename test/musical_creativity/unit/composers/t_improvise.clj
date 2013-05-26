@@ -19,10 +19,8 @@
 (fact "making lexicon name"
   (make-name-of-lexicon '(63 59 37)) => "lexicon-63-59-37")
 
-(fact "removing ends"
+(future-fact "removing ends"
   (create-a-complete-database '(forgray))
-
-  ;(reset! *lexicon-store* {})
 
   (remove-ends '(lexicon-77-36 lexicon-77-36-74 lexicon-74-70-34)) =>
   '(lexicon-77-36 lexicon-77-36-74 lexicon-74-70-34))
