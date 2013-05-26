@@ -161,7 +161,7 @@
   ([events] (find-next-new-ontime events (ffirst events)))
   ([events time]
      (some (fn [event]
-             (when (> (first event) time) (first event))) events)))
+             (when (> (timepoint-of event) time) (timepoint-of event))) events)))
 
 (defn get-all-simultaneous-attacks
   "returns all of the events with the same initial ontime at the nead of events."
