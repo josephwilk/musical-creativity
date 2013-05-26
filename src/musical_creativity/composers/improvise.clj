@@ -9,19 +9,14 @@
 
 (def *lexicon-store* (atom {}))
 (def *groupings-store* (atom {}))
-
 (def *the-last-first-choice* (atom ()))
-
 (def *database-names* (atom ()))
-
 (def *lexicons* (atom ()))
 (def *groupings* (atom ()))
-
-(def seed 1)
 (def *grouping-names* (atom ()))
 (def *first-groupings* (atom ()))
-(def tied-events ())
-(def *save-groupings* (atom ()))
+
+(def seed 1)
 
 (defn sort-by-first-element [lists]
   (sort (fn [[x & _] [y & _]] (< x y))  lists))
@@ -112,14 +107,16 @@
    :else
    (get-complementary-events event (rest events))))
 
-(defn select [choice]
+(defn select
   "selects randomly from objects in the same lexicon."
+  [choice]
   (if (zero? (get-first-pitch (:events (find-in-grouping choice))))
     choice
     (choose-one (:grouping-names (find-in-lexicon (:lexicon (find-in-grouping choice)))))))
 
-(defn add-them [event events]
+(defn add-them
   "creates one event from two based on tie."
+  [event events]
   (concat (take 2 event)
           (list (apply + (map third (cons event events))))
           (drop 3 event)))
@@ -148,11 +145,12 @@
              (empty? groupings)
              (nil? (second (first new-timings))))
        ()
-       (cons (map (fn [x](concat  (list current-time)
-                                  (list (second x))
-                                  (list (* (/ (third x) (- (second (first old-timings)) (first (first old-timings))))
-                                           (- (second (first new-timings)) (first (first new-timings)))))
-                                  (drop  3 x)))
+       (cons (map (fn [event]
+                    (concat (list current-time)
+                            (list (second event))
+                            (list (* (/ (third event) (- (second (first old-timings)) (first (first old-timings))))
+                                     (- (second (first new-timings)) (first (first new-timings)))))
+                            (drop  3 event)))
                   (first groupings))
              (set-timings (rest new-timings)
                           (rest old-timings)
@@ -160,7 +158,6 @@
                           (+ current-time (- (second (first new-timings)) (ffirst new-timings))))))))
 
 (defn find-next-new-ontime
-  "finds the next new ontime past the onset events."
   ([events] (find-next-new-ontime events (ffirst events)))
   ([events time]
      (some (fn [event]
@@ -174,8 +171,9 @@
           (cons (first events)
                 (get-all-simultaneous-attacks (rest events) time)))))
 
-(defn clip [cutoff-time grouping]
+(defn clip
   "clips the endings off of events which extend beyond the entrance of a new event."
+  [cutoff-time grouping]
   (when cutoff-time
     (map (fn [event]
               (if (<= (+ (timepoint-of event) (velocity-of event)) cutoff-time)
@@ -186,8 +184,9 @@
                         (list 'tie))))
          grouping)))
 
-(defn remainder [cutoff-time grouping]
+(defn remainder
   "returns the remainder of the events which extend beyond the entrance of a new event."
+  [cutoff-time grouping]
   (cond
    (empty? grouping)
    ()
@@ -201,7 +200,6 @@
          (remainder cutoff-time (rest grouping)))))
 
 (defn collect-groupings
-  "top level function to collect groupings from the database."
   ([events] (collect-groupings events 0))
   ([events cut]
      (if (nil? (find-next-new-ontime events))
@@ -212,7 +210,7 @@
          (cons (list (list (ffirst events) cutoff-time) clipped-grouping)
                (collect-groupings (concat (remainder cutoff-time grouping)
                                           (remove-all grouping events))
-                                   cutoff-time))))))
+                                  cutoff-time))))))
 
 (defn reduce-ties
   "connects tied events and returns their joined composites."
@@ -314,7 +312,6 @@
      @*grouping-names*))
 
 (defn create-database-and-put-into-lexicons [source events]
-  "pujts the various data into each object and then the object itself into the proper lexicon."
    (reset! *groupings* (collect-groupings events))
    (create-database source)
    (doall (map (fn [grouping]
@@ -344,7 +341,6 @@
   (reset! *lexicons* ())
   (reset! *grouping-names* ())
   (reset! *groupings* ())
-  (reset! *save-groupings* ())
   (reset! *database-names* ()))
 
 (defn choose-grouping []
