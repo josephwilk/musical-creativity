@@ -31,7 +31,8 @@
   {:time     (timepoint-of midi)
    :pitch    (pitch-of midi)
    :velocity (velocity-of midi)
-   :channel  (channel-of midi)})
+   :channel  (channel-of midi)
+   :instrument (when (= 5 (count midi)) (instrument-of midi))})
 
 (defn make-event [ontime data & [channel]]
   {:time ontime
