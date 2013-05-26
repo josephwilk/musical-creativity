@@ -173,18 +173,15 @@
 
 (defn clip [cutoff-time grouping]
   "clips the endings off of events which extend beyond the entrance of a new event."
-  (cond
-   (or (nil? cutoff-time) (empty? grouping))
-   ()
-   (<= (+ (ffirst grouping) (third (first grouping))) cutoff-time)
-   (cons (first grouping)
-         (clip cutoff-time (rest grouping)))
-   :else
-   (cons (concat  (take 2 (first grouping))
-                  (list (- cutoff-time (ffirst grouping)))
-                  (drop  3 (first grouping))
-                  (list 'tie))
-         (clip cutoff-time (rest grouping)))))
+  (when cutoff-time
+    (map (fn [event]
+              (if (<= (+ (timepoint-of event) (velocity-of event)) cutoff-time)
+                event
+                (concat (take 2 event)
+                        (list (- cutoff-time (timepoint-of event)))
+                        (drop  3 event)
+                        (list 'tie))))
+         grouping)))
 
 (defn remainder [cutoff-time grouping]
   "returns the remainder of the events which extend beyond the entrance of a new event."
