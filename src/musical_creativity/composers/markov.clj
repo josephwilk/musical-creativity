@@ -18,35 +18,37 @@
    {:pitch 60 :time 9000}])
 
 (def defaults
-  {:start 60
+  {:start [60]
    :events default-events
-   :length 50})
+   :length 50
+   :depth 1})
 
 (defn pick-pitches-fn [stm]
   (fn [pitches]
     (let [last-pitch (last pitches)
           candidates (stm last-pitch)
-          picked (rand-nth candidates)]
+          picked [(rand-nth candidates)]]
       (conj pitches picked))))
 
 (defn- compose-pitches [start length stm]
   (nth (iterate (pick-pitches-fn stm) [start]) length))
 
-(defn probabilities-for [stm [first-pitch second-pitch]]
-  (let [stm-key first-pitch
-        stm-row (or (stm stm-key) [])]
-    (assoc stm stm-key (conj stm-row second-pitch))))
+(defn probabilities-for [stm chunk]
+  (let [prefix (drop-last chunk)
+        suffix (last chunk)
+        stm-row (or (stm prefix) [])]
+    (assoc stm prefix (conj stm-row suffix))))
 
-(defn- state-transition-matrix-probabilities [pitches]
-  (let [pitch-pairs (partition 2 1 pitches)]
-    (reduce probabilities-for {} pitch-pairs)))
+(defn- state-transition-matrix-probabilities [pitches depth]
+  (let [pitch-chunks (partition (inc depth) 1 pitches)]
+    (reduce probabilities-for {} pitch-chunks)))
 
-(defn- compose-markov [start-pitch length stm]
-  (events/make (compose-pitches start-pitch length stm) 0 350))
+(defn- compose-markov [start length stm]
+  (events/make (flatten (compose-pitches start length stm)) 0 350))
 
 (defn compose
-  ([] (compose (:events defaults) (:start defaults) (:length defaults)))
-  ([events start-pitch length]
+  ([] (compose (:events defaults) (:start defaults) (:length defaults) (:depth defaults)))
+  ([events start length depth]
      (let [pitches (map :pitch events)
-           stm (state-transition-matrix-probabilities pitches)]
-       (compose-markov start-pitch length stm))))
+           stm (state-transition-matrix-probabilities pitches depth)]
+       (compose-markov start length stm))))
