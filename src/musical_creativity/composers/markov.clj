@@ -6,7 +6,6 @@
 
 (def default-events
   [{:pitch 60 :time 0}
-   {:pitch 60 :time 0}
    {:pitch 62 :time 1000}
    {:pitch 64 :time 2000}
    {:pitch 65 :time 3000}
@@ -23,9 +22,9 @@
    :length 50
    :depth 1})
 
-(defn pick-pitches-fn [stm depth]
+(defn pick-pitches-fn [depth stm]
   (fn [pitches]
-    (let [last-chunk (take-last (inc depth) pitches)
+    (let [last-chunk (take-last depth pitches)
           candidates (stm last-chunk)
           picked (rand-nth candidates)]
       (if picked
@@ -33,7 +32,7 @@
         pitches))))
 
 (defn- compose-pitches [start length depth stm]
-  (nth (iterate (pick-pitches-fn stm depth) start) length))
+  (nth (iterate (pick-pitches-fn depth stm) start) length))
 
 (defn probabilities-for [stm chunk]
   (let [prefix (drop-last chunk)
@@ -51,6 +50,8 @@
 (defn compose
   ([] (compose (:events defaults) (:start defaults) (:length defaults) (:depth defaults)))
   ([events start length depth]
-     (let [pitches (map :pitch events)
-           stm (state-transition-matrix-probabilities pitches depth)]
-       (compose-markov start length depth stm))))
+     (if (= (count start) depth)
+       (let [pitches (map :pitch events)
+             stm (state-transition-matrix-probabilities pitches depth)]
+        (compose-markov start length depth stm))
+       (println (str "Error: Start sequence must be same as depth: start:" (count start) " depth:" depth)))))
