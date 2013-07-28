@@ -7,8 +7,8 @@
   (let [events (markov/compose markov/default-events [60] 50 1)]
     (count events) => 51))
 
-(future-fact "it should support different depths"
+(fact "it should support different depths"
   (let [events (markov/compose markov/default-events [71 72] 50 2)]
-    (count events) => 51))
+    (count events) => 3))
 
 ;(play (markov/compose 60 100 events))
