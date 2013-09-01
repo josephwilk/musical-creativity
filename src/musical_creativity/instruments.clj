@@ -6,6 +6,8 @@
     [overtone.inst.synth :as synth]
     [overtone.synth.stringed :as stringed]))
 
+(defn piano-scale-field [pitch-field] (filter #(and (>= % 21) (<= % 108)) pitch-field))
+
 (def my-pool (overtone.at-at/mk-pool))
 
 (definst saw-wave [freq 440 attack 0.01 sustain 0.4 release 0.1 vol 0.4]
