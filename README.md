@@ -14,8 +14,8 @@ Experiments with models for computers generating music.
 
 ;Cellular automata
 (require '[musical-creativity.composers.cellular-automata :as ca] :reload)
-(musician/play (ca/compose) piano)
-(musician/play (ca/compose ca/rule-22) piano)
+(musician/play (ca/compose) organ)
+(musician/play (ca/compose ca/rule-22) sawish)
 
 ;Sonify data
 (require '[musical-creativity.composers.sonify-data :as sonify-data] :reload)

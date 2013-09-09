@@ -4,6 +4,13 @@
             [overtone.live :as live]
             [overtone.inst.sampled-piano :as piano]))
 
+;;Brainwave types:
+;; * Delta: deepest stages of sleep
+;; * Beta:  normal waking consciousness
+;; * Alpha: relaxation and meditation (creativity)
+;; * Theta: REM sleep (dreams)
+;; * Gamma: hyperalertness, perception, and integration of sensory input
+
 ; Example:
 ;; {gamma_waves 95408, high_beta_waves 205681, beta_waves 293928, mid_gamma_waves 84528, low_alpha_waves 172417,
 ;; delta_waves 117933, timestamp 1.375811275696894E9, low_beta_waves 382176, low_gamma_waves 106288, alpha_waves 112605, theta_waves 635628, high_alpha_waves 52793, attention 0, meditation 0}
