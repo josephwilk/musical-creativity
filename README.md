@@ -31,6 +31,9 @@ Experiments with models for computers generating music.
 (require '[data.bach :as bach] :reload)
 (recombinance/create-database-from bach/chorale-140-data)
 (musician/play (recombinance/compose) piano)
+(musician/play (recombinance/compose) slow-piano)
+
+(musician/play (recombinance/compose-original) piano)
 
 ;Network (Using adaptive resonance theory)
 (require '[musical-creativity.composers.network :as network] :reload)

@@ -11,6 +11,9 @@
 
 (def my-pool (overtone.at-at/mk-pool))
 
+(defn- note->hz [music-note]
+  (midi->hz (note music-note)))
+
 (definst bell-by-freq [frequency 440 duration 1000 volume 1.0
   h0 1 h1 0.6 h2 0.4 h3 0.25 h4 0.2 h5 0.15]
   (let [harmonics   [ 1  2  3  4.2  5.4 6.8]
@@ -51,7 +54,7 @@
          :action FREE))
     (lpf (mul-add (sin-osc 5) freq (* freq 5)))))
 
-(defn play-organ [musical-note]
+(defn play-organ [musical-note & args]
   (organ-with-freq (note->hz (note musical-note))))
 
 (definst woah-by-freq [freq 440 duration 1000 volume 1.0]
@@ -59,7 +62,7 @@
         aenv (env-gen (perc 0.005 (/ duration 1000)) :action FREE)]
     (* volume (sin-osc fenv (* 0.5 Math/PI)) aenv)))
 
-(defn play-woah [musical-note]
+(defn play-woah [musical-note & args]
   (woah-by-freq (note->hz (note musical-note))))
 
 (definst sawnoff-by-freq [freq 440 depth 10]
@@ -124,9 +127,6 @@
 (defn- saw2 [music-note]
   (saw-wave (midi->hz (note music-note))))
 
-(defn- note->hz [music-note]
-  (midi->hz (note music-note)))
-
 (defn linear-map
   "given points (x0,y0), (x1,y1) calculate linear relation y given x"
   [x0 x1 y0 y1 x]
@@ -155,8 +155,9 @@
         note-time (+ start-time (:time event))]
     (when pitch-to-play
       (if (and attack level)
-        (let [current-instrument (at note-time (player-fn :note pitch-to-play :attack attack :level level))]
-          (at (+ 1200 note-time) (ctl current-instrument :gate 0)))
+        (let [current-instrument (at note-time (player-fn :note pitch-to-play))]
+         ; (at (+ 1200 note-time) (ctl current-instrument :gate 0))
+          )
         (at note-time (player-fn pitch-to-play)))
       (overtone.at-at/at (- note-time 10) #(when log (do (print log) (flush))) my-pool))))
 
@@ -165,6 +166,13 @@
         note-time (+ start-time (:time event))
         note-name (find-note-name pitch)]
     (at note-time (play-chord (pitch/chord note-name :major)))))
+
+(defn slow-sampled-piano [& args]
+  (Thread/sleep 400)
+  (apply piano/sampled-piano args))
+
+(defn slow-piano [event start-time]
+  (play-event event start-time slow-sampled-piano))
 
 (defn piano [event start-time]
   (play-event event start-time piano/sampled-piano))
