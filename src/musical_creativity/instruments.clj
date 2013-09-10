@@ -147,16 +147,28 @@
 (defn- play-chord [a-chord]
   (doseq [note a-chord] (saw2 note)))
 
+(defn-  velocity-to-sustain [velocity]
+  (case velocity
+    230 0.2
+    500 0.3
+    1000 0.4
+    1500 0.5
+    2000 0.7
+    1))
+
 (defn play-event [event start-time player-fn]
   (let [pitch-to-play (:pitch event)
         log (:log event)
         attack (when (:velocity event) (velocity-to-attack (:velocity event)))
         level (when (:velocity event)  (velocity-to-level (:velocity event))  1)
+        sustain (when (:velocity event) (velocity-to-sustain (:velocity event)))
         note-time (+ start-time (:time event))]
+    (println event)
     (when pitch-to-play
       (if (and attack level)
-        (let [current-instrument (at note-time (player-fn :note pitch-to-play))]
-         ; (at (+ 1200 note-time) (ctl current-instrument :gate 0))
+
+        (let [current-instrument (at note-time (player-fn :note pitch-to-play :attack attack :level level :sustain sustain))]
+          ;(at (+ 1200 note-time) (ctl current-instrument :gate 0))
           )
         (at note-time (player-fn pitch-to-play)))
       (overtone.at-at/at (- note-time 10) #(when log (do (print log) (flush))) my-pool))))
