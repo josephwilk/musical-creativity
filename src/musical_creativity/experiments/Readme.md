@@ -5,7 +5,10 @@
 (use 'overtone.synth.sampled-piano)
 (use 'overtone.music.pitch)
 
-(reset! fact-store '((g-b-d*c-e-g are dominant*tonic) (dominant*tonic are resolutions) (f-a-c*c-e-g are subdominant*tonic) (subdominant*tonic are resolutions)))
+(reset! fact-store '((g-b-d*c-e-g are dominant*tonic)
+                     (dominant*tonic are resolutions)
+                     (f-a-c*c-e-g are subdominant*tonic)
+                     (subdominant*tonic are resolutions)))
 
 (analogy 'g-b-d*c-e-g)
 
