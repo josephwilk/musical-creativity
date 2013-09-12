@@ -3,6 +3,11 @@
    [midje.sweet :refer :all]
    [musical-creativity.experiments.analogy :refer :all]))
 
+(reset! fact-store '((cat*mouse are strong*weak)
+                     (strong*weak are opposite*sides)
+                     (oil*water are non*mixable)
+                     (non*mixable are opposite*sides)))
+
 (fact "lookup"
   (lookup-data 'opposite*sides '((non*mixable are oil*water) (opposite*sides are non*mixable))) => '(opposite*sides are non*mixable))
 
