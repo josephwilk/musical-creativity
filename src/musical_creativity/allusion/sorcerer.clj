@@ -5,9 +5,9 @@
 (def *choices* '(chopin-1 bach-1 bach-2 bach-3 bach-4 beet-1 beet-2 bocc-1 c-1 s-1))
 
 (def chopin-1 '((0 59 1000 1 64)(1000 64 1500 1 64)(2500 63 500 1 64)(3000 64 500 1 64)
-(3500 67 500 1 64)(4000 71 1000 1 64)(5000 71 1000 1 64)(6000 71 1000 1 64)(7000 76 1000 1 64)
-(8000 75 500 1 64)(8500 76 500 1 64)(9000 78 750 1 64)(9750 76 250 1 64)(10000 76 1000 1 64)
-(11000 75 1000 1 64)))
+                (3500 67 500 1 64)(4000 71 1000 1 64)(5000 71 1000 1 64)(6000 71 1000 1 64)(7000 76 1000 1 64)
+                (8000 75 500 1 64)(8500 76 500 1 64)(9000 78 750 1 64)(9750 76 250 1 64)(10000 76 1000 1 64)
+                (11000 75 1000 1 64)))
 
 (def bach-1 '((0 71 500 1 64)(500 74 500 1 64)(1000 78 500 1 64)(1500 83 1000 1 64)
               (2500 81 500 1 64)(3000 83 1000 1 64)))
@@ -96,7 +96,6 @@
   (- interval 12))
 
 (defn pattern-match
-  "the basic pattern matcher."
   ([target-pattern-list source-pattern-list] (pattern-match target-pattern-list source-pattern-list 0 true))
   ([target-pattern-list source-pattern-list last-interval] (pattern-match target-pattern-list source-pattern-list last-interval true))
   ([target-pattern-list source-pattern-list last-interval initial]
@@ -118,15 +117,15 @@
       (cons (list test (first database-names)) (find-patterns target-pattern (rest names-of-database-works) (rest database-names)))
       (find-patterns target-pattern (rest names-of-database-works) (rest database-names)))))
 
-(defn find-allusions [target list-of-sources patterns]
+(defn set-channels [target list-of-sources patterns]
   (loop [patterns patterns
          counter 0
          list-of-sources list-of-sources
          hits []]
     (if (empty? patterns)
       hits
-      (let [timing (get-timing target (first patterns))
-            thing (if timing 
+      (let [timing (get-timing target (ffirst patterns))
+            thing (if timing
                     (change-channel (add-timing timing (first list-of-sources)) counter)
                     [])]
         (recur (rest patterns) (inc counter) (rest list-of-sources) (cons thing hits))))))
@@ -140,7 +139,7 @@
   "runs the basic grunt functions of the matcher."
   [target list-of-sources database-names]
   (let [patterns (find-the-patterns target list-of-sources database-names)
-        results (find-allusions target list-of-sources patterns)
+        results (set-channels target list-of-sources patterns)
         results (apply concat (cons target results))
         results (sort-by-first-element results)]
     (println :patterns patterns)
