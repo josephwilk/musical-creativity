@@ -54,10 +54,9 @@
          :action FREE))
     (lpf (mul-add (sin-osc 5) freq (* freq 5)))))
 
-(defn play-organ [_ musical-note _ attack _ level _ sustain _ velocity]
-  (println attack)
+(defn play-organ [_ musical-note _ attack _ level _ sustain]
   (let [hz (note->hz (note musical-note))]
-    (organ-with-freq hz velocity)))
+    (organ-with-freq hz)))
 
 (definst woah-by-freq [freq 440 duration 1000 volume 1.0]
   (let [fenv (* (env-gen (perc 0.1 (/ duration 1000))) freq)
@@ -164,13 +163,12 @@
         attack (when (:velocity event) (velocity-to-attack (:velocity event)))
         level (when (:velocity event)  (velocity-to-level (:velocity event))  1)
         sustain (when (:velocity event) (velocity-to-sustain (:velocity event)))
-        note-time (+ start-time (:time event))
-        velocity (when-let [v (:velocity event)] v)]
+        note-time (+ start-time (:time event))]
     (println event)
     (when pitch-to-play
       (if (and attack level)
 
-        (let [current-instrument (at note-time (player-fn :note pitch-to-play :attack attack :level level :sustain sustain :velocity velocity))]
+        (let [current-instrument (at note-time (player-fn :note pitch-to-play :attack attack :level level :sustain sustain))]
           ;(at (+ 1200 note-time) (ctl current-instrument :gate 0))
           )
         (at note-time (player-fn pitch-to-play)))
