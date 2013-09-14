@@ -67,6 +67,9 @@ Experiments with models for computers generating music.
 ;(very experimental)
 (require '[musical-creativity.composers.improvise :as improvise] :reload)
 (musician/play (improvise/compose) piano)
+
+(require '[musical-creativity.band :as band] :reload)
+(band/play (improvise/compose))
 ```
 
 ##Book
