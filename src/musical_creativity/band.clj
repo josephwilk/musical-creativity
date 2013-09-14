@@ -3,20 +3,20 @@
    [overtone.live :refer :all]
    [overtone.inst.synth :refer :all]
    [overtone.inst.sampled-piano :as piano]
-   [overtone.inst.drum :as drum]))
+   [overtone.inst.drum :as drum]
 
-(defn piano-fn [pitch]
-  (piano/sampled-piano pitch))
-(defn flute-fn [pitch]
+   [musical-creativity.instruments :as instruments]))
+
+(defn flute-fn [pitch & rest]
   (println :flute)
   (simple-flute (midi->hz pitch)))
-(defn bass-fn  [pitch]
+(defn bass-fn  [pitch & rest]
   (println :bass)
   (bass (midi->hz pitch)))
-(defn tom-fn [pitch]
+(defn tom-fn [pitch & rest]
   (println :tom)
   (drum/tom (midi->hz pitch)))
-(defn kick-fn [pitch]
+(defn kick-fn [pitch & rest]
   (drum/kick (midi->hz pitch)))
 
 ;(10 20 25 26 41 50 52 55 56 58 59 60 61 62 63 64 65 66 67 68 69 70 71
@@ -26,22 +26,29 @@
 
 (defn find-instrument [id]
   (case id
+    117 instruments/tb303
+
+    102 instruments/groan
+    111 instruments/woah
+    99 instruments/shudder
+    90 instruments/bell
+    91 instruments/bell
+    94 instruments/bell
+    93 instruments/bell
+    98 instruments/bell
     ;74 flute-fn
     88 bass-fn
     118 tom-fn
+    120 tom-fn
+    121 tom-fn
+    122 tom-fn
     119 kick-fn
-    piano-fn))
-
-(defn play-event [event start-time player-fn]
-  (let [pitch-to-play (:pitch event)
-        note-time (+ start-time (:time event))]
-    (when pitch-to-play
-      (at note-time (player-fn pitch-to-play)))))
+    instruments/organ))
 
 (defn band-fn [event start-time]
-  (let [instrument (find-instrument (:instrument event))]
-    (play-event event start-time instrument)))
+  (let [play-with-instrument (find-instrument (:instrument event))]
+    (play-with-instrument event start-time)))
 
 (defn play [events]
-  (let [start-time (+ 500 (overtone.live/now))]
+  (let [start-time (+ 1000 (overtone.live/now))]
     (dorun (map #(band-fn % start-time) events))))
