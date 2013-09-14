@@ -31,7 +31,7 @@
       (detect-silence whole :action FREE)
       whole))
 
-(defn play-bell [musical-note]
+(defn play-bell [_ musical-note & args]
   (bell-by-freq (note->hz (note musical-note))))
 
 (definst sawish-by-freq [freq 440 duration 1500 vibrato 8 depth 1 volume 1.0]
@@ -41,7 +41,7 @@
         (* envelope)
         (rlpf (mul-add (sin-osc vibrato) (* freq depth) (* 2 freq))))))
 
-(defn play-sawish [musical-note]
+(defn play-sawish [_ musical-note & args]
   (sawish-by-freq (note->hz (note musical-note))))
 
 (definst organ-with-freq [freq 440 dur 1000 vol 1.0]
@@ -54,7 +54,7 @@
          :action FREE))
     (lpf (mul-add (sin-osc 5) freq (* freq 5)))))
 
-(defn play-organ [musical-note & args]
+(defn play-organ [_ musical-note & args]
   (organ-with-freq (note->hz (note musical-note))))
 
 (definst woah-by-freq [freq 440 duration 1000 volume 1.0]
@@ -62,7 +62,7 @@
         aenv (env-gen (perc 0.005 (/ duration 1000)) :action FREE)]
     (* volume (sin-osc fenv (* 0.5 Math/PI)) aenv)))
 
-(defn play-woah [musical-note & args]
+(defn play-woah [_ musical-note & args]
   (woah-by-freq (note->hz (note musical-note))))
 
 (definst sawnoff-by-freq [freq 440 depth 10]
@@ -73,7 +73,7 @@
       (sin-osc (* 2 freq))
       (saw (+ freq (* depth (lf-saw:kr 0.1 0.2)))))))
 
-(defn play-sawnoff [musical-note]
+(defn play-sawnoff [_ musical-note & args]
   (sawnoff-by-freq (note->hz (note musical-note))))
 
 (definst groan-by-freq [freq 440 duration 10000 vibrato 8/3 volume 1.0]
@@ -89,7 +89,7 @@
       (* (sin-osc 0.8) (+ -0.03 (square freq)))
       (+ -0.04 (sin-osc freq))))))
 
-(defn play-groan [musical-note]
+(defn play-groan [_ musical-note & args]
   (groan-by-freq (note->hz (note musical-note))))
 
 (definst shudder-by-freq [freq 440 vibrato 6]
@@ -99,7 +99,7 @@
       (square freq)
       (sin-osc freq))))
 
-(defn play-shudder [musical-note]
+(defn play-shudder [_ musical-note & args]
   (shudder-by-freq (note->hz (note musical-note))))
 
 (definst saw-wave [freq 440 attack 0.01 sustain 0.4 release 0.1 vol 0.4]
