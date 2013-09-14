@@ -30,6 +30,7 @@ Experiments with models for computers generating music.
 (require '[musical-creativity.composers.recombinance :as recombinance] :reload)
 (require '[data.bach :as bach] :reload)
 (recombinance/create-database-from bach/chorale-140-data)
+(musician/play (recombinance/compose) organ)
 (musician/play (recombinance/compose) piano)
 (musician/play (recombinance/compose) slow-piano)
 
