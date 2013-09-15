@@ -54,7 +54,7 @@
          :action FREE))
     (lpf (mul-add (sin-osc 5) freq (* freq 5)))))
 
-(defn play-organ [_ musical-note _ attack _ level _ sustain]
+(defn play-organ [_ musical-note & args]
   (let [hz (note->hz (note musical-note))]
     (organ-with-freq hz)))
 
@@ -171,7 +171,7 @@
         (let [current-instrument (at note-time (player-fn :note pitch-to-play :attack attack :level level :sustain sustain))]
           ;(at (+ 1200 note-time) (ctl current-instrument :gate 0))
           )
-        (at note-time (player-fn pitch-to-play)))
+        (at note-time (player-fn :note pitch-to-play)))
       (overtone.at-at/at (- note-time 10) #(when log (do (print log) (flush))) my-pool))))
 
 (defn play-saw [event start-time]
