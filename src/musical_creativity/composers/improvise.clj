@@ -362,4 +362,4 @@
   (improvise-it))
 
 (defn compose []
-  (map midi-to-event (improvise '(data.forgray/forgray))))
+  (map midi-to-event (improvise '(data.forgray/forgray data.fourbros/fourbros))))
