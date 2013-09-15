@@ -6,6 +6,6 @@
   (stop))
 
 (defn play [events musician-fn]
-  (let [start-time (+ 500 (overtone.live/now))]
+  (let [start-time (+ 1000 (overtone.live/now))]
     (println)
     (dorun (map #(musician-fn % start-time) events))))
