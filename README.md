@@ -23,18 +23,8 @@ Experiments with models for computers generating music.
 
 ;Sonify text
 (require '[musical-creativity.composers.sonify-words :as sonify-words] :reload)
-(musician/play (sonify-words/compose "potato potato potata potatd potate potatk") piano)
+(musician/play (sonify-words/compose "Strange Loop Strange Loop") piano)
 (musician/play (sonify-words/compose "potato potato") ping)
-
-;Recombinance (Based on Bach Choral no. 140)
-(require '[musical-creativity.composers.recombinance :as recombinance] :reload)
-(require '[data.bach :as bach] :reload)
-(recombinance/create-database-from bach/chorale-140-data)
-(musician/play (recombinance/compose) organ)
-(musician/play (recombinance/compose) piano)
-(musician/play (recombinance/compose) slow-piano)
-
-(musician/play (recombinance/compose-original) piano)
 
 ;Network (Using adaptive resonance theory)
 (require '[musical-creativity.composers.network :as network] :reload)
@@ -51,6 +41,24 @@ Experiments with models for computers generating music.
 (require '[musical-creativity.composers.fuzzy :as fuzzy] :reload)
 (musician/play (fuzzy/compose) piano)
 
+;Improvise
+;(very experimental)
+(require '[musical-creativity.composers.improvise :as improvise] :reload)
+(musician/play (improvise/compose) piano)
+
+(require '[musical-creativity.band :as band] :reload)
+(band/play (improvise/compose))
+
+;Recombinance (Based on Bach Choral no. 140)
+(require '[musical-creativity.composers.recombinance :as recombinance] :reload)
+(require '[data.bach :as bach] :reload)
+(recombinance/create-database-from bach/chorale-140-data)
+(musician/play (recombinance/compose) organ)
+(musician/play (recombinance/compose) piano)
+(musician/play (recombinance/compose) slow-piano)
+
+(musician/play (recombinance/compose-original) piano)
+
 ;Gradus (with each run Gradus learns how to better compose)
 (require '[musical-creativity.composers.gradus :as gradus] :reload)
 
@@ -63,14 +71,19 @@ Experiments with models for computers generating music.
 (musician/play (gradus/compose-canon data.gradus/cantus-firmus-7) piano)
 
 (musician/play (gradus/compose-contemporary) piano)
+```
 
-;Improvise
-;(very experimental)
-(require '[musical-creativity.composers.improvise :as improvise] :reload)
-(musician/play (improvise/compose) piano)
+### Demos
 
-(require '[musical-creativity.band :as band] :reload)
-(band/play (improvise/compose))
+```clojure
+;;b11606b
+(musical-creativity.musician/play (map musical-creativity.events/midi-to-event data.bach.chorale-140/b11606b) piano)
+
+(require '[musical-creativity.composers.recombinance :as recombinance] :reload)
+(require '[data.bach :as bach] :reload)
+(recombinance/create-database-from bach/chorale-140-data)
+
+(musical-creativity.musician/play (map musical-creativity.events/midi-to-event ('b11606b-22 @beats-store)))
 ```
 
 ##Book
@@ -80,3 +93,5 @@ Based on exercises from:
 ![Computer Models of Musical Creativity](http://mitpress.mit.edu/covers/9780262033381.jpg)
 
 Computer Models of Musical Creativity http://mitpress.mit.edu/books/computer-models-musical-creativity
+
+
