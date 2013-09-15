@@ -164,7 +164,7 @@
         level (when (:velocity event)  (velocity-to-level (:velocity event))  1)
         sustain (when (:velocity event) (velocity-to-sustain (:velocity event)))
         note-time (+ start-time (:time event))]
-    (println event)
+    ;(println event)
     (when pitch-to-play
       (if (and attack level)
 
