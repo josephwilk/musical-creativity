@@ -105,6 +105,8 @@
 
 (defn create-rows [number start rules & [up-number]]
   (println start)
+  (reset! musical-creativity.pretty/cells start)
+  (Thread/sleep 300)
   (let [up-number (or up-number 1)]
     (when-not (= number up-number)
       (let [row (create-the-row start rules up-number)

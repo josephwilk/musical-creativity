@@ -1,5 +1,7 @@
 (ns musical-creativity.pretty
-  (:require [quil.core :as quil]))
+  (:require [quil.core :refer :all]))
+
+(def cells (atom ["0" "0" "0" "0" "0" "0" "0" "0" "0" "0" "0" "0" "*" "0" "0" "0" "0" "0" "0" "0" "0" "0" "0" "0" "0" "0"]))
 
 (defn setup []
   (smooth)
@@ -7,17 +9,21 @@
   (background 200))
 
 (defn draw []
-  (stroke (random 255))
-  (stroke-weight (random 10))
-  (fill (random 255))
+  (stroke 255)
+  (stroke-weight 2)
 
-  (let [diam (random 100)
-        x    (random (width))
-        y    (random (height))]
-    (ellipse x y diam diam)))
+  (doall
+   (map (fn [[cell index]]
+          (let [c (if (= cell "*") 0 255)
+                diam 10
+                x    (* (inc index) 20)
+                y    20]
+            (fill c)
+            (ellipse x y diam diam)))
+        (map vector @cells (range)))))
 
 (defsketch pretty-music
   :title "Musical creativity"
   :setup setup
   :draw draw
-  :size [323 200])
+  :size [540 50])
