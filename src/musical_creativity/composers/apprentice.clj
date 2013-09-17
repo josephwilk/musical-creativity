@@ -88,7 +88,6 @@
 (defn setf [thing value])
 (defn wierd-count [item list])
 (defn remove-duplicates [list] list)
-(defn funcall [thing])
 (defn set-table-sequence [dialog weights] )
 (defn third [])
 (defn listp [thing])
@@ -414,12 +413,12 @@
        predecessors successors keywords word-type positions-in-sentence associations usage music.
        weight is stored in associations."
   (let [words (remove-duplicates @*words*)]
-    (map (fn [x] (list x (funcall type (eval x)))) words)))
+    (map (fn [x] (list x (type (lookup-word x)))) words)))
 
 (defn new-text []
   "gets the elements from words and sets the table sequence thusly."
   (reset! *weight-list*
-          (let [test (get-element-from-words 'associations)]
+          (let [test (get-element-from-words :associations)]
           (if test test nil)))
   (set-table-sequence @*dialog-text* (reverse @*weight-list*)))
 
@@ -455,7 +454,7 @@
 (defn get-music-associations [associations]
   (cond
    (empty? associations)()
-   (:events (eval (ffirst associations)))
+   (:events (lookup-word (ffirst associations)))
    (cons (first associations)
          (get-music-associations (rest associations)))
    :else (get-music-associations (rest associations))))
@@ -481,7 +480,7 @@
 (defn get-word-associations [associations]
   (cond
    (empty? associations)()
-   (:events (eval (ffirst associations)))
+   (:events (lookup-word (ffirst associations)))
    (get-word-associations (rest associations))
    :else (cons (first associations)
            (get-word-associations (rest associations)))))
