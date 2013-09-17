@@ -309,7 +309,7 @@
                (push word *all-words*))
              (reset! *input-work* (rest @*input-work*)))
 
-           (and (boundp word)(not (:used-before? (lookup-word word))))
+           (and (boundp word) (not (:used-before? (lookup-word word))))
            (->
              (assoc (:name (lookup-word word)) (cons name (name (lookup-word word))))
              (assoc (:sentence-type (lookup-word word)) (list sentence-type))
@@ -362,7 +362,8 @@
                   (assoc (:used-before? (lookup-word word)) true)))
 
           (reset! *predecessor* word)
-          (reset! *successor* (nth sentence (+ (position word sentence) 2)))
+          (println :w word :s sentence)
+          ;WIP(reset! *successor* (nth sentence (+ (position word sentence) 2)))
           (pushnew word *words*)
           (if (not (=  sentence-type '*))
             (doall (map
@@ -412,7 +413,7 @@
   "this is a test function for getting infor from words. type can be
        predecessors successors keywords word-type positions-in-sentence associations usage music.
        weight is stored in associations."
-  (let [words (remove-duplicates *words*)]
+  (let [words (remove-duplicates @*words*)]
     (map (fn [x] (list x (funcall type (eval x)))) words)))
 
 (defn new-text []
