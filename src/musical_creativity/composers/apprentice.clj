@@ -54,7 +54,7 @@
   (let [index (.indexOf list thing)]
     (when (>= index 0) index)))
 
-(defn lookup-sentence [sentence]  
+(defn lookup-sentence [sentence]
   (@*sentences* sentence))
 
 (defn make-sentence [id atts]  (reset! *sentences* (assoc @*sentences* id atts)))
@@ -279,9 +279,9 @@
 
 (defn make-word-objects [sentence sentence-type name]
   "makes the words objects for colaborator."
-  (doall 
+  (doall
    (map (fn [word]
-          (cond 
+          (cond
            (and (not (member word @*words*)) (not (boundp word)))
            (do
              (make-word word {:name (list name)
@@ -308,19 +308,19 @@
              (if (not (=  sentence-type '*))
                (push word *all-words*))
              (reset! *input-work* (rest @*input-work*)))
-           
+
            (and (boundp word)(not (:used-before? (lookup-word word))))
-           (do
-             (setf (:name (lookup-word word)) (cons name (name (lookup-word word))))
-             (setf (:sentence-type (lookup-word word)) (list sentence-type))
-             (setf (:sentence (lookup-word word)) (list sentence))
-             (setf (:length-of-sentence (lookup-word word)) (list (count sentence)))
-             (setf (:predecessors (lookup-word word)) (list *predecessor*))
-             (setf (:successors (lookup-word word)) (list *successor*))
-             (setf (:keywords (lookup-word word)) (list *keyword*))
-             (setf (:positions-in-sentence (lookup-word word)) (list (inc (position word sentence))))
-             (setf (:word-type (lookup-word word)) (list sentence-type))
-             (setf (:associations (lookup-word word))
+           (->
+             (assoc (:name (lookup-word word)) (cons name (name (lookup-word word))))
+             (assoc (:sentence-type (lookup-word word)) (list sentence-type))
+             (assoc (:sentence (lookup-word word)) (list sentence))
+             (assoc (:length-of-sentence (lookup-word word)) (list (count sentence)))
+             (assoc (:predecessors (lookup-word word)) (list *predecessor*))
+             (assoc (:successors (lookup-word word)) (list *successor*))
+             (assoc (:keywords (lookup-word word)) (list *keyword*))
+             (assoc (:positions-in-sentence (lookup-word word)) (list (inc (position word sentence))))
+             (assoc (:word-type (lookup-word word)) (list sentence-type))
+             (assoc (:associations (lookup-word word))
                    (compound-associations
                     (concat (if (and *keyword* (not (=  word *keyword*)))
                               (make-weight-list *keyword* *keyword-weight*))
@@ -330,8 +330,8 @@
                               (make-weight-list *successor* *successor-weight*))
                             (map (fn [item]
                                    (list item *backward-chain-weight*)) (my-remove (list word) *all-words*)))))
-             (setf (:usage (lookup-word word)) 1)
-             (setf (:used-before? (lookup-word word)) true)
+             (assoc (:usage (lookup-word word)) 1)
+             (assoc (:used-before? (lookup-word word)) true)
              (if (not (=  sentence-type '*))
                (push word *all-words*))
              (reset! *input-work* (rest *input-work*)))
@@ -360,12 +360,12 @@
                   (assoc (:usage (lookup-word word))
                     (inc (:usage (lookup-word word))))
                   (assoc (:used-before? (lookup-word word)) true)))
-          
-          (setf *predecessor* word)
-          (setf *successor* (nth sentence (+ (position word sentence) 2)))
+
+          (reset! *predecessor* word)
+          (reset! *successor* (nth sentence (+ (position word sentence) 2)))
           (pushnew word *words*)
           (if (not (=  sentence-type '*))
-            (doall (map 
+            (doall (map
                     (fn [item] (add-word-to-word-weightlists item)) sentence)))) sentence)))
 
 (defn figure-speac [word]
