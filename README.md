@@ -35,7 +35,7 @@ Experiments with models for computers generating music.
 (musician/play (markov/compose) piano)
 (musician/play (markov/compose) ping)
 
-(musician/play (markov/compose data.bach/bach1 [57 60 69] 50 3) piano)
+(musician/play (markov/compose data.bach/bach1 [57 60 69] 50) piano)
 
 ;Fuzzy
 (require '[musical-creativity.composers.fuzzy :as fuzzy] :reload)
