@@ -48,10 +48,11 @@
   (events/make (flatten (compose-pitches start length depth stm)) 0 350))
 
 (defn compose
-  ([] (compose (:events defaults) (:start defaults) (:length defaults) (:depth defaults)))
-  ([events start length depth]
-     (if (= (count start) depth)
-       (let [pitches (map :pitch events)
-             stm (state-transition-matrix-probabilities pitches depth)]
-        (compose-markov start length depth stm))
-       (println (str "Error: Start sequence must be same as depth: start:" (count start) " depth:" depth)))))
+  ([] (compose (:events defaults) (:start defaults) (:length defaults)))
+  ([events start length]
+     (let [depth (count start)]
+       (if (= (count start) depth)
+         (let [pitches (map :pitch events)
+               stm (state-transition-matrix-probabilities pitches depth)]
+           (compose-markov start length depth stm))
+         (println (str "Error: Start sequence must be same as depth: start:" (count start) " depth:" depth))))))
