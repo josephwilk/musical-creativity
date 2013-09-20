@@ -36,7 +36,7 @@
 
 (defn make-event [ontime data & [channel]]
   {:time ontime
-   :log (:out data)
+   :log (or (:out data) (:log data))
    :pitch (int (extract-pitch data))
    :channel (or channel 1)})
 
