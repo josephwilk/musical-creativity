@@ -58,8 +58,11 @@
   (@*sentences* sentence))
 
 (defn make-sentence [id atts]  (reset! *sentences* (assoc @*sentences* id atts)))
+(defn update-sentence [id field val] (reset! *sentences* (assoc-in @*sentences* [id field] val)))
+
 (defn lookup-word [word]  (@*words* word))
 (defn make-word [id atts]  (reset! *words* (assoc @*words* id atts)))
+(defn update-word [id field val] (reset! *words* (assoc-in @*words* [id field] val)))
 
 (defn sortcdr [fun thing] (sort fun thing))
 
@@ -85,7 +88,7 @@
 (defn boundp [thing])
 
 (defn push [item col] )
-(defn setf [thing value])
+
 (defn wierd-count [item list])
 (defn remove-duplicates [list] list)
 (defn set-table-sequence [dialog weights] )
@@ -262,8 +265,8 @@
 (defn add-word-to-word-weightlists [word]
   "adds new words backchain style to all previous words in the database."
   (map (fn [item]
-         (when-not (=  item word)
-           (setf (:associations (lookup-word item))
+         (when-not (= item word)
+           (update-word item :associations
                  (compound-associations
                   (concat (:associations (lookup-word item))
                           (list
@@ -387,26 +390,26 @@
 
 (defn parse-sentence [sentence name]
   "parses the sentence fully."
-  (setf (:parse-it (lookup-sentence name))
+  (update-sentence name :parse-it
         (map (fn [word]
                (figure-speac word) ) sentence)))
 
 (defn define-incipients [sentence sentence-type]
   "defines the incipients for the sentence."
   (if (=  sentence-type '?)
-    (setf (:incipients (eval *question-incipient-lexicon*))
-          (cons (first sentence) (:incipients (eval *question-incipient-lexicon*))))
-    (setf (:incipients (eval *answer-incipient-lexicon*))
-          (cons (first sentence) (:incipients (eval *answer-incipient-lexicon*))))))
+    (update-sentence *question-incipient-lexicon* :incipients
+          (cons (first sentence) (:incipients (lookup-sentence @*question-incipient-lexicon*))))
+    (update-sentence *answer-incipient-lexicon* :incipients
+          (cons (first sentence) (:incipients (lookup-sentence @*answer-incipient-lexicon*))))))
 
 (defn define-cadences [sentence sentence-type]
   "finds and returns its arg's cadences."
   (when-not (=  sentence-type '*)
     (if (=  sentence-type '?)
-      (setf (:cadences (eval *question-cadence-lexicon*))
-            (cons (my-last sentence) (:cadences (eval *question-cadence-lexicon*))))
-      (setf (:cadences (eval *answer-cadence-lexicon*))
-            (cons (my-last sentence) (:cadences (eval *answer-cadence-lexicon*)))))))
+      (update-sentence @*question-cadence-lexicon* :cadences
+            (cons (my-last sentence) (:cadences (lookup-sentence @*question-cadence-lexicon*))))
+      (update-sentence @*answer-cadence-lexicon* :cadences
+            (cons (my-last sentence) (:cadences (lookup-sentence @*answer-cadence-lexicon*)))))))
 
 (defn get-element-from-words [type]
   "this is a test function for getting infor from words. type can be
@@ -424,8 +427,8 @@
 
 (defn reduce-weight [word sentence]
   "reduces the weight of each entry  in word for all of the words in sentence."
-  (setf (:associations (lookup-word word))
-        (punish (:associations (lookup-word word)) sentence)))
+  (update-word word :associations
+               (punish (:associations (lookup-word word)) sentence)))
 
 (defn reduce-weighting [sentence-1 sentence-2]
   "sentence 1 here is the initiating sentence."
@@ -443,8 +446,8 @@
 
 (defn add-weight [word sentence]
   "increases the weight of each entry  in word for all of the words in sentence."
-  (setf (:associations (lookup-word word))
-        (reward (:associations (lookup-word word)) sentence)))
+  (update-word word :associations
+               (reward (:associations (lookup-word word)) sentence)))
 
 (defn add-weighting [sentence-1 sentence-2]
   "sentence 1 here is the initiating sentence."
@@ -504,17 +507,18 @@
         ;(setq tester-word (member current-word cadences))
         (pushnew current-word *current-words*) ;;;these must be subtracted from options to avoid repeats
 
-        (recur current-word (cons collected-words (let [test
-                                                        (choose-the-highest-rated-word
-                                                         (remove-them
-                                                          (concat *current-words*
-                                                                  (get-music-words (cadences
-                                                                                    (if (=  type '?) *question-cadence-lexicon* *answer-cadence-lexicon*))))
-                                                          (get-music-associations (:associations (eval current-word)))))]
-                                                    (if test
-                                                      test
-                                                      (choose-the-one
-                                                       (get-music-words (map (fn [association] (first association) ) (:associations (eval current-word)))))))))))))
+        (recur current-word
+               (cons collected-words
+                     (let [test (choose-the-highest-rated-word
+                                 (remove-them
+                                  (concat *current-words*
+                                          (get-music-words (cadences
+                                                            (if (=  type '?) *question-cadence-lexicon* *answer-cadence-lexicon*))))
+                                  (get-music-associations (:associations (lookup-word current-word)))))]
+                       (if test
+                         test
+                         (choose-the-one
+                          (get-music-words (map (fn [association] (first association) ) (:associations (lookup-word current-word)))))))))))))
 
 (defn reply [type sentence]
   "this function creates sentences by using the various associations in each
