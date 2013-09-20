@@ -71,6 +71,8 @@
   (when-not (empty? list)
     (nth list (rand-int (count list)))))
 
+(defn remove-duplicates [list] (distinct list))
+
 (defn my-remove [to-be-removed list-of-things]
   "removes each element of first arg from second arg."
   (if (empty? to-be-removed)
@@ -84,13 +86,11 @@
 (defn explode [thing] (rest (clojure.string/split (str thing) #"")))
 (defn implode [thing] thing)
 (defn my-last [thing] (last thing))
-(defn incf [thing])
 (defn boundp [thing])
 
 (defn push [item col] )
 
 (defn wierd-count [item list])
-(defn remove-duplicates [list] list)
 (defn set-table-sequence [dialog weights] )
 (defn third [])
 (defn listp [thing])
@@ -646,7 +646,7 @@
                                            :length-of-sentence (count *response*)
                                            :origination 'apprentice})
                          (pushnew name *sentences*)
-                         (incf @*counter*)))))
+                         (swap! @*counter* inc)))))
         (if (not (empty? @*response*))
           (do (new-text)
               (if (and (not (=  (first @*response*) '*))(not (= (first *response*) '\^))
