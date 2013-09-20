@@ -5,7 +5,9 @@
     [overtone.music.pitch :as pitch]
     [overtone.inst.sampled-piano :as piano]
     [overtone.inst.synth :as synth]
-    [overtone.synth.stringed :as stringed]))
+    [overtone.synth.stringed :as stringed]
+
+    [musical-creativity.pretty :as pretty]))
 
 (defn piano-scale-field [pitch-field] (filter #(and (>= % 21) (<= % 108)) pitch-field))
 
@@ -172,7 +174,10 @@
           ;(at (+ 1200 note-time) (ctl current-instrument :gate 0))
           )
         (at note-time (player-fn :note pitch-to-play)))
-      (overtone.at-at/at (- note-time 10) #(when log (do (print log) (flush))) my-pool))))
+      (overtone.at-at/at (- note-time 0) #(when log
+                                             (if (seq? log)
+                                               (reset! pretty/cells log)
+                                               (do (print log) (flush)))) my-pool))))
 
 (defn play-saw [event start-time]
   (let [pitch (:pitch event)

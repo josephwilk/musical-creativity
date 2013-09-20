@@ -5,7 +5,7 @@
 
 (defn setup []
   (smooth)
-  (frame-rate 1)
+  (frame-rate 50)
   (background 200))
 
 (defn draw []

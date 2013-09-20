@@ -68,9 +68,10 @@
 
 (def events (atom []))
 (def store-rules (atom []))
+(def _start (atom nil))
 
 (defn log-a-event [entry-time pitch]
-  (swap! events conj (events/make-event entry-time {:pitch pitch})))
+  (swap! events conj (events/make-event entry-time {:out @_start :pitch pitch})))
 
 (defn- pitch-from-position [position]
   (math/round (+ (* position (/ 60 200)) 55)))
@@ -105,8 +106,7 @@
 
 (defn create-rows [number start rules & [up-number]]
   (println start)
-  (reset! musical-creativity.pretty/cells start)
-  (Thread/sleep 300)
+  (reset! _start start)
   (let [up-number (or up-number 1)]
     (when-not (= number up-number)
       (let [row (create-the-row start rules up-number)
@@ -118,6 +118,6 @@
   (reset! events [])
   (let [rules (or rules default-rules)
         the-events (create-rows 25 default-start rules 0)
-        the-events (map :pitch the-events)
+        the-events (map #(select-keys % [:pitch :log]) the-events)
         the-events (events/make the-events)]
-        (remove nil? the-events)))
+         (remove nil? the-events)))
