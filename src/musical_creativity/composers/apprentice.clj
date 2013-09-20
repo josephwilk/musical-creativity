@@ -64,14 +64,21 @@
 (defn make-word [id atts]  (reset! *words* (assoc @*words* id atts)))
 (defn update-word [id field val] (reset! *words* (assoc-in @*words* [id field] val)))
 
-(defn sortcdr [fun thing] (sort fun thing))
+(defn explode [thing] (rest (clojure.string/split (str thing) #"")))
+(defn third [col] (nth 2 col))
+(defn my-last [thing] (last thing))
+
+(defn sortcdr [fun thing]
+  (println :thing thing)
+  (sort fun thing))
 
 (defn choose-one [list]
   "randomly pick a value from the list"
   (when-not (empty? list)
     (nth list (rand-int (count list)))))
 
-(defn remove-duplicates [list] (distinct list))
+(defn remove-duplicates [list]
+  (distinct list))
 
 (defn my-remove [to-be-removed list-of-things]
   "removes each element of first arg from second arg."
@@ -83,16 +90,13 @@
 (defn assoc-clisp [item list] (some #{item} list))
 
 (defn pushnew [x y])
-(defn explode [thing] (rest (clojure.string/split (str thing) #"")))
 (defn implode [thing] thing)
-(defn my-last [thing] (last thing))
 (defn boundp [thing])
 
 (defn push [item col] )
 
 (defn wierd-count [item list])
 (defn set-table-sequence [dialog weights] )
-(defn third [])
 (defn listp [thing])
 (defn make-list-into-string [list] (str list))
 (defn read-from-string [thing] thing)
@@ -411,10 +415,10 @@
       (update-sentence @*answer-cadence-lexicon* :cadences
             (cons (my-last sentence) (:cadences (lookup-sentence @*answer-cadence-lexicon*)))))))
 
-(defn get-element-from-words [type]
-  "this is a test function for getting infor from words. type can be
-       predecessors successors keywords word-type positions-in-sentence associations usage music.
-       weight is stored in associations."
+(defn get-element-from-words
+  "this is a test function for getting infer from words. Type can be
+   predecessors successors keywords word-type positions-in-sentence associations usage music. weight is stored in associations."
+  [type]
   (let [words (remove-duplicates @*words*)]
     (map (fn [x] (list x (type (lookup-word x)))) words)))
 
@@ -422,7 +426,7 @@
   "gets the elements from words and sets the table sequence thusly."
   (reset! *weight-list*
           (let [test (get-element-from-words :associations)]
-          (if test test nil)))
+            (or test nil)))
   (set-table-sequence @*dialog-text* (reverse @*weight-list*)))
 
 (defn reduce-weight [word sentence]
