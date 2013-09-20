@@ -77,8 +77,7 @@
   (when-not (empty? list)
     (nth list (rand-int (count list)))))
 
-(defn remove-duplicates [list]
-  (distinct list))
+(defn remove-duplicates [list] (distinct list))
 
 (defn my-remove [to-be-removed list-of-things]
   "removes each element of first arg from second arg."
@@ -159,14 +158,14 @@
    calling (recognize-no (too bad you cant answer!))
    recognize-no returned nil"
   (if (find-no sentence)
-    (pushnew (first @*sentences*) *no-sentences*)
+    (pushnew (first (keys @*sentences*)) *no-sentences*)
     ()))
 
 (defn recognize-yes [sentence]
   "this function finds the first ocurance of the yes word (followed by a ^) and
    places it in the *yes-sentences* listing."
   (if (find-yes sentence)
-    (pushnew (first @*sentences*) *yes-sentences*)
+    (pushnew (first (keys @*sentences*)) *yes-sentences*)
     ()))
 
 (defn find-yes [sentence]
@@ -288,7 +287,7 @@
   (doall
    (map (fn [word]
           (cond
-           (and (not (member word @*words*)) (not (boundp word)))
+           (and (not (member word (keys @*words*))) (not (boundp word)))
            (do
              (make-word word {:name (list name)
                               :sentence-type (list sentence-type)
@@ -419,7 +418,7 @@
   "this is a test function for getting infer from words. Type can be
    predecessors successors keywords word-type positions-in-sentence associations usage music. weight is stored in associations."
   [type]
-  (let [words (remove-duplicates @*words*)]
+  (let [words (remove-duplicates (keys @*words*))]
     (map (fn [x] (list x (type (lookup-word x)))) words)))
 
 (defn new-text []
@@ -530,13 +529,13 @@
   (cond
    (recognize-no sentence)
    (do
-     (reduce-weighting (first (:sentence (lookup-sentence (third @*sentences*))))
-                       (first (:sentence (lookup-sentence (second @*sentences*)))))
+     (reduce-weighting (first (:sentence (lookup-sentence (third (keys @*sentences*)))))
+                       (first (:sentence (lookup-sentence (second (keys @*sentences*))))))
      (list '*))
    (recognize-yes sentence)
    (do
-     (add-weighting (first (:sentence (lookup-sentence (third @*sentences*))))
-                    (first (:sentence (lookup-sentence (second @*sentences*)))))
+     (add-weighting (first (:sentence (lookup-sentence (third (keys @*sentences*)))))
+                    (first (:sentence (lookup-sentence (second (keys @*sentences*))))))
      (list '\^))
 
    (:events (lookup-word (first sentence)))
