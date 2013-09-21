@@ -159,16 +159,16 @@
    places it in the *no-sentences* listing.
    calling (recognize-no (too bad you cant answer!))
    recognize-no returned nil"
-  (if (find-no sentence)
+  (if-not (empty? (find-no sentence))
     (pushnew (first (keys @*sentences*)) *no-sentences*)
-    ()))
+    nil))
 
 (defn recognize-yes [sentence]
   "this function finds the first ocurance of the yes word (followed by a ^) and
    places it in the *yes-sentences* listing."
-  (if (find-yes sentence)
+  (if-not (empty? (find-yes sentence))
     (pushnew (first (keys @*sentences*)) *yes-sentences*)
-    ()))
+    nil))
 
 (defn find-yes
   "tests the sentence to see if it contains the yes word."
@@ -180,7 +180,6 @@
        (if (empty? (rest sentence))
          (member @*yes* (list (implode (butlast (explode (first sentence))))))))
    (let [test (butlast (explode (first sentence)))]
-     (println :YES)
      (if (= (my-last test) "*")
        (reset! *yes* (butlast (implode test)))
        (reset! *yes* (implode (list (first sentence))))))
@@ -204,16 +203,19 @@
 (defn establish-keywords
   "establishes all of the principal keywords."
   [sentence]
-  (let [test (recognize-no sentence)
+  (let [no-test  (recognize-no sentence)
         yes-test (recognize-yes sentence)]
+
+    (println :no no-test :yes yes-test)
+
     (reset! *predecessor* ())
     (reset! *successor* (second sentence))
     (reset! *last-word* (my-last sentence))
-    (when-not (or yes-test test)
+    (when-not (or yes-test no-test)
       (reset! *keyword* (get-keyword sentence)))
-    (when-not (or yes-test test)
+    (when-not (or yes-test no-test)
       (pushnew @*keyword* *keywords*))
-    (when-not (or yes-test test)
+    (when-not (or yes-test no-test)
       (pushnew (my-last sentence) *last-words*))))
 
 (defn remove-object-twice
@@ -231,7 +233,6 @@
 (defn compound-associations
   "aggregates all of the same word weightings into single entries."
   [associations]
-  (println :assoca associations)
   (distinct
    (map (fn [[association-1 weight-1]]
           [association-1 (reduce (fn [tally ass]
@@ -385,9 +386,6 @@
   "this function sets up parsing structure in sentences for future creation of sentences and
    atn use. important to note that word types are figured contextually based on their current usage
    and thus don't require a separate parse entry in their slots."
-
-
-  (println @*words*)
   (let [count-for-word (frequency word (keys @*words*))
         total-words (count (keys @*words*))]
     (cond
@@ -520,21 +518,21 @@
         ;(setq test-word current-word)
         ;(setq tester-word (member current-word cadences))
         (pushnew current-word *current-words*) ;;;these must be subtracted from options to avoid repeats
+        (let [collected-words-col (cons collected-words
+                                        (let [test (choose-the-highest-rated-word
+                                                    (remove-them
+                                                     (concat @*current-words*
+                                                             (get-music-words (cadences
+                                                                               (if (=  type '?)
+                                                                                 @*question-cadence-lexicon*
+                                                                                 @*answer-cadence-lexicon*))))
+                                                     (get-music-associations (:associations (lookup-word current-word)))))]
+                                          (if test
+                                            test
+                                            (choose-the-one
+                                             (get-music-words (map (fn [association] (first association) ) (:associations (lookup-word current-word))))))))]
 
-        (recur current-word
-               (cons collected-words
-                     (let [test (choose-the-highest-rated-word
-                                 (remove-them
-                                  (concat @*current-words*
-                                          (get-music-words (cadences
-                                                            (if (=  type '?)
-                                                              @*question-cadence-lexicon*
-                                                              @*answer-cadence-lexicon*))))
-                                  (get-music-associations (:associations (lookup-word current-word)))))]
-                       (if test
-                         test
-                         (choose-the-one
-                          (get-music-words (map (fn [association] (first association) ) (:associations (lookup-word current-word)))))))))))))
+          (recur current-word collected-words-col))))))
 
 (defn reply [type sentence]
   "this function creates sentences by using the various associations in each
@@ -583,7 +581,7 @@
                                        (get-word-words (:incipients @*answer-incipient-lexicon*)))
                             (get-word-words (:incipients @*question-incipient-lexicon*)))]
            (reset! *current-words* ())
-           (if (or (nil? choices)(nil? incipients))
+           (if (or (nil? choices) (nil? incipients))
              ()
              (let [current-word (let [trial (choose-the-highest-rated-word
                                              (remove-them
@@ -600,20 +598,22 @@
                              (if (or (nil? current-word) (member current-word cadences))
                                current-words
                                (do
-                                 (pushnew current-word *current-words*)
-                                 (recur current-word (cons current-words
-                                                           (let [test
-                                                                 (choose-the-highest-rated-word
-                                                                  (remove-them
-                                                                   (concat @*current-words*
-                                                                           (get-word-words (cadences
-                                                                                            (if (= type '?)
-                                                                                              @*question-cadence-lexicon*
-                                                                                              @*answer-cadence-lexicon*))))
-                                                                   (get-word-associations (:associations (lookup-word current-word)))))]
-                                                             (if test test
-                                                                 (choose-the-one
-                                                                  (get-word-words (map (fn [association] (first association)) (:associations (lookup-word current-word)))))))))))))]
+                                 (let [new-current-words (cons current-words
+                                                               (let [test
+                                                                     (choose-the-highest-rated-word
+                                                                      (remove-them
+                                                                       (concat @*current-words*
+                                                                               (get-word-words (:cadences
+                                                                                                (if (= type '?)
+                                                                                                  @*question-cadence-lexicon*
+                                                                                                  @*answer-cadence-lexicon*))))
+                                                                       (get-word-associations (:associations (lookup-word current-word)))))]
+                                                                 (if test
+                                                                   test
+                                                                   (choose-the-one
+                                                                    (get-word-words (map (fn [association] (first association)) (:associations (lookup-word current-word))))))))]
+                                   (pushnew current-word *current-words*)
+                                   (recur current-word new-current-words))))))]
                  new-sentence))))))
 
 (defn display [response]
