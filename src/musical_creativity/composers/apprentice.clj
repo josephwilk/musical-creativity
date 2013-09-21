@@ -84,11 +84,12 @@
     (my-remove (rest to-be-removed)
                (remove (fn [item] (= item (first to-be-removed))) list-of-things))))
 
-(defn pushnew [x y])
+(defn pushnew [item col] (reset! col (concat [item] @col)))
+
 (defn implode [thing] thing)
 (defn boundp [thing] )
 
-(defn push [item col] )
+(defn push [item col] (reset! col (concat [item] @col)) )
 
 (defn wierd-count [item list])
 (defn set-table-sequence [dialog weights] )
@@ -254,7 +255,6 @@
                        :length-of-sentence (list (count sentence))
                        :parse-it ()
                        :origination 'user})
-;  (pushnew name *sentences*)
   (swap! *counter* inc))
 
 (defn make-weight-list [name weight]
@@ -369,7 +369,7 @@
           (reset! *predecessor* word)
           (println :w word :s sentence)
           ;WIP(reset! *successor* (nth sentence (+ (position word sentence) 2)))
-          (pushnew word *words*)
+          ;WIP(pushnew word *words*)
           (if (not (=  sentence-type '*))
             (doall (map
                     (fn [item] (add-word-to-word-weightlists item)) sentence)))) sentence)))
@@ -544,7 +544,7 @@
    (let [choices (compound-associations
                   (apply concat
                          (map (fn [word] (get-music-associations (:associations (lookup-word word)))) sentence)))
-         incipients (if (=  type '?)
+         incipients (if (= type '?)
                       (my-remove (list (eval *no*))
                                  (get-music-words (:incipients @*answer-incipient-lexicon*)))
                       (get-music-words (:incipients @*question-incipient-lexicon*)))]
@@ -653,7 +653,7 @@
                                            :sentence (list *response*)
                                            :length-of-sentence (count *response*)
                                            :origination 'apprentice})
-                         (pushnew name *sentences*)
+                         ;WIP(pushnew name *sentences*)
                          (swap! @*counter* inc)))))
         (if (not (empty? @*response*))
           (do (new-text)
