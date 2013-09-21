@@ -316,39 +316,40 @@
 
            (and (boundp word) (not (:used-before? (lookup-word word))))
            (->
-             (assoc (:name (lookup-word word)) (cons name (name (lookup-word word))))
-             (assoc (:sentence-type (lookup-word word)) (list sentence-type))
-             (assoc (:sentence (lookup-word word)) (list sentence))
-             (assoc (:length-of-sentence (lookup-word word)) (list (count sentence)))
-             (assoc (:predecessors (lookup-word word)) (list @*predecessor*))
-             (assoc (:successors (lookup-word word)) (list @*successor*))
-             (assoc (:keywords (lookup-word word)) (list @*keyword*))
-             (assoc (:positions-in-sentence (lookup-word word)) (list (inc (position word sentence))))
-             (assoc (:word-type (lookup-word word)) (list sentence-type))
-             (assoc (:associations (lookup-word word))
-                   (compound-associations
-                    (concat (if (and @*keyword* (not (=  word @*keyword*)))
-                              (make-weight-list @*keyword* *keyword-weight*))
-                            (if (and @*last-word* (not (=  word @*last-word*)))
-                              (make-weight-list @*last-word* @*last-word-weight*))
-                            (if (and @*successor* (not (=  word @*successor*)))
-                              (make-weight-list @*successor* @*successor-weight*))
-                            (map (fn [item]
-                                   (list item @*backward-chain-weight*)) (my-remove (list word) @*all-words*)))))
-             (assoc (:usage (lookup-word word)) 1)
-             (assoc (:used-before? (lookup-word word)) true)
-             (if (not (=  sentence-type '*))
-               (push word *all-words*))
-             (reset! *input-work* (rest *input-work*)))
+            (lookup-word word)
+            (assoc :name (cons name (name (lookup-word word))))
+            (assoc :sentence-type (list sentence-type))
+            (assoc :sentence (list sentence))
+            (assoc :length-of-sentence (list (count sentence)))
+            (assoc :predecessors (list @*predecessor*))
+            (assoc :successors (list @*successor*))
+            (assoc :keywords (list @*keyword*))
+            (assoc :positions-in-sentence (list (inc (position word sentence))))
+            (assoc :word-type (list sentence-type))
+            (assoc :associations
+              (compound-associations
+               (concat (if (and @*keyword* (not (=  word @*keyword*)))
+                         (make-weight-list @*keyword* *keyword-weight*))
+                       (if (and @*last-word* (not (=  word @*last-word*)))
+                         (make-weight-list @*last-word* @*last-word-weight*))
+                       (if (and @*successor* (not (=  word @*successor*)))
+                         (make-weight-list @*successor* @*successor-weight*))
+                       (map (fn [item]
+                              (list item @*backward-chain-weight*)) (my-remove (list word) @*all-words*)))))
+            (assoc :usage 1)
+            (assoc :used-before? true)
+            (if (not (=  sentence-type '*))
+              (push word *all-words*))
+            (reset! *input-work* (rest @*input-work*)))
            :else (->
                   (lookup-word word)
                   (assoc :name  (cons name (:name (lookup-word word))))
                   (assoc :sentence-type (cons sentence-type (sentence-type (lookup-word word))))
                   (assoc :sentence (cons sentence (sentence (lookup-word word))))
                   (assoc :length-of-sentence (cons (count sentence) (:length-of-sentence (lookup-word word))))
-                  (assoc :predecessors (cons *predecessor* (:predecessors (lookup-word word))))
-                  (assoc :successors (cons *successor* (:successors (lookup-word word))))
-                  (assoc :keywords (cons *keyword* (:keywords (lookup-word word))))
+                  (assoc :predecessors (cons @*predecessor* (:predecessors (lookup-word word))))
+                  (assoc :successors (cons @*successor* (:successors (lookup-word word))))
+                  (assoc :keywords (cons @*keyword* (:keywords (lookup-word word))))
                   (assoc :positions-in-sentence (cons (inc (position word sentence)) (:positions-in-sentence (lookup-word word))))
                   (assoc :word-type(cons sentence-type (:word-type (lookup-word word))))
                   (assoc :associations
@@ -360,7 +361,7 @@
                              (if (and @*successor* (not (=  word @*successor*)))
                                (make-weight-list @*successor* @*successor-weight*))
                              (map (fn [item]
-                                    (list item @*backward-chain-weight*)) (my-remove (list word) *all-words*))
+                                    (list item @*backward-chain-weight*)) (my-remove (list word) @*all-words*))
                              (:associations (lookup-word word)))))
                   (assoc :usage
                     (inc :usage))
@@ -403,9 +404,9 @@
 (defn define-incipients [sentence sentence-type]
   "defines the incipients for the sentence."
   (if (=  sentence-type '?)
-    (update-sentence *question-incipient-lexicon* :incipients
+    (update-sentence @*question-incipient-lexicon* :incipients
           (cons (first sentence) (:incipients (lookup-sentence @*question-incipient-lexicon*))))
-    (update-sentence *answer-incipient-lexicon* :incipients
+    (update-sentence @*answer-incipient-lexicon* :incipients
           (cons (first sentence) (:incipients (lookup-sentence @*answer-incipient-lexicon*))))))
 
 (defn define-cadences [sentence sentence-type]
@@ -445,7 +446,7 @@
   "rewards the weights with a * statement from user."
   (if (empty? words) associations
       (let [test (assoc (first words) associations)]
-        (if test (reward (cons (list (first test) (round-it (* (second test) *weight-divisor*)))
+        (if test (reward (cons (list (first test) (round-it (* (second test) @*weight-divisor*)))
                                (remove test associations))
                          (rest words))
             (reward associations (rest words))))))
@@ -548,7 +549,7 @@
                   (apply concat
                          (map (fn [word] (get-music-associations (:associations (lookup-word word)))) sentence)))
          incipients (if (= type '?)
-                      (my-remove (list (eval *no*))
+                      (my-remove (list (eval @*no*))
                                  (get-music-words (:incipients @*answer-incipient-lexicon*)))
                       (get-music-words (:incipients @*question-incipient-lexicon*)))]
      (reset! *current-words* ())
@@ -572,8 +573,8 @@
                                (map (fn [word] (get-word-associations (:associations (lookup-word word)))) sentence)))
                incipients (if (=  type '?)     ;;;this is a just in case choices is nil listing of alternatives sentence incipients
                             (my-remove (list (eval @*no*))
-                                       (get-word-words (:incipients *answer-incipient-lexicon*)))
-                            (get-word-words (:incipients *question-incipient-lexicon*)))]
+                                       (get-word-words (:incipients @*answer-incipient-lexicon*)))
+                            (get-word-words (:incipients @*question-incipient-lexicon*)))]
            (reset! *current-words* ())
            (if (or (nil? choices)(nil? incipients))
              ()
@@ -653,18 +654,18 @@
                           sentence-type (my-last (explode (my-last @*response*)))]
                       (make-sentence name {:name 'me
                                            :sentence-type sentence-type
-                                           :sentence (list *response*)
-                                           :length-of-sentence (count *response*)
+                                           :sentence (list @*response*)
+                                           :length-of-sentence (count @*response*)
                                            :origination 'apprentice})
                          ;WIP(pushnew name *sentences*)
                          (swap! @*counter* inc)))))
         (if (not (empty? @*response*))
           (do (new-text)
-              (if (and (not (=  (first @*response*) '*))(not (= (first *response*) '\^))
+              (if (and (not (=  (first @*response*) '*))(not (= (first @*response*) '\^))
                        (not (empty? (first @*response*)))
                        (:events (eval (first @*response*))))
                 (reset! *process* (process-run-function "play" 'play-events (apply concat (make-timings (map (fn [x](:events (eval x))) @*response*))))))
-              (message-dialog (make-list-into-string *response*)))
+              (message-dialog (make-list-into-string @*response*)))
           (do (new-text)
               (message-dialog " ------- "))))))
 
@@ -672,8 +673,8 @@
   "removes the cadences from the choices."
   (cond
    (empty? choices)()
-   (or (member (second (first choices)) (:cadences *answer-cadence-lexicon*))
-       (member (second (first choices)) (:cadences *question-cadence-lexicon*)))
+   (or (member (second (first choices)) (:cadences @*answer-cadence-lexicon*))
+       (member (second (first choices)) (:cadences @*question-cadence-lexicon*)))
    (remove-cadences (rest choices))
    :else (cons (first choices)(remove-cadences (rest choices)))))
 
@@ -715,14 +716,14 @@
   (let [relevant-words
         (compound-associations
          (apply concat
-                (map (fn [word] (:associations (lookup-word word)) ) (first (:sentence (eval (first *sentences*))))
+                (map (fn [word] (:associations (lookup-word word)) ) (first (:sentence (eval (first @*sentences*))))
                       )))]
     (relate-words relevant-words parsed-words)))
 
 (defn parse-the-sentence [parse cadence]
   "the argument here is the parse found in any sentence parse-it slot."
   (concat (let [parse-lists (remove-cadences
-                             (map (fn [item] (reverse item)) (get-associations (collect-parsings *sentences*))))]
+                             (map (fn [item] (reverse item)) (get-associations (collect-parsings @*sentences*))))]
             (map (fn [element] (second (assoc element (mix parse-lists)))) (butlast parse)))
           (list (choose-one cadence))))
 
