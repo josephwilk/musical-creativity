@@ -534,6 +534,23 @@
 
           (recur current-word collected-words-col))))))
 
+(defn- pick-words [current-word]
+  (let [test (choose-the-highest-rated-word
+              (remove-them
+               (concat @*current-words*
+                       (get-word-words (:cadences
+                                        (if (= type '?)
+                                          @*question-cadence-lexicon*
+                                          @*answer-cadence-lexicon*))))
+               (get-word-associations (:associations (lookup-word current-word)))))]
+    (println :tes test)
+
+    (if test
+      test
+      (choose-the-one
+       (get-word-words (map (fn [association] (first association)) (:associations (lookup-word current-word))))))))
+
+
 (defn reply [type sentence]
   "this function creates sentences by using the various associations in each
    word in the sentence argument."
@@ -595,25 +612,15 @@
                      (cons current-word
                            (loop [current-word current-word
                                   current-words []]
+
+                             (println :cu current-words :picke (pick-words current-word))
+
                              (if (or (nil? current-word) (member current-word cadences))
                                current-words
-                               (do
-                                 (let [new-current-words (cons current-words
-                                                               (let [test
-                                                                     (choose-the-highest-rated-word
-                                                                      (remove-them
-                                                                       (concat @*current-words*
-                                                                               (get-word-words (:cadences
-                                                                                                (if (= type '?)
-                                                                                                  @*question-cadence-lexicon*
-                                                                                                  @*answer-cadence-lexicon*))))
-                                                                       (get-word-associations (:associations (lookup-word current-word)))))]
-                                                                 (if test
-                                                                   test
-                                                                   (choose-the-one
-                                                                    (get-word-words (map (fn [association] (first association)) (:associations (lookup-word current-word))))))))]
-                                   (pushnew current-word *current-words*)
-                                   (recur current-word new-current-words))))))]
+                               (let [current-word (pick-words current-word)
+                                     new-current-words (cons current-word  current-words)]
+                                 (pushnew current-word *current-words*)
+                                 (recur current-word new-current-words)))))]
                  new-sentence))))))
 
 (defn display [response]
