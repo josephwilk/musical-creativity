@@ -2,11 +2,27 @@
   (:require [midje.sweet :refer :all]
             [musical-creativity.composers.apprentice :refer :all]))
 
+(namespace-state-changes (before :facts (reset-state!)))
+
+(defn reset-state! []
+  (reset! *words* {})
+  (reset! *sentences* {})
+  (reset! *no* ())
+  (reset! *yes* ()))
+
 (fact "find-no"
-  (find-no '(what is your name?)) => ())
+  (find-no '(what is your name?)) => ()
+  @*no* => ()
+
+  (find-no '(*what is your name?)) => '(*what)
+  @*no* => '(*what))
 
 (fact "find-yes"
-  (find-yes '(what is your name?)) => ())
+  (find-yes '(what is your name?)) => ()
+  @*yes* => ()
+
+  (find-yes '($what is your name?)) => '($what)
+  @*yes* => '($what))
 
 (fact "reply"
   (put-sentence-into-database '(what is your name?))
@@ -17,7 +33,7 @@
   (reply '? '(what is your name?)) => ())
 
 (fact "establish-keywords"
-  (put-sentence-into-database '(what is your name?))
+;  (put-sentence-into-database '(what is your name?))
   (establish-keywords '(what is your name?))  => '(name?))
 
 (fact "choose-the-highest-rated-word"
@@ -27,3 +43,8 @@
 (fact "compound-associations"
   (compound-associations '((name? 0.75) (name? 0.2) (is 0.5)))
    => '((name? 0.95) (is 0.5)))
+
+(fact "add weighting"
+  (add-weighting '(no*) '(*)) =>
+  '((no* (name? 0.85) (computer! 0.1) (david! 0.1)
+         (name 0.1) (my 0.1) (your 0.1) (is 0.1) (what 0.1))))
