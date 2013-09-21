@@ -14,8 +14,9 @@
 (def *counter* (atom 0))
 (def *keyword-weight* (atom 0.15))
 (def *last-word-weight* (atom 0.2))
-(def *successor-weight* (atom nil))
+(def *successor-weight* (atom 0.5))
 (def *backward-chain-weight* (atom 0.1))
+
 (def *predecessor* (atom nil))
 (def *successor* (atom nil))
 (def *last-word* (atom nil))
@@ -82,8 +83,6 @@
     list-of-things
     (my-remove (rest to-be-removed)
                (remove (fn [item] (= item (first to-be-removed))) list-of-things))))
-
-(defn assoc-clisp [item list] (some #{item} list))
 
 (defn pushnew [x y])
 (defn implode [thing] thing)
@@ -225,6 +224,7 @@
 (defn compound-associations
   "aggregates all of the same word weightings into single entries."
   [associations]
+  (println :assoca associations)
   (distinct
    (map (fn [[association-1 weight-1]]
           [association-1 (reduce (fn [tally ass]
@@ -278,6 +278,18 @@
 
        @*all-words*))
 
+(defn build-associations [word]
+  (compound-associations
+   (concat
+    (when (and @*keyword* (not= word @*keyword*))
+      (make-weight-list @*keyword* @*keyword-weight*))
+    (when (and @*last-word* (not= word @*last-word*))
+      (make-weight-list @*last-word* @*last-word-weight*))
+    (when (and @*successor* (not= word @*successor*))
+      (make-weight-list @*successor* @*successor-weight*))
+    (map (fn [item]
+           (list item @*backward-chain-weight*)) (my-remove (list word) @*all-words*)))))
+
 (defn make-word-objects [sentence sentence-type name]
   "makes the words objects for colaborator."
   (doall
@@ -294,16 +306,8 @@
                               :keywords (list @*keyword*)
                               :word-type (list sentence-type)
                               :positions-in-sentence (list (inc (position word sentence)))
-                              :associations
-                              (compound-associations
-                               (concat (if (and @*keyword* (not (=  word @*keyword*)))
-                                         (make-weight-list @*keyword* @*keyword-weight*))
-                                       (if (and @*last-word* (not (=  word @*last-word*)))
-                                         (make-weight-list @*last-word* @*last-word-weight*))
-                                       (if (and @*successor* (not (=  word @*successor*)))
-                                         (make-weight-list @*successor* @*successor-weight*))
-                                       (map (fn [item]
-                                              (list item @*backward-chain-weight*)) (my-remove (list word) @*all-words*))))
+                              :associations (build-associations word)
+
                               :usage 1
                               :used-before? true})
              (if (not (=  sentence-type '*))
@@ -510,9 +514,11 @@
                (cons collected-words
                      (let [test (choose-the-highest-rated-word
                                  (remove-them
-                                  (concat *current-words*
+                                  (concat @*current-words*
                                           (get-music-words (cadences
-                                                            (if (=  type '?) *question-cadence-lexicon* *answer-cadence-lexicon*))))
+                                                            (if (=  type '?)
+                                                              @*question-cadence-lexicon*
+                                                              @*answer-cadence-lexicon*))))
                                   (get-music-associations (:associations (lookup-word current-word)))))]
                        (if test
                          test
@@ -535,7 +541,7 @@
      (list '\^))
 
    (:events (lookup-word (first sentence)))
-   (let [choices (compound-associations                              ;;;this is a pro-rated list of all of the associations of the sentence argument
+   (let [choices (compound-associations
                   (apply concat
                          (map (fn [word] (get-music-associations (:associations (lookup-word word)))) sentence)))
          incipients (if (=  type '?)
@@ -571,8 +577,8 @@
              (let [current-word (let [trial (choose-the-highest-rated-word
                                              (remove-them
                                               (get-word-words (:cadences (if (=  type '?)
-                                                                          *question-cadence-lexicon*
-                                                                          *answer-cadence-lexicon*)))
+                                                                          @*question-cadence-lexicon*
+                                                                          @*answer-cadence-lexicon*)))
                                               choices))]
                                   (if trial trial (choose-one (get-word-words incipients))))
                    cadences (:cadences (eval (other-lexicon-type type)))]
@@ -584,16 +590,19 @@
                                current-words
                                (do
                                  (pushnew current-word *current-words*)
-                                 (recur current-word (cons current-words (let [test
-                                                                               (choose-the-highest-rated-word
-                                                                                (remove-them
-                                                                                 (concat @*current-words*
-                                                                                         (get-word-words (cadences
-                                                                                                          (if (=  type '?) @*question-cadence-lexicon* @*answer-cadence-lexicon*))))
-                                                                                 (get-word-associations (:associations (lookup-word current-word)))))]
-                                                                           (if test test
-                                                                               (choose-the-one
-                                                                                (get-word-words (map (fn [association] (first association)) (:associations (lookup-word current-word)))))))))))))]
+                                 (recur current-word (cons current-words
+                                                           (let [test
+                                                                 (choose-the-highest-rated-word
+                                                                  (remove-them
+                                                                   (concat @*current-words*
+                                                                           (get-word-words (cadences
+                                                                                            (if (= type '?)
+                                                                                              @*question-cadence-lexicon*
+                                                                                              @*answer-cadence-lexicon*))))
+                                                                   (get-word-associations (:associations (lookup-word current-word)))))]
+                                                             (if test test
+                                                                 (choose-the-one
+                                                                  (get-word-words (map (fn [association] (first association)) (:associations (lookup-word current-word)))))))))))))]
                  new-sentence))))))
 
 (defn display [response]
