@@ -64,7 +64,7 @@
 (defn update-word [id field val] (reset! *words* (assoc-in @*words* [id field] val)))
 
 (defn explode [thing] (rest (clojure.string/split (str thing) #"")))
-(defn third [col] (nth 2 col))
+(defn third [col] (nth col 2))
 (defn my-last [thing] (last thing))
 
 (defn sortcdr [fun thing]
@@ -85,16 +85,17 @@
                (remove (fn [item] (= item (first to-be-removed))) list-of-things))))
 
 (defn pushnew [item col] (reset! col (concat [item] @col)))
+(defn make-list-into-string [list] (str list))
 
 (defn implode [thing] thing)
 (defn boundp [thing] )
 
 (defn push [item col] (reset! col (concat [item] @col)) )
 
-(defn wierd-count [item list])
+(defn wierd-count [item list] (count (filter #(= % item) list)))
+
 (defn set-table-sequence [dialog weights] )
 (defn listp [thing] thing)
-(defn make-list-into-string [list] (str list))
 (defn read-from-string [thing] thing)
 (defn process-run-function [thing])
 (defn make-timings [thing] thing)
@@ -199,7 +200,6 @@
   [sentence]
   (let [test (recognize-no sentence)
         yes-test (recognize-yes sentence)]
-    ;(reset! *rs* (make-random-state t))
     (reset! *predecessor* ())
     (reset! *successor* (second sentence))
     (reset! *last-word* (my-last sentence))
@@ -341,17 +341,17 @@
                (push word *all-words*))
              (reset! *input-work* (rest *input-work*)))
            :else (->
-                  (assoc (:name (lookup-word word)) (cons name (:name (lookup-word word))))
-                  (assoc (:sentence-type (lookup-word word))(cons sentence-type (sentence-type (lookup-word word))))
-                  (assoc (:sentence (lookup-word word))(cons sentence (sentence (lookup-word word))))
-                  (assoc (:length-of-sentence (lookup-word word))
-                    (cons (count sentence) (:length-of-sentence (lookup-word word))))
-                  (assoc (:predecessors (lookup-word word))(cons *predecessor* (:predecessors (lookup-word word))))
-                  (assoc (:successors (lookup-word word))(cons *successor* (:successors (lookup-word word))))
-                  (assoc (:keywords (lookup-word word))(cons *keyword* (:keywords (lookup-word word))))
-                  (assoc (:positions-in-sentence (lookup-word word))(cons (inc (position word sentence)) (:positions-in-sentence (lookup-word word))))
-                  (assoc (:word-type (lookup-word word))(cons sentence-type (:word-type (lookup-word word))))
-                  (assoc (:associations (lookup-word word))
+                  (lookup-word word)
+                  (assoc :name  (cons name (:name (lookup-word word))))
+                  (assoc :sentence-type (cons sentence-type (sentence-type (lookup-word word))))
+                  (assoc :sentence (cons sentence (sentence (lookup-word word))))
+                  (assoc :length-of-sentence (cons (count sentence) (:length-of-sentence (lookup-word word))))
+                  (assoc :predecessors (cons *predecessor* (:predecessors (lookup-word word))))
+                  (assoc :successors (cons *successor* (:successors (lookup-word word))))
+                  (assoc :keywords (cons *keyword* (:keywords (lookup-word word))))
+                  (assoc :positions-in-sentence (cons (inc (position word sentence)) (:positions-in-sentence (lookup-word word))))
+                  (assoc :word-type(cons sentence-type (:word-type (lookup-word word))))
+                  (assoc :associations
                     (compound-associations
                      (concat (if (and @*keyword* (not (=  word @*keyword*)))
                                (make-weight-list @*keyword* @*keyword-weight*))
@@ -362,9 +362,9 @@
                              (map (fn [item]
                                     (list item @*backward-chain-weight*)) (my-remove (list word) *all-words*))
                              (:associations (lookup-word word)))))
-                  (assoc (:usage (lookup-word word))
-                    (inc (:usage (lookup-word word))))
-                  (assoc (:used-before? (lookup-word word)) true)))
+                  (assoc :usage
+                    (inc :usage))
+                  (assoc :used-before? true)))
 
           (reset! *predecessor* word)
           (println :w word :s sentence)
@@ -378,16 +378,19 @@
   "this function sets up parsing structure in sentences for future creation of sentences and
    atn use. important to note that word types are figured contextually based on their current usage
    and thus don't require a separate parse entry in their slots."
-  (let [count (wierd-count word *words*)
-        length (count *words*)]
+
+
+  (println @*words*)
+  (let [count-for-word (wierd-count word (keys @*words*))
+        total-words (count (keys @*words*))]
     (cond
-     (< count (/ length 10))
+     (< count-for-word (/ total-words 10))
      'c
-     (< count (/ length 8))
+     (< count-for-word (/ total-words 8))
      'e
-     (< count (/ length 6))
+     (< count-for-word (/ total-words 6))
      'a
-     (< count (/ length 4))
+     (< count-for-word (/ total-words 4))
      'p
      :else 's)))
 
