@@ -351,7 +351,7 @@
 
                               :usage 1
                               :used-before? true})
-             (when-not (=  sentence-type "*") (push word *all-words*))
+             (when-not (= sentence-type "*") (push word *all-words*))
              (reset! *input-work* (rest @*input-work*)))
 
            (and (word-seen? word) (not (:used-before? (lookup-word word))))
@@ -411,7 +411,7 @@
           ;;WIP
           (if (< (+ (position word sentence) 2) (count sentence))
             (reset! *successor* (nth sentence (+ (position word sentence) 2)))
-            (reset! *successor* nil))
+            (reset! *successor* ()))
           ;WIP(pushnew word *words*)
 
           (if (not (=  sentence-type "*"))
