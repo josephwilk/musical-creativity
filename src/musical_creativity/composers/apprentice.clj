@@ -666,7 +666,7 @@
 
 (defn event-loop []
   (loop []
-    (reset! *name-list* (eval (read-line)))
+    (reset! *name-list* (read-string (read-line)))
 
     (println @*name-list*)
 
