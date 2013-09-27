@@ -686,18 +686,21 @@
                                :origination 'apprentice})
           (swap! *counter* inc))))
     (if-not (empty? @*response*)
+      (do
+        (new-text)
+        (if (and (not (= (first @*response*) '*))
+                 (not (= (first @*response*) '$))
+                 (not (nil? (first @*response*)))
+                 (:events (lookup-word (first @*response*))))
+          (reset! *process*
+                  (process-run-function "play" 'play-events
+                                        (apply concat
+                                               (make-timings
+                                                (map (fn [x](:events (lookup-word x))) @*response*))))))
+        (message-dialog (make-list-into-string @*response*)))
       (do (new-text)
-          (if (and (not (= (first @*response*) '*)) (not (= (first @*response*) '$))
-                   (not (empty? (first @*response*)))
-                   (:events (lookup-word (first @*response*))))
-            (reset! *process*
-                    (process-run-function "play" 'play-events
-                                          (apply concat
-                                                 (make-timings
-                                                  (map (fn [x](:events (lookup-word x))) @*response*))))))
-          (message-dialog (make-list-into-string @*response*)))
-      (do (new-text)
-          (message-dialog " ------- ")))))
+          (message-dialog " ------- ")))
+    (recur)))
 
 (defn apprentice []
   "this function runs the program from the menu."
