@@ -13,12 +13,9 @@
   (reset! *no-sentences* ())
   (reset! *yes-sentences* ())
   (reset! *keyword* ())
+  (reset! *keywords* ())
   (reset! *last-word-weight* 0.2)
-
-  (reset! *keyword-weight* 0.15)
-  (reset! *last-word-weight* 0.2)
-  (reset! *successor-weight* 0.5)
-  (reset! *backward-chain-weight* 0.1)
+  (reset! *counter* 0)
 
   (reset! *last-word* nil)
   (reset! *successor* nil))
@@ -73,14 +70,14 @@
 
 (fact "get-keyword"
   (get-keyword '(hello!)) =>  'hello!
-  (get-keyword '(what is your name?)) => 'name?)
+  (get-keyword '(what is your name?)) => 'name?
+  (get-keyword '(who am i speaking to?)) => 'speaking)
+
+(fact "make-weight-list"
+  (make-weight-list 'name? 0.75) => '((name? 0.75)))
 
 (fact "add-weighting"
-  (put-sentence-into-database '(what is your name?))
-
-  (add-weighting '(what is my name?) '(is computer!)) =>
-  '((what (computer! 3.64) (is 9.4) (name? 10.18) (david! 0.96)
-          (name 1.1) (my 1.5) (your 1.5) (hello! 0.4) (yes$ 0.1))))
+  (put-sentence-into-database '(what is your name?)))
 
 (fact "build-associations"
   (put-sentence-into-database '(what is your name?))
@@ -91,6 +88,8 @@
 
 (fact "reduce-weight"
   (put-sentence-into-database '(what is your name?))
+  (put-sentence-into-database '(my name is david!))
+  (put-sentence-into-database '(your name is computer!))
 
   (reduce-weight 'what '(computer!)) =>
   '((computer! 0.81) (name? 5.04) (is 2.7) (david! 1.62) (name 0.9) (my 0.5) (your 1.3)))
@@ -98,3 +97,25 @@
 (fact "punish"
   (punish '((name? 2.47) (is 1.0) (david! 0.1) (name 0.1) (my 0.1) (your 0.4)) '(david!))
   => '((david! 0.05) (name? 2.47) (is 1.0) (name 0.1) (my 0.1) (your 0.4)))
+
+(fact "reward"
+  (reward '((david! 2.47) (name 0.9) (up? 0.1) (is 0.5) (what 0.1) (hello! 0.1) (yes$ 0.1))
+          '(what is up?))
+  =>
+  '((up? 0.2) (is 1.0) (what 0.2) (david! 2.47) (name 0.9) (hello! 0.1) (yes$ 0.1)))
+
+(fact "compare-words"
+  (compare-words 'a 'a) => true)
+
+(fact "remove-object-twice"
+  (remove-object-twice 'name? '((name? 0.75) (name? 0.2) (is 0.5)))
+   => '((is 0.5)))
+
+(fact "sentence-type"
+  (get-sentence-type '(what is your name?)) => "?")
+
+(fact "define-incipients"
+  (define-incipients '(my name is david!) '!) => '(my))
+
+(fact "define-cadences"
+  (define-cadences '(my name is david!) '!) => '(david!))

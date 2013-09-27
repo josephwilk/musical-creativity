@@ -2,7 +2,13 @@
   (:require
    [clojure.math.numeric-tower :as math]))
 
-(def *hori-cons* 50)
+(def weight-divisor 2)
+(def keyword-weight 0.15)
+(def successor-weight 0.5)
+(def backward-chain-weight 0.1)
+(def last-word-weight 0.2)
+
+(def *initiate* (atom true))
 
 (def *sentences* (atom {}))
 (def *no-sentences* (atom ()))
@@ -12,10 +18,6 @@
 (def *keyword* (atom ()))
 (def *keywords* (atom ()))
 (def *counter* (atom 0))
-(def *keyword-weight* (atom 0.15))
-(def *last-word-weight* (atom 0.2))
-(def *successor-weight* (atom 0.5))
-(def *backward-chain-weight* (atom 0.1))
 
 (def *predecessor* (atom nil))
 (def *successor* (atom nil))
@@ -26,15 +28,13 @@
 (def *input-work* (atom ()))
 (def *weight-list* (atom ()))
 (def *response* (atom ()))
-(def *weight-divisor* (atom 2))
 (def *current-words* (atom ()))
-(def *initiate* (atom true))
 (def *input* (atom ()))
 (def *name-list* (atom ()))
 (def *process* (atom ()))
 
-(defn make-incipient-lexicon [] {:incipients []})
-(defn make-candence-lexicon  [] {:cadences []})
+(defn make-incipient-lexicon [] {:incipients ()})
+(defn make-candence-lexicon  [] {:cadences ()})
 
 (def *question-incipient-lexicon* (atom (make-incipient-lexicon)))
 (def *answer-incipient-lexicon*   (atom (make-incipient-lexicon)))
@@ -125,7 +125,7 @@
 (defn remove-them [list things]
   "removes its first arg from its second arg."
   (if (empty? list) things
-      (remove-them (rest list)(remove-it (first list) things))))
+      (remove-them (rest list) (remove-it (first list) things))))
 
 (defn round-it [n]
   "simple utility to limit decimal places."
@@ -133,7 +133,7 @@
 
 (defn other-lexicon-type [type]
   "returns words from the opposite of its arg sentence type."
-  (if (= type '?) @*answer-cadence-lexicon* @*question-cadence-lexicon*))
+  (if (= type "?") @*answer-cadence-lexicon* @*question-cadence-lexicon*))
 
 (defn punish [associations words]
   "Punishes the weights with a * statement from user."
@@ -144,7 +144,7 @@
                          word-weight))
                      associations)]
       (if test
-        (punish (cons (list (first test) (round-it (/ (second test) @*weight-divisor*)))
+        (punish (cons (list (first test) (round-it (/ (second test) weight-divisor)))
                       (remove #(= % test) associations))
                 (rest words))
         (punish associations (rest words))))))
@@ -251,15 +251,15 @@
   "compares the first word with the second for similarities."
   (let [test-1 (explode first-word)
         test-2 (explode second-word)]
-    (if (or (=  test-1 (take (explode second-word) (count test-1)))
-            (=  test-2 (take (explode first-word) (count test-1)))) true)))
+    (if (or (= test-1 (take (count test-1) (explode second-word)))
+            (= test-2 (take (count test-1) (explode first-word) ))) true)))
 
 (defn make-sentence-object [sentence sentence-type name]
   "associations in this version are of four types:
-  1) keyword found in *keyword*, weight being *keyword-weight*
-  2) last words found in *last-word*, weight being *last-word-weight*
-  3) next words found in *successor*, *successor-weight*
-  4) all remaining words found in *all-words*, weight being *backward-chain-weight*
+  1) keyword found in *keyword*, weight being keyword-weight
+  2) last words found in *last-word*, weight being last-word-weight
+  3) next words found in *successor*, successor-weight
+  4) all remaining words found in *all-words*, weight being backward-chain-weight
    the only exception being the word for no - this will not be in the vocabulary"
   (make-sentence name {:name (list name)
                        :sentence-type (list sentence-type)
@@ -286,10 +286,10 @@
                               (list
                                (cond
                                 (=  word @*keyword*)
-                                (list word (round-it (/ @*keyword-weight* 2)))
+                                (list word (round-it (/ keyword-weight 2)))
                                 (= word @*last-word*)
-                                (list word (round-it (/ @*last-word-weight* 2)))
-                                :else (list word @*backward-chain-weight*))))))))
+                                (list word (round-it (/ last-word-weight 2)))
+                                :else (list word backward-chain-weight))))))))
 
     @*all-words*)))
 
@@ -297,13 +297,13 @@
   (compound-associations
    (concat
     (when (and @*keyword* (not= word @*keyword*))
-      (make-weight-list @*keyword* @*keyword-weight*))
+      (make-weight-list @*keyword* keyword-weight))
     (when (and @*last-word* (not= word @*last-word*))
-      (make-weight-list @*last-word* @*last-word-weight*))
+      (make-weight-list @*last-word* last-word-weight))
     (when (and @*successor* (not= word @*successor*))
-      (make-weight-list @*successor* @*successor-weight*))
+      (make-weight-list @*successor* successor-weight))
     (map (fn [item]
-           (list item @*backward-chain-weight*)) (my-remove (list word) @*all-words*)))))
+           (list item backward-chain-weight)) (my-remove (list word) @*all-words*)))))
 
 (defn make-word-objects [sentence sentence-type name]
   "makes the words objects for colaborator."
@@ -345,13 +345,13 @@
                                (assoc :associations
                                  (compound-associations
                                   (concat (if (and @*keyword* (not (=  word @*keyword*)))
-                                            (make-weight-list @*keyword* @*keyword-weight*))
+                                            (make-weight-list @*keyword* keyword-weight))
                                           (if (and @*last-word* (not (=  word @*last-word*)))
-                                            (make-weight-list @*last-word* @*last-word-weight*))
+                                            (make-weight-list @*last-word* last-word-weight))
                                           (if (and @*successor* (not (=  word @*successor*)))
-                                            (make-weight-list @*successor* @*successor-weight*))
+                                            (make-weight-list @*successor* successor-weight))
                                           (map (fn [item]
-                                                 (list item @*backward-chain-weight*)) (my-remove (list word) @*all-words*)))))
+                                                 (list item backward-chain-weight)) (my-remove (list word) @*all-words*)))))
                                (assoc :usage 1)
                                (assoc :used-before? true)))
              (if (not (=  sentence-type "*"))
@@ -371,13 +371,13 @@
                                     (assoc :associations
                                       (compound-associations
                                        (concat (if (and @*keyword* (not (=  word @*keyword*)))
-                                                 (make-weight-list @*keyword* @*keyword-weight*))
+                                                 (make-weight-list @*keyword* keyword-weight))
                                                (if (and @*last-word* (not (=  word *last-word*)))
-                                                 (make-weight-list @*last-word* @*last-word-weight*))
+                                                 (make-weight-list @*last-word* last-word-weight))
                                                (if (and @*successor* (not (=  word @*successor*)))
-                                                 (make-weight-list @*successor* @*successor-weight*))
+                                                 (make-weight-list @*successor* successor-weight))
                                                (map (fn [item]
-                                                      (list item @*backward-chain-weight*)) (my-remove (list word) @*all-words*))
+                                                      (list item backward-chain-weight)) (my-remove (list word) @*all-words*))
                                                (:associations (lookup-word word)))))
                                     (assoc :usage (inc (:usage (lookup-word word))))
                                     (assoc :used-before? true))))
@@ -457,9 +457,12 @@
 (defn reward [associations words]
   "rewards the weights with a * statement from user."
   (if (empty? words) associations
-      (let [test (some #{(first words)}  associations)]
-        (if test (reward (cons (list (first test) (round-it (* (second test) @*weight-divisor*)))
-                               (remove test associations))
+      (let [test (some (fn [word-weight]
+                         (when (= (first words) (first word-weight))
+                           word-weight))
+                       associations)]
+        (if test (reward (cons (list (first test) (round-it (* (second test) weight-divisor)))
+                               (remove #(= test %) associations))
                          (rest words))
             (reward associations (rest words))))))
 
@@ -710,7 +713,6 @@
   (reset! *yes* ())
 
   (event-loop))
-
 
 (defn remove-cadences [choices]
   "removes the cadences from the choices."
