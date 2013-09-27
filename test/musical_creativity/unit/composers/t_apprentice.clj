@@ -98,6 +98,3 @@
 (fact "punish"
   (punish '((name? 2.47) (is 1.0) (david! 0.1) (name 0.1) (my 0.1) (your 0.4)) '(david!))
   => '((david! 0.05) (name? 2.47) (is 1.0) (name 0.1) (my 0.1) (your 0.4)))
-
-(fact "apprentice"
-  (apprentice))

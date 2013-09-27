@@ -325,7 +325,7 @@
 
                               :usage 1
                               :used-before? true})
-             (if (not (=  sentence-type '*))
+             (if (not (=  sentence-type "*"))
                (push word *all-words*))
              (reset! *input-work* (rest @*input-work*)))
 
@@ -354,7 +354,7 @@
                                                  (list item @*backward-chain-weight*)) (my-remove (list word) @*all-words*)))))
                                (assoc :usage 1)
                                (assoc :used-before? true)))
-             (if (not (=  sentence-type '*))
+             (if (not (=  sentence-type "*"))
                (push word *all-words*))
              (reset! *input-work* (rest @*input-work*)))
            :else (swap-word! word  (->
@@ -383,9 +383,9 @@
                                     (assoc :used-before? true))))
 
           (reset! *predecessor* word)
-          ;WIP(reset! *successor* (nth sentence (+ (position word sentence) 2)))
+          ;(reset! *successor* (nth sentence (+ (position word sentence) 2)))
           ;WIP(pushnew word *words*)
-          (if (not (=  sentence-type '*))
+          (if (not (=  sentence-type "*"))
             (doall (map
                     (fn [item] (add-word-to-word-weightlists item)) sentence)))) sentence)))
 
@@ -414,7 +414,7 @@
 
 (defn define-incipients [sentence sentence-type]
   "defines the incipients for the sentence."
-  (if (=  sentence-type '?)
+  (if (=  sentence-type "?")
     (update-sentence @*question-incipient-lexicon* :incipients
           (cons (first sentence) (:incipients (lookup-sentence @*question-incipient-lexicon*))))
     (update-sentence @*answer-incipient-lexicon* :incipients
@@ -422,8 +422,8 @@
 
 (defn define-cadences [sentence sentence-type]
   "finds and returns its arg's cadences."
-  (when-not (=  sentence-type '*)
-    (if (=  sentence-type '?)
+  (when-not (=  sentence-type "*")
+    (if (=  sentence-type "?")
       (update-sentence @*question-cadence-lexicon* :cadences
             (cons (my-last sentence) (:cadences (lookup-sentence @*question-cadence-lexicon*))))
       (update-sentence @*answer-cadence-lexicon* :cadences
