@@ -2,23 +2,7 @@
   (:require [midje.sweet :refer :all]
             [musical-creativity.composers.apprentice :refer :all]))
 
-(namespace-state-changes (before :facts (reset-state!)))
-
-(defn reset-state! []
-  (reset! *all-words* ())
-  (reset! *words* {})
-  (reset! *sentences* {})
-  (reset! *no* ())
-  (reset! *yes* ())
-  (reset! *no-sentences* ())
-  (reset! *yes-sentences* ())
-  (reset! *keyword* ())
-  (reset! *keywords* ())
-  (reset! *last-word-weight* 0.2)
-  (reset! *counter* 0)
-
-  (reset! *last-word* nil)
-  (reset! *successor* nil))
+(namespace-state-changes (before :facts (reset-all!)))
 
 (fact "find-no"
   (find-no '(what is your name?)) => ()
@@ -34,7 +18,6 @@
   (find-yes '($what is your name?)) => '($what)
   @*yes* => '($what))
 
-
 (fact "recognize-no"
   (recognize-no '(what is your name?)) => nil)
 
@@ -47,11 +30,10 @@
   ;;(println :sentence @*sentences*)
   ;;(println :word @*words*)
 
-  (reply '? '(what is your name?)) => ())
+  (reply "?" '(what is your name?)) => ())
 
 (fact "establish-keywords"
-  (establish-keywords '(what is your name?))
-  @*keyword* => '(name?))
+  (establish-keywords '(what is your name?)) => '(name?))
 
 (fact "choose-the-highest-rated-word"
   (choose-the-highest-rated-word
@@ -63,10 +45,14 @@
 
 (fact "add weighting"
   (put-sentence-into-database '(what is your name?))
+  (put-sentence-into-database '(my name is david!))
 
   (add-weighting '(no*) '(*)) =>
   '((no* (name? 0.85) (computer! 0.1) (david! 0.1)
          (name 0.1) (my 0.1) (your 0.1) (is 0.1) (what 0.1))))
+
+(fact "add word to word weightlists"
+  (add-word-to-word-weightlists 'what) => nil)
 
 (fact "get-keyword"
   (get-keyword '(hello!)) =>  'hello!
@@ -82,9 +68,7 @@
 (fact "build-associations"
   (put-sentence-into-database '(what is your name?))
 
-  (build-associations 'what) => '([name? 0.4]
-                                    [is 0.6]
-                                      [your .1]))
+  (build-associations 'what) => '([name? 0.4] [is 0.6] [your .1]))
 
 (fact "reduce-weight"
   (put-sentence-into-database '(what is your name?))
