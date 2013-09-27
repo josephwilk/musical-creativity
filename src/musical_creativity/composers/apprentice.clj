@@ -106,7 +106,7 @@
 (defn read-from-string [thing] thing)
 (defn process-run-function [thing])
 (defn make-timings [thing] thing)
-(defn message-dialog [thing] (println thing))
+(defn message-dialog [thing] (println :message thing))
 (defn play-events [events] events)
 
 (defn choose-the-one [stuff]
@@ -666,28 +666,35 @@
 
 (defn event-loop []
   (loop []
+    (reset! *name-list* (eval (read-line)))
+
+    (println @*name-list*)
+
     (reset! *input* @*name-list*)
     (when (and (boundp (first @*name-list*)) (:events (lookup-word (first @*name-list*))))
       (reset! *name-list* (fix-end-of-music-sentences @*name-list*))
       (reset! *input* @*name-list*))
 
     (let [trial (put-sentence-into-database @*input*)]
-      (if (not (empty? (read-from-string trial)))
-        (do (let [name (implode (list 'sentence- @*counter*))
-                  sentence-type (my-last (explode (my-last @*response*)))]
-              (make-sentence name {:name 'me
-                                   :sentence-type sentence-type
-                                   :sentence (list @*response*)
-                                   :length-of-sentence (count @*response*)
-                                   :origination 'apprentice})
-              (pushnew name *sentences*)
-              (swap! @*counter* inc)))))
-    (if (not (empty? @*response*))
+      (when-not (empty? (read-from-string trial))
+        (let [name (implode (list 'sentence- @*counter*))
+              sentence-type (my-last (explode (my-last @*response*)))]
+          (make-sentence name {:name 'me
+                               :sentence-type sentence-type
+                               :sentence (list @*response*)
+                               :length-of-sentence (count @*response*)
+                               :origination 'apprentice})
+          (swap! *counter* inc))))
+    (if-not (empty? @*response*)
       (do (new-text)
           (if (and (not (= (first @*response*) '*)) (not (= (first @*response*) '$))
                    (not (empty? (first @*response*)))
                    (:events (lookup-word (first @*response*))))
-            (reset! *process* (process-run-function "play" 'play-events (apply concat (make-timings (map (fn [x](:events (eval x))) @*response*))))))
+            (reset! *process*
+                    (process-run-function "play" 'play-events
+                                          (apply concat
+                                                 (make-timings
+                                                  (map (fn [x](:events (lookup-word x))) @*response*))))))
           (message-dialog (make-list-into-string @*response*)))
       (do (new-text)
           (message-dialog " ------- ")))))
