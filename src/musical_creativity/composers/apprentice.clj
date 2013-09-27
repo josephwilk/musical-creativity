@@ -92,14 +92,14 @@
 (defn make-list-into-string [list] (str list))
 
 (defn implode [thing] thing)
-(defn boundp [thing] )
+(defn boundp [thing] false )
 
 (defn push [item col] (reset! col (concat [item] @col)) )
 
 (defn frequency [item list] (count (filter #(= % item) list)))
 
 (defn set-table-sequence [dialog weights] )
-(defn listp [thing] thing)
+(defn listp [thing] (list? thing))
 (defn read-from-string [thing] thing)
 (defn process-run-function [thing])
 (defn make-timings [thing] thing)
@@ -130,7 +130,7 @@
 
 (defn other-lexicon-type [type]
   "returns words from the opposite of its arg sentence type."
-  (if (=  type '?) @*answer-cadence-lexicon* @*question-cadence-lexicon*))
+  (if (= type '?) @*answer-cadence-lexicon* @*question-cadence-lexicon*))
 
 (defn punish [associations words]
   "Punishes the weights with a * statement from user."
@@ -485,7 +485,7 @@
 (defn get-word-words [words]
   (cond
    (empty? words) ()
-   (:events (lookup-word (first (if (listp (first words))
+   (:events (lookup-word (first (if (list? (first words))
                            (list (ffirst words))
                            (list (first words))))))
    (get-word-words (rest words))
@@ -522,7 +522,7 @@
                                         (let [test (choose-the-highest-rated-word
                                                     (remove-them
                                                      (concat @*current-words*
-                                                             (get-music-words (cadences
+                                                             (get-music-words (:cadences
                                                                                (if (=  type '?)
                                                                                  @*question-cadence-lexicon*
                                                                                  @*answer-cadence-lexicon*))))
@@ -550,6 +550,61 @@
       (choose-the-one
        (get-word-words (map (fn [association] (first association)) (:associations (lookup-word current-word))))))))
 
+(defn choices-thing [type sentence]
+  (let [choices (compound-associations
+                 (apply concat
+                        (map (fn [word] (get-music-associations (:associations (lookup-word word)))) sentence)))
+        incipients (if (= type '?)
+                     (my-remove (list (eval @*no*))
+                                (get-music-words (:incipients @*answer-incipient-lexicon*)))
+                     (get-music-words (:incipients @*question-incipient-lexicon*)))]
+    (reset! *current-words* ())
+    (if (or (empty? choices) (empty? incipients))
+      ()
+      (let [current-word                                            ;;;here's where we get a current word - the highest rated word in choices
+            (let [trial (choose-the-highest-rated-word
+                         (remove-them
+                          (get-music-words (:cadences (if (=  type '?)
+                                                        @*question-cadence-lexicon*
+                                                        @*answer-cadence-lexicon*)) )
+                          choices))]
+              (if trial trial (get-music-words (choose-one incipients))))            ;;;here is where we resort to incipients if necessary
+            cadences (get-music-words (:cadences (lookup-sentence (other-lexicon-type type))))]  ;;;this variable will indicate when we must stop!
+        (let [new-sentence (cons current-word (current-words-list current-word cadences))]
+          new-sentence)))))
+
+(defn default-reply-thing [type sentence]
+  (let [choices (compound-associations                              ;;;this is a pro-rated list of all of the associations of the sentence argument
+                 (apply concat
+                        (map (fn [word] (get-word-associations (:associations (lookup-word word)))) sentence)))
+        incipients (if (=  type '?)     ;;;this is a just in case choices is nil listing of alternatives sentence incipients
+                     (my-remove (list (eval @*no*))
+                                (get-word-words (:incipients @*answer-incipient-lexicon*)))
+                     (get-word-words (:incipients @*question-incipient-lexicon*)))]
+    (reset! *current-words* ())
+    (if (or (nil? choices) (nil? incipients))
+      ()
+      (let [current-word (let [trial (choose-the-highest-rated-word
+                                      (remove-them
+                                       (get-word-words (:cadences (if (=  type '?)
+                                                                    @*question-cadence-lexicon*
+                                                                    @*answer-cadence-lexicon*)))
+                                       choices))]
+                           (if trial trial (choose-one (get-word-words incipients))))
+            cadences (:cadences (lookup-sentence (other-lexicon-type type)))]
+        (let [new-sentence
+              (cons current-word
+                    (loop [current-word current-word
+                           current-words []]
+
+                      (println :cu current-words :picke (pick-words current-word))
+                      (if (or (nil? current-word) (member current-word cadences))
+                        current-words
+                        (let [current-word (pick-words current-word)
+                              new-current-words (cons current-word  current-words)]
+                          (pushnew current-word *current-words*)
+                          (recur current-word new-current-words)))))]
+          new-sentence)))))
 
 (defn reply [type sentence]
   "this function creates sentences by using the various associations in each
@@ -567,66 +622,13 @@
      (list '$))
 
    (:events (lookup-word (first sentence)))
-   (let [choices (compound-associations
-                  (apply concat
-                         (map (fn [word] (get-music-associations (:associations (lookup-word word)))) sentence)))
-         incipients (if (= type '?)
-                      (my-remove (list (eval @*no*))
-                                 (get-music-words (:incipients @*answer-incipient-lexicon*)))
-                      (get-music-words (:incipients @*question-incipient-lexicon*)))]
-     (reset! *current-words* ())
-     (if (or (empty? choices) (empty? incipients))
-       ()
-       (let [current-word                                            ;;;here's where we get a current word - the highest rated word in choices
-             (let [trial (choose-the-highest-rated-word
-                          (remove-them
-                           (get-music-words (:cadences (if (=  type '?)
-                                                        @*question-cadence-lexicon*
-                                                        @*answer-cadence-lexicon*)) )
-                           choices))]
-               (if trial trial (get-music-words (choose-one incipients))))            ;;;here is where we resort to incipients if necessary
-             cadences (get-music-words (:cadences (eval (other-lexicon-type type))))]  ;;;this variable will indicate when we must stop!
-         (let [new-sentence (cons current-word (current-words-list current-word cadences))]
+   (choices-thing type sentence)
 
-
-           new-sentence))))
-   :else (let [choices (compound-associations                              ;;;this is a pro-rated list of all of the associations of the sentence argument
-                        (apply concat
-                               (map (fn [word] (get-word-associations (:associations (lookup-word word)))) sentence)))
-               incipients (if (=  type '?)     ;;;this is a just in case choices is nil listing of alternatives sentence incipients
-                            (my-remove (list (eval @*no*))
-                                       (get-word-words (:incipients @*answer-incipient-lexicon*)))
-                            (get-word-words (:incipients @*question-incipient-lexicon*)))]
-           (reset! *current-words* ())
-           (if (or (nil? choices) (nil? incipients))
-             ()
-             (let [current-word (let [trial (choose-the-highest-rated-word
-                                             (remove-them
-                                              (get-word-words (:cadences (if (=  type '?)
-                                                                          @*question-cadence-lexicon*
-                                                                          @*answer-cadence-lexicon*)))
-                                              choices))]
-                                  (if trial trial (choose-one (get-word-words incipients))))
-                   cadences (:cadences (eval (other-lexicon-type type)))]
-               (let [new-sentence
-                     (cons current-word
-                           (loop [current-word current-word
-                                  current-words []]
-
-                             (println :cu current-words :picke (pick-words current-word))
-
-                             (if (or (nil? current-word) (member current-word cadences))
-                               current-words
-                               (let [current-word (pick-words current-word)
-                                     new-current-words (cons current-word  current-words)]
-                                 (pushnew current-word *current-words*)
-                                 (recur current-word new-current-words)))))]
-                 new-sentence))))))
+   :else (default-reply-thing type sentence)))
 
 (defn display [response]
   "simple making of list into string."
   (make-list-into-string response))
-
 
 (defn put-sentence-into-database [sentence]
   "puts the sentence into the database."
@@ -677,7 +679,7 @@
           (do (new-text)
               (if (and (not (=  (first @*response*) '*))(not (= (first @*response*) '$))
                        (not (empty? (first @*response*)))
-                       (:events (eval (first @*response*))))
+                       (:events (lookup-word (first @*response*))))
                 (reset! *process* (process-run-function "play" 'play-events (apply concat (make-timings (map (fn [x](:events (eval x))) @*response*))))))
               (message-dialog (make-list-into-string @*response*)))
           (do (new-text)
