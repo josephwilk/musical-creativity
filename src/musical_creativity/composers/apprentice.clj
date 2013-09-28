@@ -27,7 +27,6 @@
 (def *all-words* (atom ()))
 (def *input-work* (atom ()))
 (def *weight-list* (atom ()))
-(def *response* (atom ()))
 (def *current-words* (atom ()))
 (def *input* (atom ()))
 (def *name-list* (atom ()))
@@ -61,7 +60,6 @@
   (reset! *all-words* ())
   (reset! *input-work* ())
   (reset! *weight-list* ())
-  (reset! *response* ())
   (reset! *current-words* ())
   (reset! *input* ())
   (reset! *name-list* ())
@@ -427,16 +425,15 @@
 
 (defn parse-sentence [sentence name]
   "parses the sentence fully."
-  (update-sentence name :parse-it
-        (map (fn [word] (figure-speac word) ) sentence)))
+  (update-sentence name :parse-it (map (fn [word] (figure-speac word)) sentence)))
 
 (defn define-incipients [sentence sentence-type]
   "defines the incipients for the sentence."
   (if (=  sentence-type "?")
     (update-sentence @*question-incipient-lexicon* :incipients
-          (cons (first sentence) (:incipients (lookup-sentence @*question-incipient-lexicon*))))
+                     (cons (first sentence) (:incipients (lookup-sentence @*question-incipient-lexicon*))))
     (update-sentence @*answer-incipient-lexicon* :incipients
-          (cons (first sentence) (:incipients (lookup-sentence @*answer-incipient-lexicon*))))))
+                     (cons (first sentence) (:incipients (lookup-sentence @*answer-incipient-lexicon*))))))
 
 (defn define-cadences [sentence sentence-type]
   "finds and returns its arg's cadences."
@@ -668,9 +665,9 @@
     (parse-sentence sentence name)
     (define-incipients sentence sentence-type)
     (define-cadences sentence sentence-type)
+
     (new-text)
-    (reset! *response* (reply sentence-type sentence))
-    (display @*response*)))
+    (reply sentence-type sentence)))
 
 (defn fix-end-of-music-sentences [sentence]
   "attaches the punctuation to the end of the music sentence."
@@ -690,31 +687,29 @@
     (when (and (word-seen? (first @*name-list*)) (:events (lookup-word (first @*name-list*))))
       (reset! *name-list* (fix-end-of-music-sentences @*name-list*))
       (reset! *input* @*name-list*))
-    (let [trial (put-sentence-into-database @*input*)]
-      (when-not (empty? trial)
+
+    (let [response (put-sentence-into-database @*input*)]
+      (when-not (empty? response)
         (let [name (implode (str "sentence-" @*counter*))
-              sentence-type (my-last (explode (my-last @*response*)))]
+              sentence-type (my-last (explode (my-last response)))]
           (make-sentence name {:name 'me
                                :sentence-type sentence-type
-                               :sentence (list @*response*)
-                               :length-of-sentence (count @*response*)
+                               :sentence (list response)
+                               :length-of-sentence (count response)
                                :origination 'apprentice})
           (swap! *counter* inc))))
-    (if-not (empty? @*response*)
-      (do
-        (new-text)
-        (if (and (not= (first @*response*) "*")
-                 (not= (first @*response*) "$")
-                 (not (nil? (first @*response*)))
-                 (:events (lookup-word (first @*response*))))
-          (reset! *process*
-                  (process-run-function "play" 'play-events
-                                        (apply concat
-                                               (make-timings
-                                                (map (fn [x](:events (lookup-word x))) @*response*))))))
-        (message-dialog (make-list-into-string @*response*)))
-      (do (new-text)
-          (message-dialog " ------- ")))
+    (when-not (empty? response)
+      (new-text)
+      (if (and (not= (first response) "*")
+               (not= (first response) "$")
+               (not (nil? (first response)))
+               (:events (lookup-word (first response))))
+        (reset! *process*
+                (process-run-function "play" 'play-events
+                                      (apply concat
+                                             (make-timings
+                                              (map (fn [x](:events (lookup-word x))) response))))))
+      (message-dialog (make-list-into-string response)))
     (recur)))
 
 (defn apprentice []
@@ -772,7 +767,8 @@
   (let [relevant-words
         (compound-associations
          (apply concat
-                (map (fn [word] (:associations (lookup-word word)) ) (first (:sentence (eval (first @*sentences*))))
+                (map (fn [word] (:associations (lookup-word word)))
+                     (first (:sentence (eval (first @*sentences*))))
                       )))]
     (relate-words relevant-words parsed-words)))
 
@@ -807,7 +803,7 @@
   "this is used in re-time for setting the new time!
    requires that the first in events be sorted to current time!"
   (let [time (ffirst events)]
-    (first (my-sort #'> (map (fn [event] (get-note-timing event time)) events)))))
+    (first (my-sort > (map (fn [event] (get-note-timing event time)) events)))))
 
 
 (defn re-time
