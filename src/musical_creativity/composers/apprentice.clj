@@ -12,6 +12,8 @@
 (def *counter* (atom 0))
 
 (def *sentences* (atom {}))
+(def *words*     (atom {}))
+
 (def *no-sentences* (atom ()))
 (def *yes-sentences* (atom ()))
 (def *yes* (atom ()))
@@ -23,14 +25,10 @@
 (def *successor* (atom nil))
 (def *last-word* (atom nil))
 (def *last-words* (atom ()))
-(def *words* (atom {}))
 (def *all-words* (atom ()))
 (def *input-work* (atom ()))
 (def *weight-list* (atom ()))
 (def *current-words* (atom ()))
-(def *input* (atom ()))
-(def *name-list* (atom ()))
-(def *process* (atom ()))
 
 (defn make-incipient-lexicon [] {:incipients ()})
 (defn make-candence-lexicon  [] {:cadences ()})
@@ -39,8 +37,6 @@
 (def *answer-incipient-lexicon*   (atom (make-incipient-lexicon)))
 (def *question-cadence-lexicon*   (atom (make-candence-lexicon )))
 (def *answer-cadence-lexicon*     (atom (make-candence-lexicon)))
-
-(def *dialog-text* (atom ""))
 
 (defn reset-all! []
   (reset! *initiate* true)
@@ -61,9 +57,6 @@
   (reset! *input-work* ())
   (reset! *weight-list* ())
   (reset! *current-words* ())
-  (reset! *input* ())
-  (reset! *name-list* ())
-  (reset! *process* ())
   (reset! *question-incipient-lexicon* (make-incipient-lexicon))
   (reset! *answer-incipient-lexicon*   (make-incipient-lexicon))
   (reset! *question-cadence-lexicon*   (make-candence-lexicon))
@@ -313,9 +306,9 @@
                          (list word (round-it (/ keyword-weight 2)))
                          (= word last-word)
                          (list word (round-it (/ last-word-weight 2)))
-                         :else (list word backward-chain-weight)))))])
+                         :else (list word backward-chain-weight)))))]
 
-        (update-word current-word :associations new-associations)))
+          (update-word current-word :associations new-associations))))
     all-words)))
 
 (defn build-associations
@@ -453,10 +446,8 @@
 
 (defn new-text []
   "gets the elements from words and sets the table sequence thusly."
-  (reset! *weight-list*
-          (let [test (get-element-from-words :associations)]
-            (or test nil)))
-  (set-table-sequence @*dialog-text* (reverse @*weight-list*)))
+  (reset! *weight-list* (or (get-element-from-words :associations) nil))
+  (println (reverse @*weight-list*)))
 
 (defn reduce-weight
   "reduces the weight of each entry  in word for all of the words in sentence."
@@ -682,13 +673,12 @@
 
 (defn event-loop []
   (loop []
-    (reset! *name-list* (read-string (read-line)))
-    (reset! *input* @*name-list*)
-    (when (and (word-seen? (first @*name-list*)) (:events (lookup-word (first @*name-list*))))
-      (reset! *name-list* (fix-end-of-music-sentences @*name-list*))
-      (reset! *input* @*name-list*))
-
-    (let [response (put-sentence-into-database @*input*)]
+    (let [user-input (read-string (read-line))
+          input (if (and (word-seen? (first user-input))
+                           (:events (lookup-word (first user-input))))
+                  (fix-end-of-music-sentences user-input)
+                  user-input)
+          response (put-sentence-into-database input)]
       (when-not (empty? response)
         (let [name (implode (str "sentence-" @*counter*))
               sentence-type (my-last (explode (my-last response)))]
@@ -697,20 +687,19 @@
                                :sentence (list response)
                                :length-of-sentence (count response)
                                :origination 'apprentice})
-          (swap! *counter* inc))))
-    (when-not (empty? response)
-      (new-text)
-      (if (and (not= (first response) "*")
-               (not= (first response) "$")
-               (not (nil? (first response)))
-               (:events (lookup-word (first response))))
-        (reset! *process*
-                (process-run-function "play" 'play-events
-                                      (apply concat
-                                             (make-timings
-                                              (map (fn [x](:events (lookup-word x))) response))))))
-      (message-dialog (make-list-into-string response)))
-    (recur)))
+          (swap! *counter* inc)))
+      (when-not (empty? response)
+        (new-text)
+        (if (and (not= (first response) "*")
+                 (not= (first response) "$")
+                 (not (nil? (first response)))
+                 (:events (lookup-word (first response))))
+          (process-run-function "play" 'play-events
+                                (apply concat
+                                       (make-timings
+                                        (map (fn [x](:events (lookup-word x))) response)))))
+        (message-dialog (make-list-into-string response)))
+      (recur))))
 
 (defn apprentice []
   "this function runs the program from the menu."
