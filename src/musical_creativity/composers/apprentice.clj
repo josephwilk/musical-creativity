@@ -437,14 +437,16 @@
   (let [new-associations (punish (:associations (lookup-word word)) sentence)]
     (update-word word :associations new-associations)))
 
-(defn reduce-weighting [sentence-1 sentence-2]
+(defn reduce-weighting
   "sentence 1 here is the initiating sentence."
+  [sentence-1 sentence-2]
   (doall
    (map (fn [word]
           (cons word (reduce-weight word sentence-2))) sentence-1)))
 
-(defn reward [associations words]
-  "rewards the weights with a * statement from user."
+(defn reward
+  "rewards the weights with a $ statement from user."
+  [associations words]
   (if (empty? words) associations
       (let [test (some (fn [word-weight]
                          (when (= (first words) (first word-weight))
@@ -501,12 +503,11 @@
            (get-word-associations (rest associations)))))
 
 (defn choose-the-highest-rated-word [words]
-  "chooses the highest choice from among ties for the honor."
   (first
-   (choose-one (let [rated-words (sort-by-last words)
-                     rating (second (first rated-words))]
-                 (remove (fn [word] (when-not (= (second word) rating) true)) rated-words)))))
-
+   (choose-one
+    (let [rated-words (sort-by-last words)
+          rating (second (first rated-words))]
+      (remove (fn [word] (when-not (= (second word) rating) true)) rated-words)))))
 
 (defn current-words-list [current-word cadences]
   (loop [current-word current-word
@@ -514,36 +515,34 @@
     (if (or (nil? current-word) (member current-word cadences))
       collected-words
       (do
-        (push-new current-word *current-words*) ;;;these must be subtracted from options to avoid repeats
+        (push-new current-word *current-words*)
         (let [collected-words-col
               (cons collected-words
-                    (let [test (choose-the-highest-rated-word
+                    (let [musical-words (get-music-words (:cadences
+                                                          (if (= type "?")
+                                                            @*question-cadence-lexicon*
+                                                            @*answer-cadence-lexicon*)))
+                          test (choose-the-highest-rated-word
                                 (remove-them
-                                 (concat @*current-words*
-                                         (get-music-words (:cadences
-                                                           (if (= type "?")
-                                                             @*question-cadence-lexicon*
-                                                             @*answer-cadence-lexicon*))))
+                                 (concat @*current-words* musical-words)
                                  (get-music-associations (:associations (lookup-word current-word)))))]
-                      (if test
-                        test
-                        (choose-the-one
-                         (get-music-words (map (fn [association] (first association) ) (:associations (lookup-word current-word))))))))]
+                      (or test
+                          (choose-the-one
+                           (get-music-words (map (fn [association] (first association) ) (:associations (lookup-word current-word))))))))]
           (recur current-word collected-words-col))))))
 
 (defn- pick-words [current-word]
-  (let [test (choose-the-highest-rated-word
+  (let [word-words (get-word-words (:cadences
+                                       (if (= type "?")
+                                         @*question-cadence-lexicon*
+                                         @*answer-cadence-lexicon*)))
+        test (choose-the-highest-rated-word
               (remove-them
-               (concat @*current-words*
-                       (get-word-words (:cadences
-                                        (if (= type "?")
-                                          @*question-cadence-lexicon*
-                                          @*answer-cadence-lexicon*))))
+               (concat @*current-words* word-words)
                (get-word-associations (:associations (lookup-word current-word)))))]
-    (if test
-      test
-      (choose-the-one
-       (get-word-words (map (fn [association] (first association)) (:associations (lookup-word current-word))))))))
+    (or test
+        (choose-the-one
+         (get-word-words (map (fn [association] (first association)) (:associations (lookup-word current-word))))))))
 
 (defn process-events [type sentence]
   (let [choices (compound-associations
@@ -557,16 +556,15 @@
     (if (or (empty? choices) (empty? incipients))
       ()
       (let [current-word
-            (let [trial (choose-the-highest-rated-word
-                         (remove-them
-                          (get-music-words (:cadences (if (= type "?")
+            (let [musical-words (get-music-words (:cadences (if (= type "?")
                                                         @*question-cadence-lexicon*
                                                         @*answer-cadence-lexicon*)) )
-                          choices))]
-              (if trial trial (get-music-words (choose-one incipients))))
-            cadences (get-music-words (:cadences (other-lexicon-type type)))]
-        (let [new-sentence (cons current-word (current-words-list current-word cadences))]
-          new-sentence)))))
+                  trial (choose-the-highest-rated-word (remove-them musical-words choices))]
+              (or trial (get-music-words (choose-one incipients))))
+            cadences (get-music-words (:cadences (other-lexicon-type type)))
+
+            new-sentence (cons current-word (current-words-list current-word cadences))]
+        new-sentence))))
 
 (defn process-default [type sentence]
   (let [choices (compound-associations
@@ -602,14 +600,8 @@
           new-sentence)))))
 
 (defn process-no []
-  (println :punishing-> (first (:sentence (lookup-sentence (third (all-sentences)))))
-                        (first (:sentence (lookup-sentence (second (all-sentences))))))
-
-
   (reduce-weighting (first (:sentence (lookup-sentence (third (all-sentences)))))
                     (first (:sentence (lookup-sentence (second (all-sentences))))))
-
-
   (list "*"))
 
 (defn process-yes []
@@ -678,8 +670,7 @@
                                :sentence (list response)
                                :length-of-sentence (count response)
                                :origination 'apprentice})
-          (swap! *counter* inc)))
-      (when-not (empty? response)
+          (swap! *counter* inc))
         (new-text)
         (if (and (not= (first response) "*")
                  (not= (first response) "$")
