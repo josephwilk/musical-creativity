@@ -20,15 +20,16 @@
 (def ^:dynamic *yes-sentences* (atom ()))
 (def ^:dynamic *yes* (atom ()))
 (def ^:dynamic *no*  (atom ()))
+
 (def ^:dynamic *keyword*  (atom ()))
 (def ^:dynamic *keywords* (atom ()))
 
 (def ^:dynamic *predecessor* (atom nil))
-(def ^:dynamic *successor* (atom nil))
-(def ^:dynamic *last-word* (atom nil))
+(def ^:dynamic *successor*   (atom nil))
+(def ^:dynamic *last-word*   (atom nil))
 
-(def ^:dynamic *last-words* (atom ()))
-(def ^:dynamic *all-words* (atom ()))
+(def ^:dynamic *last-words*    (atom ()))
+(def ^:dynamic *all-words*     (atom ()))
 (def ^:dynamic *current-words* (atom ()))
 
 (defn make-incipient-lexicon [] {:incipients ()})
@@ -408,7 +409,7 @@
   (when-not (= sentence-type "*")
     (if (=  sentence-type "?")
       (update-cadence *question-cadence-lexicon* (cons (last sentence) (:cadences @*question-cadence-lexicon*)))
-      (update-cadence *answer-cadence-lexicon*  (cons (last sentence) (:cadences @*answer-cadence-lexicon*))))))
+      (update-cadence *answer-cadence-lexicon*   (cons (last sentence) (:cadences @*answer-cadence-lexicon*))))))
 
 (defn get-element-from-words
   "getting infer from words. Type can be
@@ -556,10 +557,24 @@
             new-sentence (cons current-word (current-words-list current-word cadences))]
         new-sentence))))
 
-(defn process-default [type sentence]
+(defn build-reply-sentence [current-word cadences]
+  (let [new-words (loop [current-word current-word
+                         current-words []]
+
+                    (println :word current-word :c_words current-words :cadences cadences)
+
+                    (if (or (nil? current-word) (member current-word cadences))
+                      current-words
+                      (let [next-word (pick-words current-word)]
+                        (push-new next-word *current-words*)
+                        (recur next-word (cons next-word current-words)))))
+        new-sentence (cons current-word new-words)]
+  new-sentence))
+
+(defn build-a-response [type sentence]
   (let [choices (compound-associations
                  (mapcat (fn [word] (get-word-associations (:associations (lookup-word word)))) sentence))
-        incipients (if (or (= type "?") (= type '?))
+        incipients (if (or (= type "?"))
                      (my-remove (list @*no*) (get-word-words (:incipients @*answer-incipient-lexicon*)))
                      (get-word-words (:incipients @*question-incipient-lexicon*)))]
 
@@ -574,20 +589,7 @@
                                        choices))]
                            (or trial (choose-one (get-word-words incipients))))
             cadences (:cadences (other-lexicon-type type))]
-        (let [new-sentence
-              (cons current-word
-                    (loop [current-word current-word
-                           current-words []]
-
-                      (println :word current-words :c_words current-words)
-
-                      (if (or (nil? current-word) (member current-word cadences))
-                        current-words
-                        (let [next-word (pick-words current-word)
-                              new-current-words (cons next-word current-words)]
-                          (push-new next-word *current-words*)
-                          (recur next-word new-current-words)))))]
-          new-sentence)))))
+        (build-reply-sentence current-word cadences)))))
 
 (defn process-no []
   (reduce-weighting (first (:sentence (lookup-sentence (third (all-sentences)))))
@@ -612,7 +614,7 @@
    (:events (lookup-word (first sentence)))
    (process-events type sentence)
 
-   :else (process-default type sentence)))
+   :else (build-a-response type sentence)))
 
 (defn put-sentence-into-database [sentence]
   (establish-keywords sentence)
