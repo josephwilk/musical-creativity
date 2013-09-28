@@ -1,6 +1,7 @@
 (ns musical-creativity.composers.apprentice
   (:require
-   [clojure.math.numeric-tower :as math]))
+   [clojure.math.numeric-tower :as math]
+   [musical-creativity.util :refer [position choose-one third]]))
 
 (def weight-divisor 2)
 (def keyword-weight 0.75)
@@ -10,7 +11,6 @@
 (def predecessors-weight 0.5)
 (def broad-keyword-weight 0.1)
 
-(def ^:dynamic *initiate* (atom true))
 (def ^:dynamic *counter* (atom 0))
 
 (def ^:dynamic *sentences-store* (atom {}))
@@ -41,7 +41,6 @@
 (def ^:dynamic *answer-cadence-lexicon*     (atom (make-candence-lexicon)))
 
 (defn reset-all! []
-  (reset! *initiate* true)
   (reset! *counter* 0)
   (reset! *sentences-store* {})
   (reset! *no-sentences* ())
@@ -67,7 +66,6 @@
 (declare find-no find-yes)
 
 (defn member [item col] (boolean (some #{item} col)))
-(defn my-sort [fun things] (sort fun things))
 
 (defn all-sentences []
   (sort
@@ -76,14 +74,7 @@
         (Integer/parseInt (last (clojure.string/split (str y) #"-")))))
    (keys @*sentences-store*)))
 
-(defn position [thing list]
-  "returns position of thing in list or nil"
-  (let [index (.indexOf list thing)]
-    (when (>= index 0) index)))
-
-(defn lookup-sentence [sentence]
-  (@*sentences-store* sentence))
-
+(defn lookup-sentence [sentence] (@*sentences-store* sentence))
 (defn make-sentence [id atts]  (reset! *sentences-store* (assoc @*sentences-store* id atts)))
 (defn update-sentence [id field val] (reset! *sentences-store* (assoc-in @*sentences-store* [id field] val))
   val)
@@ -107,18 +98,9 @@
   new-value)
 
 (defn explode [thing] (rest (clojure.string/split (str thing) #"")))
-(defn third [col] (nth col 2))
-(defn my-last [thing] (last thing))
 
-(defn sortcdr [thing]
+(defn sort-by-last [thing]
   (sort (fn [x y] (> (last x) (last y))) thing))
-
-(defn choose-one [list]
-  "randomly pick a value from the list"
-  (when-not (empty? list)
-    (nth list (rand-int (count list)))))
-
-(defn remove-duplicates [list] (distinct list))
 
 (defn my-remove [to-be-removed list-of-things]
   "removes each element of first arg from second arg."
@@ -127,21 +109,18 @@
     (my-remove (rest to-be-removed)
                (remove (fn [item] (= item (first to-be-removed))) list-of-things))))
 
-(defn pushnew [item col] (reset! col (concat [item] @col)))
+(defn push-new [item col] (reset! col (concat [item] @col)))
 (defn make-list-into-string [list] (str list))
 
 (defn implode [thing] thing)
-(defn push [item col] (reset! col (concat [item] @col)) )
+(defn push [item col] (reset! col (concat [item] @col)))
 
 (defn frequency [item list] (count (filter #(= % item) list)))
 
-(defn set-table-sequence [dialog weights] )
-(defn listp [thing] (list? thing))
-
-(defn process-run-function [thing])
 (defn make-timings [thing] thing)
-(defn message-dialog [thing] (when (seq thing) (println "Alice> " (str thing))))
-(defn play-events [events] events)
+(defn play-events [events] (println :play  events))
+
+(defn message [thing] (when (seq thing) (println "Alice> " (str thing))))
 
 (defn choose-the-one [stuff]
   "simply chooses one object pseudo-randomly from its arg."
@@ -171,8 +150,9 @@
   "returns words from the opposite of its arg sentence type."
   (if (= type "?") @*answer-cadence-lexicon* @*question-cadence-lexicon*))
 
-(defn punish [associations words]
+(defn punish
   "Punishes the weights with a * statement from user."
+  [associations words]
   (if (empty? words)
     associations
     (let [test (some (fn [word-weight]
@@ -185,33 +165,32 @@
                 (rest words))
         (punish associations (rest words))))))
 
-(defn get-sentence-type [sentence]
+(defn get-sentence-type
   "returns the sentence type of question or statement."
-  (my-last (explode (my-last sentence))))
+  [sentence]
+  (last (explode (last sentence))))
 
-(defn make-new-name []
+(defn make-new-name
   "returns a new sentence name."
+  []
   (str "sentence-" @*counter*))
 
 (defn get-keyword [sentence]
-  "gets the keyword from its arg."
   (let [test (map (fn [word] (count (explode word))) sentence)]
-    (nth sentence (position (first (my-sort > test)) test))))
+    (nth sentence (position (first (sort > test)) test))))
 
 (defn recognize-no [sentence]
-  "this function finds the first ocurance of the no word (followed by a *) and
-   places it in the *no-sentences* listing.
-   calling (recognize-no (too bad you cant answer!))
-   recognize-no returned nil"
+  "finds the first ocurance of the no word (followed by a *) and
+   places it in the *no-sentences* listing."
   (if-not (empty? (find-no sentence))
-    (pushnew (first (all-sentences)) *no-sentences*)
+    (push-new (first (all-sentences)) *no-sentences*)
     nil))
 
 (defn recognize-yes [sentence]
-  "this function finds the first ocurance of the yes word (followed by a $) and
+  "finds the first ocurance of the yes word (followed by a $) and
    places it in the *yes-sentences* listing."
   (if-not (empty? (find-yes sentence))
-    (pushnew (first (all-sentences)) *yes-sentences*)
+    (push-new (first (all-sentences)) *yes-sentences*)
     nil))
 
 (defn find-yes
@@ -224,7 +203,7 @@
        (if (empty? (rest sentence))
          (member @*yes* (list (implode (butlast (explode (first sentence))))))))
    (let [test (butlast (explode (first sentence)))]
-     (if (= (my-last test) "*")
+     (if (= (last test) "*")
        (reset! *yes* (butlast (implode test)))
        (reset! *yes* (implode (list (first sentence))))))
    :else (find-yes (rest sentence))))
@@ -239,25 +218,25 @@
        (if (empty? (rest sentence))
          (member @*no* (list (implode (butlast (explode (first sentence))))))))
    (let [test (butlast (explode (first sentence)))]
-     (if (= (my-last test) "*")
+     (if (= (last test) "*")
        (reset! *no* (butlast (implode test)))
        (reset! *no* (implode (list (first sentence))))))
    :else (find-no (rest sentence))))
 
 (defn establish-keywords
   "establishes all of the principal keywords."
-  [sentence ]
+  [sentence]
   (let [no-test  (recognize-no sentence)
         yes-test (recognize-yes sentence)]
     (reset! *predecessor* ())
     (reset! *successor* (second sentence))
-    (reset! *last-word* (my-last sentence))
+    (reset! *last-word* (last sentence))
     (when-not (or yes-test no-test)
       (reset! *keyword* (get-keyword sentence)))
     (when-not (or yes-test no-test)
-      (pushnew @*keyword* *keywords*))
+      (push-new @*keyword* *keywords*))
     (when-not (or yes-test no-test)
-      (pushnew (my-last sentence) *last-words*))))
+      (push-new (last sentence) *last-words*))))
 
 (defn remove-object-twice
   "removes the object and its target twice."
@@ -284,21 +263,14 @@
                             associations)))
         associations)))
 
-(defn compare-words
-  "compares the first word with the second for similarities."
-  [first-word second-word]
-  (let [test-1 (explode first-word)
-        test-2 (explode second-word)]
-    (if (or (= test-1 (take (count test-1) (explode second-word)))
-            (= test-2 (take (count test-1) (explode first-word)))) true)))
-
-(defn make-sentence-object [sentence sentence-type name]
-  "associations in this version are of four types:
-  1) keyword found in *keyword*, weight being keyword-weight
-  2) last words found in *last-word*, weight being last-word-weight
-  3) next words found in *successor*, successor-weight
-  4) all remaining words found in *all-words*, weight being backward-chain-weight
+(defn make-sentence-object
+  "associations are of four types:
+  1. keyword found in *keyword*, weight being keyword-weight
+  2. last words found in *last-word*, weight being last-word-weight
+  3. next words found in *successor*, successor-weight
+  4. all remaining words found in *all-words*, weight being backward-chain-weight
    the only exception being the word for no - this will not be in the vocabulary"
+  [sentence sentence-type name]
   (make-sentence name {:name (list name)
                        :sentence-type (list sentence-type)
                        :sentence (list sentence)
@@ -444,14 +416,14 @@
   "finds and returns its arg's cadences."
   (when-not (= sentence-type "*")
     (if (=  sentence-type "?")
-      (update-cadence *question-cadence-lexicon* (cons (my-last sentence) (:cadences @*question-cadence-lexicon*)))
-      (update-cadence *answer-cadence-lexicon*  (cons (my-last sentence) (:cadences @*answer-cadence-lexicon*))))))
+      (update-cadence *question-cadence-lexicon* (cons (last sentence) (:cadences @*question-cadence-lexicon*)))
+      (update-cadence *answer-cadence-lexicon*  (cons (last sentence) (:cadences @*answer-cadence-lexicon*))))))
 
 (defn get-element-from-words
   "this is a test function for getting infer from words. Type can be
    predecessors successors keywords word-type positions-in-sentence associations usage music. weight is stored in associations."
   [type]
-  (let [words (remove-duplicates (keys @*words-store*))]
+  (let [words (distinct (keys @*words-store*))]
     (map (fn [x] (list x (type (lookup-word x)))) words)))
 
 (defn new-text []
@@ -531,7 +503,7 @@
 (defn choose-the-highest-rated-word [words]
   "chooses the highest choice from among ties for the honor."
   (first
-   (choose-one (let [rated-words (sortcdr words)
+   (choose-one (let [rated-words (sort-by-last words)
                      rating (second (first rated-words))]
                  (remove (fn [word] (when-not (= (second word) rating) true)) rated-words)))))
 
@@ -542,7 +514,7 @@
     (if (or (nil? current-word) (member current-word cadences))
       collected-words
       (do
-        (pushnew current-word *current-words*) ;;;these must be subtracted from options to avoid repeats
+        (push-new current-word *current-words*) ;;;these must be subtracted from options to avoid repeats
         (let [collected-words-col
               (cons collected-words
                     (let [test (choose-the-highest-rated-word
@@ -618,11 +590,14 @@
               (cons current-word
                     (loop [current-word current-word
                            current-words []]
+
+                      (println :word current-words :c_words current-words)
+
                       (if (or (nil? current-word) (member current-word cadences))
                         current-words
                         (let [next-word (pick-words current-word)
                               new-current-words (cons next-word current-words)]
-                          (pushnew next-word *current-words*)
+                          (push-new next-word *current-words*)
                           (recur next-word new-current-words)))))]
           new-sentence)))))
 
@@ -672,9 +647,10 @@
     (new-text)
     (reply sentence-type sentence)))
 
-(defn fix-end-of-music-sentences [sentence]
+(defn fix-end-of-music-sentences
   "attaches the punctuation to the end of the music sentence."
-  (let [object (nth (- (count sentence) 2) sentence)
+  [sentence]
+  (let [object (nth sentence (- (count sentence) 2))
         the-name (implode (drop (- (count sentence) 2) sentence))]
     (make-word the-name {:name (:name (eval object))
                          :timing (:timing (eval object))
@@ -687,7 +663,8 @@
   (loop []
     (print "user> ")
     (flush)
-    (let [user-input (read-string (read-line))
+    (let [raw-input (read-line)
+          user-input (read-string (str "(" raw-input ")"))
           input (if (and (word-seen? (first user-input))
                          (:events (lookup-word (first user-input))))
                   (fix-end-of-music-sentences user-input)
@@ -695,7 +672,7 @@
           response (put-sentence-into-database input)]
       (when-not (empty? response)
         (let [name (str "sentence-" @*counter*)
-              sentence-type (my-last (explode (my-last response)))]
+              sentence-type (last (explode (last response)))]
           (make-sentence name {:name 'me
                                :sentence-type sentence-type
                                :sentence (list response)
@@ -708,24 +685,22 @@
                  (not= (first response) "$")
                  (not (nil? (first response)))
                  (:events (lookup-word (first response))))
-          (process-run-function "play" 'play-events
-                                (apply concat
-                                       (make-timings
-                                        (map (fn [x](:events (lookup-word x))) response)))))
-        (message-dialog response))
+          (play-events (apply concat
+                              (make-timings
+                               (map (fn [x] (:events (lookup-word x))) response)))))
+        (message response))
       (recur))))
 
 (defn apprentice []
-  "this function runs the program from the menu."
-  (when @*initiate* (reset! *all-words* ()))
-
+  (reset! *all-words* ())
   (reset! *no* ())
   (reset! *yes* ())
 
   (event-loop))
 
-(defn remove-cadences [choices]
+(defn remove-cadences
   "removes the cadences from the choices."
+  [choices]
   (cond
    (empty? choices)()
    (or (member (second (first choices)) (:cadences @*answer-cadence-lexicon*))
@@ -740,13 +715,15 @@
   ;;       do (setf list-2 (rest list-2)))
 )
 
-(defn collect-parsings [sentences]
+(defn collect-parsings
   "pairs the parsings with the words in the sentences."
+  [sentences]
   (pair (apply concat (map (fn [sentence] (first (:sentence (eval sentence)))) sentences))
         (apply concat (map (fn [sentence] (:parse-it (eval sentence))) sentences))))
 
-(defn mix [list]
+(defn mix
   "pseudo-randomly mixes the list arg."
+  [list]
   (if (empty? list) nil
       (let [choice (choose-one list)]
         (cons choice (mix (remove choice list :count 1))))))
@@ -797,7 +774,6 @@
                       (rest (first events)))
                 (set-to-zero (rest events) subtract)))))
 
-
 (defn get-note-timing [event time]
   "grunt work for get-beat-length"
   (- (+ (first event)(third event)) time))
@@ -806,7 +782,7 @@
   "this is used in re-time for setting the new time!
    requires that the first in events be sorted to current time!"
   (let [time (ffirst events)]
-    (first (my-sort > (map (fn [event] (get-note-timing event time)) events)))))
+    (first (sort > (map (fn [event] (get-note-timing event time)) events)))))
 
 
 (defn re-time
