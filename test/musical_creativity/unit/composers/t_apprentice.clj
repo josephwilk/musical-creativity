@@ -36,8 +36,8 @@
   (establish-keywords '(what is your name?)) => '(name?))
 
 (fact "choose-the-highest-rated-word"
-  (choose-the-highest-rated-word
-   '((name 1.6) (name? 2.49) (your 1.2) (is 1.6) (what 0.8) (my 1.1))) => 'name?)
+  (choose-the-highest-rated-word '((is 1.4) (hello! 0.4) (your 1.4) (what 0.9)))
+   => 'your)
 
 (fact "compound-associations"
   (compound-associations '((name? 0.75) (name? 0.2) (is 0.5)))
@@ -68,7 +68,9 @@
 (fact "build-associations"
   (put-sentence-into-database '(what is your name?))
 
-  (build-associations 'what) => '([name? 0.4] [is 0.6] [your .1]))
+  (build-associations 'what @*all-words*) => '([name? 0.95] [your 0.1] [is 0.1])
+
+  (build-associations 'what @*all-words* '((name 0.5))) => '([name? 0.95] [your 0.1] [is 0.1] [name 0.5]))
 
 (fact "reduce-weight"
   (put-sentence-into-database '(what is your name?))
@@ -103,3 +105,11 @@
 
 (fact "define-cadences"
   (define-cadences '(my name is david!) '!) => '(david!))
+
+(fact "remove them"
+  (remove-them '(name?) '((name? 6.77) (is 1.4) (hello! 0.4) (your 1.4) (what 0.9))) =>
+  '((is 1.4) (hello! 0.4) (your 1.4) (what 0.9)))
+
+(fact "remove it"
+  (remove-it 'name? '((name? 6.77) (is 1.4) (hello! 0.4) (your 1.4) (what 0.9))) =>
+    '((is 1.4) (hello! 0.4) (your 1.4) (what 0.9)))
