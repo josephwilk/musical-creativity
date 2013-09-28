@@ -227,7 +227,7 @@
 
 (defn establish-keywords
   "establishes all of the principal keywords."
-  [sentence]
+  [sentence ]
   (let [no-test  (recognize-no sentence)
         yes-test (recognize-yes sentence)]
     (reset! *predecessor* ())
@@ -257,15 +257,17 @@
   [associations]
   (distinct
    (map (fn [[association-1 weight-1]]
-          [association-1 (reduce (fn [tally ass]
-                                   (if (= (first ass) association-1)
-                                     (+ tally (second ass))
-                                     tally)) 0
-                                     associations)])
+          (list association-1
+                (reduce (fn [tally ass]
+                          (if (= (first ass) association-1)
+                            (+ tally (second ass))
+                            tally)) 0
+                            associations)))
         associations)))
 
-(defn compare-words [first-word second-word]
+(defn compare-words
   "compares the first word with the second for similarities."
+  [first-word second-word]
   (let [test-1 (explode first-word)
         test-2 (explode second-word)]
     (if (or (= test-1 (take (count test-1) (explode second-word)))
@@ -287,7 +289,6 @@
   (swap! *counter* inc))
 
 (defn make-weight-list [name weight]
-  "a simple cover for double listing."
   (list (list name weight)))
 
 (defn add-word-to-word-weightlists
@@ -314,17 +315,17 @@
 (defn build-associations
   ([word all-words] (build-associations word all-words ()))
   ([word all-words current-associations]
-      (compound-associations
-       (concat
-        (when (and @*keyword* (not= word @*keyword*))
-          (make-weight-list @*keyword* keyword-weight))
-        (when (and @*last-word* (not= word @*last-word*))
-          (make-weight-list @*last-word* last-word-weight))
-        (when (and @*successor* (not= word @*successor*))
-          (make-weight-list @*successor* successor-weight))
-        (map (fn [item]
-               (list item backward-chain-weight)) (my-remove (list word) all-words))
-        current-associations))))
+     (compound-associations
+      (concat
+       (when (and @*keyword* (not= word @*keyword*))
+         (make-weight-list @*keyword* keyword-weight))
+       (when (and @*last-word* (not= word @*last-word*))
+         (make-weight-list @*last-word* last-word-weight))
+       (when (and @*successor* (not= word @*successor*))
+         (make-weight-list @*successor* successor-weight))
+       (map (fn [item]
+              (list item backward-chain-weight)) (my-remove (list word) all-words))
+       current-associations))))
 
 (defn update-or-create-word [word sentence sentence-type name]
   (cond
@@ -703,7 +704,7 @@
 
 (defn apprentice []
   "this function runs the program from the menu."
-  (when @*initiate* (reset! *all-words* nil))
+  (when @*initiate* (reset! *all-words* ()))
 
   (reset! *no* ())
   (reset! *yes* ())

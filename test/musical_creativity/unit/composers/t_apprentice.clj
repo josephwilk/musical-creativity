@@ -126,3 +126,6 @@
 (fact "remove it"
   (remove-it 'name? '((name? 6.77) (is 1.4) (hello! 0.4) (your 1.4) (what 0.9))) =>
     '((is 1.4) (hello! 0.4) (your 1.4) (what 0.9)))
+
+(fact "round it"
+  (round-it 0.95) => (roughly 0.95))
