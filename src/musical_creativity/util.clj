@@ -25,7 +25,8 @@
 
 (defn choose-one [list]
   "randomly pick a value from the list"
-  (nth list (rand-int (count list))))
+  (when-not (empty? list)
+    (nth list (rand-int (count list)))))
 
 (defn last-first
   "First item of last element in list (first (last list))"
