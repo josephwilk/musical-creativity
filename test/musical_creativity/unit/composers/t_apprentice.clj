@@ -28,13 +28,14 @@
   (put-sentence-into-database '(hello!))
   (put-sentence-into-database '(what is your name?))
 
-;  (println @*words*)
+  (println @*words-store*)
 
-  (:associations ('name? @*words*)) => '((your 0.2) (is 0.2) (what 0.2) (hello! 0.1))
-  (:associations ('your @*words*)) => '((name? 2.21) (is 0.3) (what 0.3) (hello! 0.1))
-  (:associations ('is @*words*)) => '((name? 2.09) (your 0.8) (what 0.4) (hello! 0.1))
-  (:associations ('what @*words*)) => '((name? 2.47) (is 0.9) (hello! 0.1) (your 0.4))
-  (:associations ('hello! @*words*)) => '((what 0.4) (is 0.4) (your 0.4) (name? 1.52)))
+  (println @*sentences-store*)
+  (:associations ('name?  @*words-store*)) => '((your 0.2) (is 0.2) (what 0.2) (hello! 0.1))
+  (:associations ('your   @*words-store*)) => '((name? 2.21) (is 0.3) (what 0.3) (hello! 0.1))
+  (:associations ('is     @*words-store*)) => '((name? 2.09) (your 0.8) (what 0.4) (hello! 0.1))
+  (:associations ('what   @*words-store*)) => '((name? 2.47) (is 0.9) (hello! 0.1) (your 0.4))
+  (:associations ('hello! @*words-store*)) => '((what 0.4) (is 0.4) (your 0.4) (name? 1.52)))
 
 (fact "reply"
   (put-sentence-into-database '(hello!))

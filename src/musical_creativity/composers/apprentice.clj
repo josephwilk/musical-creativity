@@ -11,8 +11,8 @@
 (def *initiate* (atom true))
 (def *counter* (atom 0))
 
-(def *sentences* (atom {}))
-(def *words*     (atom {}))
+(def *sentences-store* (atom {}))
+(def *words-store*     (atom {}))
 
 (def *no-sentences* (atom ()))
 (def *yes-sentences* (atom ()))
@@ -41,7 +41,7 @@
 (defn reset-all! []
   (reset! *initiate* true)
   (reset! *counter* 0)
-  (reset! *sentences* {})
+  (reset! *sentences-store* {})
   (reset! *no-sentences* ())
   (reset! *yes-sentences* ())
   (reset! *yes* ())
@@ -52,7 +52,7 @@
   (reset! *successor* nil)
   (reset! *last-word* nil)
   (reset! *last-words* ())
-  (reset! *words* {})
+  (reset! *words-store* {})
   (reset! *all-words* ())
   (reset! *input-work* ())
   (reset! *weight-list* ())
@@ -73,21 +73,21 @@
     (when (>= index 0) index)))
 
 (defn lookup-sentence [sentence]
-  (@*sentences* sentence))
+  (@*sentences-store* sentence))
 
-(defn make-sentence [id atts]  (reset! *sentences* (assoc @*sentences* id atts)))
-(defn update-sentence [id field val] (reset! *sentences* (assoc-in @*sentences* [id field] val))
+(defn make-sentence [id atts]  (reset! *sentences-store* (assoc @*sentences-store* id atts)))
+(defn update-sentence [id field val] (reset! *sentences-store* (assoc-in @*sentences-store* [id field] val))
   val)
-(defn sentence-seen? [sentence] (some #{sentence} (keys @*sentences*)))
+(defn sentence-seen? [sentence] (some #{sentence} (keys @*sentences-store*)))
 
-(defn lookup-word [word]  (@*words* word))
-(defn make-word [id atts]  (reset! *words* (assoc @*words* id atts)))
+(defn lookup-word [word]  (@*words-store* word))
+(defn make-word [id atts]  (reset! *words-store* (assoc @*words-store* id atts)))
 (defn update-word [id field val]
-  (reset! *words* (assoc-in @*words* [id field] val))
+  (reset! *words-store* (assoc-in @*words-store* [id field] val))
   val)
 
-(defn word-seen? [word] (some #{word} (keys @*words*)))
-(defn swap-word! [word word-map] (reset! *words* (assoc @*words* word word-map)))
+(defn word-seen? [word] (some #{word} (keys @*words-store*)))
+(defn swap-word! [word word-map] (reset! *words-store* (assoc @*words-store* word word-map)))
 
 (defn explode [thing] (rest (clojure.string/split (str thing) #"")))
 (defn third [col] (nth col 2))
@@ -185,14 +185,14 @@
    calling (recognize-no (too bad you cant answer!))
    recognize-no returned nil"
   (if-not (empty? (find-no sentence))
-    (pushnew (first (keys @*sentences*)) *no-sentences*)
+    (pushnew (first (keys @*sentences-store*)) *no-sentences*)
     nil))
 
 (defn recognize-yes [sentence]
   "this function finds the first ocurance of the yes word (followed by a $) and
    places it in the *yes-sentences* listing."
   (if-not (empty? (find-yes sentence))
-    (pushnew (first (keys @*sentences*)) *yes-sentences*)
+    (pushnew (first (keys @*sentences-store*)) *yes-sentences*)
     nil))
 
 (defn find-yes
@@ -328,7 +328,7 @@
 
 (defn update-or-create-word [word sentence sentence-type name]
   (cond
-   (and (not (member word (keys @*words*))) (not (word-seen? word)))
+   (and (not (member word (keys @*words-store*))) (not (word-seen? word)))
    (do
      (make-word word {:name (list name)
                       :sentence-type (list sentence-type)
@@ -393,7 +393,7 @@
             (reset! *successor* (nth sentence (+ (position word sentence) 2)))
             ;(reset! *successor* nil)
             )
-          ;WIP(pushnew word *words*)
+          ;WIP(pushnew word *words-store*)
 
           (if (not= sentence-type "*")
             (doall (map
@@ -403,8 +403,8 @@
   "this function sets up parsing structure in sentences for future creation of sentences and
    atn use. important to note that word types are figured contextually based on their current usage
    and thus don't require a separate parse entry in their slots."
-  (let [count-for-word (frequency word (keys @*words*))
-        total-words (count (keys @*words*))]
+  (let [count-for-word (frequency word (keys @*words-store*))
+        total-words (count (keys @*words-store*))]
     (cond
      (< count-for-word (/ total-words 10))
      'c
@@ -441,7 +441,7 @@
   "this is a test function for getting infer from words. Type can be
    predecessors successors keywords word-type positions-in-sentence associations usage music. weight is stored in associations."
   [type]
-  (let [words (remove-duplicates (keys @*words*))]
+  (let [words (remove-duplicates (keys @*words-store*))]
     (map (fn [x] (list x (type (lookup-word x)))) words)))
 
 (defn new-text []
@@ -475,7 +475,7 @@
 (defn add-weight
   "increases the weight of each entry in word for all of the words in sentence."
   [word sentence]
-  (println @*words*)
+  (println @*words-store*)
   (let [associations (:associations (lookup-word word))]
     (update-word word :associations (reward associations sentence))))
 
@@ -618,13 +618,13 @@
           new-sentence)))))
 
 (defn process-no []
-  (reduce-weighting (first (:sentence (lookup-sentence (third (keys @*sentences*)))))
-                    (first (:sentence (lookup-sentence (second (keys @*sentences*))))))
+  (reduce-weighting (first (:sentence (lookup-sentence (third (keys @*sentences-store*)))))
+                    (first (:sentence (lookup-sentence (second (keys @*sentences-store*))))))
   (list "*"))
 
 (defn process-yes []
-  (add-weighting (first (:sentence (lookup-sentence (third (keys @*sentences*)))))
-                 (first (:sentence (lookup-sentence (second (keys @*sentences*))))))
+  (add-weighting (first (:sentence (lookup-sentence (third (keys @*sentences-store*)))))
+                 (first (:sentence (lookup-sentence (second (keys @*sentences-store*))))))
   (list "$"))
 
 (defn reply [type sentence]
@@ -757,14 +757,14 @@
         (compound-associations
          (apply concat
                 (map (fn [word] (:associations (lookup-word word)))
-                     (first (:sentence (eval (first @*sentences*))))
+                     (first (:sentence (eval (first @*sentences-store*))))
                       )))]
     (relate-words relevant-words parsed-words)))
 
 (defn parse-the-sentence [parse cadence]
   "the argument here is the parse found in any sentence parse-it slot."
   (concat (let [parse-lists (remove-cadences
-                             (map (fn [item] (reverse item)) (get-associations (collect-parsings @*sentences*))))]
+                             (map (fn [item] (reverse item)) (get-associations (collect-parsings @*sentences-store*))))]
             (map (fn [element] (second (assoc element (mix parse-lists)))) (butlast parse)))
           (list (choose-one cadence))))
 
@@ -819,11 +819,11 @@
        (:events (lookup-sentence (first sentence)))))
 
 (defn return-only-music-sentences [sentence-objects]
-  "the arg to this should be *sentences*."
+  "the arg to this should be *sentences-store*."
   (let [real-sentences (apply concat (map (fn [x] (:sentence (eval x))) sentence-objects))]
     (remove (fn [sentence] (when-not (tester-for-hidden-events sentence) true)) real-sentences)))
 
 (defn create-a-work [sentences]
- "the arg to this should be *sentences*"
+ "the arg to this should be *sentences-store*"
   (reveal-the-hidden-events (apply concat (reverse (return-only-music-sentences sentences)))))
 
