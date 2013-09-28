@@ -16,20 +16,19 @@
 (def ^:dynamic *sentences-store* (atom {}))
 (def ^:dynamic *words-store*     (atom {}))
 
-(def ^:dynamic *no-sentences* (atom ()))
+(def ^:dynamic *no-sentences*  (atom ()))
 (def ^:dynamic *yes-sentences* (atom ()))
 (def ^:dynamic *yes* (atom ()))
-(def ^:dynamic *no* (atom ()))
-(def ^:dynamic *keyword* (atom ()))
+(def ^:dynamic *no*  (atom ()))
+(def ^:dynamic *keyword*  (atom ()))
 (def ^:dynamic *keywords* (atom ()))
 
 (def ^:dynamic *predecessor* (atom nil))
 (def ^:dynamic *successor* (atom nil))
 (def ^:dynamic *last-word* (atom nil))
+
 (def ^:dynamic *last-words* (atom ()))
 (def ^:dynamic *all-words* (atom ()))
-(def ^:dynamic *input-work* (atom ()))
-(def ^:dynamic *weight-list* (atom ()))
 (def ^:dynamic *current-words* (atom ()))
 
 (defn make-incipient-lexicon [] {:incipients ()})
@@ -55,8 +54,6 @@
   (reset! *last-words* ())
   (reset! *words-store* {})
   (reset! *all-words* ())
-  (reset! *input-work* ())
-  (reset! *weight-list* ())
   (reset! *current-words* ())
   (reset! *question-incipient-lexicon* (make-incipient-lexicon))
   (reset! *answer-incipient-lexicon*   (make-incipient-lexicon))
@@ -110,24 +107,22 @@
                (remove (fn [item] (= item (first to-be-removed))) list-of-things))))
 
 (defn push-new [item col] (reset! col (concat [item] @col)))
+
 (defn make-list-into-string [list] (str list))
 
 (defn implode [thing] thing)
+
 (defn push [item col] (reset! col (concat [item] @col)))
 
 (defn frequency [item list] (count (filter #(= % item) list)))
 
 (defn make-timings [thing] thing)
+
 (defn play-events [events] (println :play  events))
 
 (defn message [thing] (when (seq thing) (println "Alice> " (str thing))))
 
-(defn choose-the-one [stuff]
-  "simply chooses one object pseudo-randomly from its arg."
-  (choose-one stuff))
-
 (defn remove-it [thing things]
-  "removes its first arg from its second arg."
   (cond
    (empty? things) ()
    (= thing (ffirst things))
@@ -136,18 +131,17 @@
                (remove-it thing (rest things)))))
 
 (defn remove-them
-  "removes its first arg from its second arg."
   [list things]
   (if (empty? list)
     things
     (remove-them (rest list) (remove-it (first list) things))))
 
 (defn round-it [n]
-  "simple utility to limit decimal places."
   (float (/ (math/round (* n 100)) 100)))
 
-(defn other-lexicon-type [type]
+(defn other-lexicon-type
   "returns words from the opposite of its arg sentence type."
+  [type]
   (if (= type "?") @*answer-cadence-lexicon* @*question-cadence-lexicon*))
 
 (defn punish
@@ -179,16 +173,18 @@
   (let [test (map (fn [word] (count (explode word))) sentence)]
     (nth sentence (position (first (sort > test)) test))))
 
-(defn recognize-no [sentence]
+(defn recognize-no
   "finds the first ocurance of the no word (followed by a *) and
    places it in the *no-sentences* listing."
+  [sentence]
   (if-not (empty? (find-no sentence))
     (push-new (first (all-sentences)) *no-sentences*)
     nil))
 
-(defn recognize-yes [sentence]
+(defn recognize-yes
   "finds the first ocurance of the yes word (followed by a $) and
    places it in the *yes-sentences* listing."
+  [sentence]
   (if-not (empty? (find-yes sentence))
     (push-new (first (all-sentences)) *yes-sentences*)
     nil))
@@ -279,8 +275,7 @@
                        :origination 'user})
   (swap! *counter* inc))
 
-(defn make-weight-list [name weight]
-  (list (list name weight)))
+(defn make-weight-list [name weight] (list (list name weight)))
 
 (defn add-word-to-word-weightlists
   "adds new words backchain style to all previous words in the database."
@@ -334,8 +329,7 @@
                       :associations (build-associations word @*all-words*)
                       :usage 1
                       :used-before? true})
-     (when-not (= sentence-type "*") (push word *all-words*))
-     (reset! *input-work* (rest @*input-work*)))
+     (when-not (= sentence-type "*") (push word *all-words*)))
 
    (and (word-seen? word) (not (:used-before? (lookup-word word))))
    (let [word-data (lookup-word word)]
@@ -353,8 +347,7 @@
                        (assoc :associations (build-associations word @*all-words*))
                        (assoc :usage 1)
                        (assoc :used-before? true)))
-     (when-not (= sentence-type "*") (push word *all-words*))
-     (reset! *input-work* (rest @*input-work*)))
+     (when-not (= sentence-type "*") (push word *all-words*)))
    :else (let [word-data (lookup-word word)]
            (swap-word! word
                        (->
@@ -385,10 +378,11 @@
             (doall (map
                     (fn [item] (add-word-to-word-weightlists item @*keyword* @*last-word* @*all-words*)) sentence)))) sentence)))
 
-(defn figure-speac [word]
+(defn figure-speac
   "this function sets up parsing structure in sentences for future creation of sentences and
    atn use. important to note that word types are figured contextually based on their current usage
    and thus don't require a separate parse entry in their slots."
+  [word]
   (let [count-for-word (frequency word (keys @*words-store*))
         total-words (count (keys @*words-store*))]
     (cond
@@ -403,33 +397,29 @@
      :else 's)))
 
 (defn parse-sentence [sentence name]
-  "parses the sentence fully."
   (update-sentence name :parse-it (map (fn [word] (figure-speac word)) sentence)))
 
 (defn define-incipients [sentence sentence-type]
-  "defines the incipients for the sentence."
   (if (or (= sentence-type "?") (= sentence-type '?))
     (update-incipient *question-incipient-lexicon* (cons (first sentence) (:incipients @*question-incipient-lexicon*)))
     (update-incipient *answer-incipient-lexicon*   (cons (first sentence) (:incipients @*answer-incipient-lexicon*)))))
 
 (defn define-cadences [sentence sentence-type]
-  "finds and returns its arg's cadences."
   (when-not (= sentence-type "*")
     (if (=  sentence-type "?")
       (update-cadence *question-cadence-lexicon* (cons (last sentence) (:cadences @*question-cadence-lexicon*)))
       (update-cadence *answer-cadence-lexicon*  (cons (last sentence) (:cadences @*answer-cadence-lexicon*))))))
 
 (defn get-element-from-words
-  "this is a test function for getting infer from words. Type can be
-   predecessors successors keywords word-type positions-in-sentence associations usage music. weight is stored in associations."
+  "getting infer from words. Type can be
+   predecessors successors keywords word-type positions-in-sentence associations usage music.
+   weight is stored in associations."
   [type]
   (let [words (distinct (keys @*words-store*))]
     (map (fn [x] (list x (type (lookup-word x)))) words)))
 
 (defn new-text []
-  "gets the elements from words and sets the table sequence thusly."
-  (reset! *weight-list* (or (get-element-from-words :associations) nil))
-  (println (reverse @*weight-list*)))
+  (println (reverse (or (get-element-from-words :associations) nil))))
 
 (defn reduce-weight
   "reduces the weight of each entry  in word for all of the words in sentence."
@@ -527,7 +517,7 @@
                                  (concat @*current-words* musical-words)
                                  (get-music-associations (:associations (lookup-word current-word)))))]
                       (or test
-                          (choose-the-one
+                          (choose-one
                            (get-music-words (map (fn [association] (first association) ) (:associations (lookup-word current-word))))))))]
           (recur current-word collected-words-col))))))
 
@@ -541,7 +531,7 @@
                (concat @*current-words* word-words)
                (get-word-associations (:associations (lookup-word current-word)))))]
     (or test
-        (choose-the-one
+        (choose-one
          (get-word-words (map (fn [association] (first association)) (:associations (lookup-word current-word))))))))
 
 (defn process-events [type sentence]
@@ -625,7 +615,6 @@
    :else (process-default type sentence)))
 
 (defn put-sentence-into-database [sentence]
-  "puts the sentence into the database."
   (establish-keywords sentence)
   (let [sentence-type (get-sentence-type sentence)
         name (make-new-name)]
@@ -636,8 +625,7 @@
     (define-incipients sentence sentence-type)
     (define-cadences sentence sentence-type)
 
-    (new-text)
-    (reply sentence-type sentence)))
+    (new-text)))
 
 (defn fix-end-of-music-sentences
   "attaches the punctuation to the end of the music sentence."
@@ -661,7 +649,8 @@
                          (:events (lookup-word (first user-input))))
                   (fix-end-of-music-sentences user-input)
                   user-input)
-          response (put-sentence-into-database input)]
+          _ (put-sentence-into-database input)
+          response (reply (get-sentence-type input) input)]
       (when-not (empty? response)
         (let [name (str "sentence-" @*counter*)
               sentence-type (last (explode (last response)))]
