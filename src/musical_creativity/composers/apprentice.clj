@@ -571,6 +571,15 @@
         new-sentence (cons current-word new-words)]
   new-sentence))
 
+(defn pick-start-word [type choices incipients]
+  (let [trial (choose-the-highest-rated-word
+               (remove-them
+                (get-word-words (:cadences (if (= type "?")
+                                             @*question-cadence-lexicon*
+                                             @*answer-cadence-lexicon*)))
+                choices))]
+  (or trial (choose-one (get-word-words incipients)))))
+
 (defn build-a-response [type sentence]
   (let [choices (compound-associations
                  (mapcat (fn [word] (get-word-associations (:associations (lookup-word word)))) sentence))
@@ -581,13 +590,7 @@
     (reset! *current-words* ())
     (if (or (empty? choices) (empty? incipients))
       ()
-      (let [current-word (let [trial (choose-the-highest-rated-word
-                                      (remove-them
-                                       (get-word-words (:cadences (if (= type "?")
-                                                                    @*question-cadence-lexicon*
-                                                                    @*answer-cadence-lexicon*)))
-                                       choices))]
-                           (or trial (choose-one (get-word-words incipients))))
+      (let [current-word (pick-start-word type choices incipients)
             cadences (:cadences (other-lexicon-type type))]
         (build-reply-sentence current-word cadences)))))
 
