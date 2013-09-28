@@ -3,10 +3,12 @@
    [clojure.math.numeric-tower :as math]))
 
 (def weight-divisor 2)
-(def keyword-weight 0.15)
+(def keyword-weight 0.75)
 (def successor-weight 0.5)
 (def backward-chain-weight 0.1)
 (def last-word-weight 0.2)
+(def predecessors-weight 0.5)
+(def broad-keyword-weight 0.1)
 
 (def *initiate* (atom true))
 (def *counter* (atom 0))
