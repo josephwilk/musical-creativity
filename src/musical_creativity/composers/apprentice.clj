@@ -69,6 +69,13 @@
 (defn member [item col] (boolean (some #{item} col)))
 (defn my-sort [fun things] (sort fun things))
 
+(defn all-sentences []
+  (sort
+   (fn [x y]
+     (> (Integer/parseInt (last (clojure.string/split (str x) #"-")))
+        (Integer/parseInt (last (clojure.string/split (str y) #"-")))))
+   (keys @*sentences-store*)))
+
 (defn position [thing list]
   "returns position of thing in list or nil"
   (let [index (.indexOf list thing)]
@@ -197,14 +204,14 @@
    calling (recognize-no (too bad you cant answer!))
    recognize-no returned nil"
   (if-not (empty? (find-no sentence))
-    (pushnew (first (keys @*sentences-store*)) *no-sentences*)
+    (pushnew (first (all-sentences)) *no-sentences*)
     nil))
 
 (defn recognize-yes [sentence]
   "this function finds the first ocurance of the yes word (followed by a $) and
    places it in the *yes-sentences* listing."
   (if-not (empty? (find-yes sentence))
-    (pushnew (first (keys @*sentences-store*)) *yes-sentences*)
+    (pushnew (first (all-sentences)) *yes-sentences*)
     nil))
 
 (defn find-yes
@@ -399,12 +406,8 @@
           (update-or-create-word word sentence sentence-type name)
           (reset! *predecessor* word)
 
-          ;;WIP
-          (if (< (+ (position word sentence) 2) (count sentence))
-            (reset! *successor* (nth sentence (+ (position word sentence) 2)))
-            ;(reset! *successor* nil)
-            )
-          ;WIP(pushnew word *words-store*)
+          (when (< (+ (position word sentence) 2) (count sentence))
+            (reset! *successor* (nth sentence (+ (position word sentence) 2))))
 
           (if (not= sentence-type "*")
             (doall (map
@@ -439,7 +442,7 @@
 
 (defn define-cadences [sentence sentence-type]
   "finds and returns its arg's cadences."
-  (when-not (=  sentence-type "*")
+  (when-not (= sentence-type "*")
     (if (=  sentence-type "?")
       (update-cadence *question-cadence-lexicon* (cons (my-last sentence) (:cadences @*question-cadence-lexicon*)))
       (update-cadence *answer-cadence-lexicon*  (cons (my-last sentence) (:cadences @*answer-cadence-lexicon*))))))
@@ -464,8 +467,9 @@
 
 (defn reduce-weighting [sentence-1 sentence-2]
   "sentence 1 here is the initiating sentence."
-  (map (fn [word]
-         (cons word (reduce-weight word sentence-2))) sentence-1))
+  (doall
+   (map (fn [word]
+          (cons word (reduce-weight word sentence-2))) sentence-1)))
 
 (defn reward [associations words]
   "rewards the weights with a * statement from user."
@@ -574,7 +578,7 @@
                  (apply concat
                         (map (fn [word] (get-music-associations (:associations (lookup-word word)))) sentence)))
         incipients (if (= type "?")
-                     (my-remove (list (eval @*no*))
+                     (my-remove (list @*no*)
                                 (get-music-words (:incipients @*answer-incipient-lexicon*)))
                      (get-music-words (:incipients @*question-incipient-lexicon*)))]
     (reset! *current-words* ())
@@ -596,7 +600,7 @@
   (let [choices (compound-associations
                  (mapcat (fn [word] (get-word-associations (:associations (lookup-word word)))) sentence))
         incipients (if (or (= type "?") (= type '?))
-                     (my-remove (list (eval @*no*)) (get-word-words (:incipients @*answer-incipient-lexicon*)))
+                     (my-remove (list @*no*) (get-word-words (:incipients @*answer-incipient-lexicon*)))
                      (get-word-words (:incipients @*question-incipient-lexicon*)))]
 
     (reset! *current-words* ())
@@ -623,13 +627,21 @@
           new-sentence)))))
 
 (defn process-no []
-  (reduce-weighting (first (:sentence (lookup-sentence (third (keys @*sentences-store*)))))
-                    (first (:sentence (lookup-sentence (second (keys @*sentences-store*))))))
+  (println (keys @*sentences-store*))
+
+  (println :punishing-> (first (:sentence (lookup-sentence (third (all-sentences)))))
+                        (first (:sentence (lookup-sentence (second (all-sentences))))))
+
+
+  (reduce-weighting (first (:sentence (lookup-sentence (third (all-sentences)))))
+                    (first (:sentence (lookup-sentence (second (all-sentences))))))
+
+
   (list "*"))
 
 (defn process-yes []
-  (add-weighting (first (:sentence (lookup-sentence (third (keys @*sentences-store*)))))
-                 (first (:sentence (lookup-sentence (second (keys @*sentences-store*))))))
+  (add-weighting (first (:sentence (lookup-sentence (third (all-sentences)))))
+                 (first (:sentence (lookup-sentence (second (all-sentences))))))
   (list "$"))
 
 (defn reply

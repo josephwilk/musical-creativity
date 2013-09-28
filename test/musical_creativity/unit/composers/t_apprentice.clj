@@ -9,7 +9,9 @@
   @*no* => ()
 
   (find-no '(*what is your name?)) => '(*what)
-  @*no* => '(*what))
+  @*no* => '(*what)
+
+  (find-no '(no*)) => (no*))
 
 (fact "find-yes"
   (find-yes '(what is your name?)) => ()
@@ -60,10 +62,14 @@
    => '((name? 0.95) (is 0.5)))
 
 (fact "add weighting"
+  (put-sentence-into-database '(hello!))
   (put-sentence-into-database '(what is your name?))
   (put-sentence-into-database '(my name is david!))
+  (put-sentence-into-database '(your name is computer!))
+  (put-sentence-into-database '(what is your name?))
+  (put-sentence-into-database '(what is my name?))
 
-  (add-weighting '(no*) '(*)) =>
+  (add-weighting '(no*) '("*")) =>
   '((no* (name? 0.85) (computer! 0.1) (david! 0.1)
          (name 0.1) (my 0.1) (your 0.1) (is 0.1) (what 0.1))))
 
