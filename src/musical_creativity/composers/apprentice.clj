@@ -301,23 +301,24 @@
 
 (defn add-word-to-word-weightlists
   "adds new words backchain style to all previous words in the database."
-  [word]
-  (seq (doall
-        (map
-         (fn [item]
-           (when-not (= item word)
-             (update-word item :associations
-                          (compound-associations
-                           (concat (:associations (lookup-word item))
-                                   (list
-                                    (cond
-                                     (=  word @*keyword*)
-                                     (list word (round-it (/ keyword-weight 2)))
-                                     (= word @*last-word*)
-                                     (list word (round-it (/ last-word-weight 2)))
-                                     :else (list word backward-chain-weight))))))))
+  [word keyword last-word all-words]
+  (doall
+   (map
+    (fn [current-word]
+      (when-not (= current-word word)
+        (let [new-associations
+              (compound-associations
+               (concat (:associations (lookup-word current-word))
+                       (list
+                        (cond
+                         (= word keyword)
+                         (list word (round-it (/ keyword-weight 2)))
+                         (= word last-word)
+                         (list word (round-it (/ last-word-weight 2)))
+                         :else (list word backward-chain-weight)))))])
 
-         @*all-words*))))
+        (update-word current-word :associations new-associations)))
+    all-words)))
 
 (defn build-associations
   ([word all-words] (build-associations word all-words ()))
@@ -389,22 +390,23 @@
                         (assoc :used-before? true))))))
 
 (defn make-word-objects [sentence sentence-type name]
-  "makes the words objects for colaborator."
   (doall
    (map (fn [word]
+          (println :word word :type sentence-type)
+
           (update-or-create-word word sentence sentence-type name)
           (reset! *predecessor* word)
 
           ;;WIP
-          (when (< (+ (position word sentence) 2) (count sentence))
+          (if (< (+ (position word sentence) 2) (count sentence))
             (reset! *successor* (nth sentence (+ (position word sentence) 2)))
-          ;;   ;(reset! *successor* ())
+            ;(reset! *successor* nil)
             )
           ;WIP(pushnew word *words*)
 
           (if (not= sentence-type "*")
             (doall (map
-                    (fn [item] (add-word-to-word-weightlists item)) sentence)))) sentence)))
+                    (fn [item] (add-word-to-word-weightlists item @*keyword* @*last-word* @*all-words*)) sentence)))) sentence)))
 
 (defn figure-speac [word]
   "this function sets up parsing structure in sentences for future creation of sentences and
@@ -662,6 +664,7 @@
         name (make-new-name)]
     (make-sentence-object sentence sentence-type name)
     (make-word-objects sentence sentence-type name)
+
     (parse-sentence sentence name)
     (define-incipients sentence sentence-type)
     (define-cadences sentence sentence-type)

@@ -24,11 +24,21 @@
 (fact "recognize-yes"
   (recognize-yes '(what is your name?)) => nil)
 
-(fact "reply"
+(fact "put-sentence-into-database"
+  (put-sentence-into-database '(hello!))
   (put-sentence-into-database '(what is your name?))
 
-  ;;(println :sentence @*sentences*)
-  ;;(println :word @*words*)
+;  (println @*words*)
+
+  (:associations ('name? @*words*)) => '((your 0.2) (is 0.2) (what 0.2) (hello! 0.1))
+  (:associations ('your @*words*)) => '((name? 2.21) (is 0.3) (what 0.3) (hello! 0.1))
+  (:associations ('is @*words*)) => '((name? 2.09) (your 0.8) (what 0.4) (hello! 0.1))
+  (:associations ('what @*words*)) => '((name? 2.47) (is 0.9) (hello! 0.1) (your 0.4))
+  (:associations ('hello! @*words*)) => '((what 0.4) (is 0.4) (your 0.4) (name? 1.52)))
+
+(fact "reply"
+  (put-sentence-into-database '(hello!))
+  (put-sentence-into-database '(what is your name?))
 
   (reply "?" '(what is your name?)) => ())
 
@@ -52,7 +62,9 @@
          (name 0.1) (my 0.1) (your 0.1) (is 0.1) (what 0.1))))
 
 (fact "add word to word weightlists"
-  (add-word-to-word-weightlists 'what) => nil)
+  (put-sentence-into-database '(what is your name?))
+
+  (add-word-to-word-weightlists 'what @*all-words*) => nil)
 
 (fact "get-keyword"
   (get-keyword '(hello!)) =>  'hello!
