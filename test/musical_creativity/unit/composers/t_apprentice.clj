@@ -11,7 +11,7 @@
   (find-no '(*what is your name?)) => '(*what)
   @*no* => '(*what)
 
-  (find-no '(no*)) => (no*))
+  (find-no '(no*)) => '(no*))
 
 (fact "find-yes"
   (find-yes '(what is your name?)) => ()
@@ -76,7 +76,7 @@
 (fact "add word to word weightlists"
   (put-sentence-into-database '(what is your name?))
 
-  (add-word-to-word-weightlists 'what @*all-words*) => nil)
+  (add-word-to-word-weightlists 'what 'what 'is @*all-words*) => nil)
 
 (fact "get-keyword"
   (get-keyword '(hello!)) =>  'hello!
@@ -92,9 +92,9 @@
 (fact "build-associations"
   (put-sentence-into-database '(what is your name?))
 
-  (build-associations 'what @*all-words*) => '([name? 0.95] [your 0.1] [is 0.1])
+  (build-associations 'what @*all-words*) => '((name? 1.55) (your 0.1) (is 0.1) (name 0.5))
 
-  (build-associations 'what @*all-words* '((name 0.5))) => '([name? 0.95] [your 0.1] [is 0.1] [name 0.5]))
+  (build-associations 'what @*all-words* '((name 0.5))) => '([name? 1.55] [your 0.1] [is 0.1] [name 0.5]))
 
 (fact "reduce-weight"
   (put-sentence-into-database '(what is your name?))
