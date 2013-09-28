@@ -229,10 +229,8 @@
     (reset! *successor* (second sentence))
     (reset! *last-word* (last sentence))
     (when-not (or yes-test no-test)
-      (reset! *keyword* (get-keyword sentence)))
-    (when-not (or yes-test no-test)
-      (push-new @*keyword* *keywords*))
-    (when-not (or yes-test no-test)
+      (reset! *keyword* (get-keyword sentence))
+      (push-new @*keyword* *keywords*)
       (push-new (last sentence) *last-words*))))
 
 (defn remove-object-twice
