@@ -10,35 +10,35 @@
 (def predecessors-weight 0.5)
 (def broad-keyword-weight 0.1)
 
-(def *initiate* (atom true))
-(def *counter* (atom 0))
+(def ^:dynamic *initiate* (atom true))
+(def ^:dynamic *counter* (atom 0))
 
-(def *sentences-store* (atom {}))
-(def *words-store*     (atom {}))
+(def ^:dynamic *sentences-store* (atom {}))
+(def ^:dynamic *words-store*     (atom {}))
 
-(def *no-sentences* (atom ()))
-(def *yes-sentences* (atom ()))
-(def *yes* (atom ()))
-(def *no* (atom ()))
-(def *keyword* (atom ()))
-(def *keywords* (atom ()))
+(def ^:dynamic *no-sentences* (atom ()))
+(def ^:dynamic *yes-sentences* (atom ()))
+(def ^:dynamic *yes* (atom ()))
+(def ^:dynamic *no* (atom ()))
+(def ^:dynamic *keyword* (atom ()))
+(def ^:dynamic *keywords* (atom ()))
 
-(def *predecessor* (atom nil))
-(def *successor* (atom nil))
-(def *last-word* (atom nil))
-(def *last-words* (atom ()))
-(def *all-words* (atom ()))
-(def *input-work* (atom ()))
-(def *weight-list* (atom ()))
-(def *current-words* (atom ()))
+(def ^:dynamic *predecessor* (atom nil))
+(def ^:dynamic *successor* (atom nil))
+(def ^:dynamic *last-word* (atom nil))
+(def ^:dynamic *last-words* (atom ()))
+(def ^:dynamic *all-words* (atom ()))
+(def ^:dynamic *input-work* (atom ()))
+(def ^:dynamic *weight-list* (atom ()))
+(def ^:dynamic *current-words* (atom ()))
 
 (defn make-incipient-lexicon [] {:incipients ()})
 (defn make-candence-lexicon  [] {:cadences ()})
 
-(def *question-incipient-lexicon* (atom (make-incipient-lexicon)))
-(def *answer-incipient-lexicon*   (atom (make-incipient-lexicon)))
-(def *question-cadence-lexicon*   (atom (make-candence-lexicon )))
-(def *answer-cadence-lexicon*     (atom (make-candence-lexicon)))
+(def ^:dynamic *question-incipient-lexicon* (atom (make-incipient-lexicon)))
+(def ^:dynamic *answer-incipient-lexicon*   (atom (make-incipient-lexicon)))
+(def ^:dynamic *question-cadence-lexicon*   (atom (make-candence-lexicon )))
+(def ^:dynamic *answer-cadence-lexicon*     (atom (make-candence-lexicon)))
 
 (defn reset-all! []
   (reset! *initiate* true)
@@ -87,7 +87,7 @@
 (defn make-sentence [id atts]  (reset! *sentences-store* (assoc @*sentences-store* id atts)))
 (defn update-sentence [id field val] (reset! *sentences-store* (assoc-in @*sentences-store* [id field] val))
   val)
-(defn sentence-seen? [sentence] (some #{sentence} (keys @*sentences-store*)))
+(defn sentence-seen? [sentence] (some #{sentence} (all-sentences)))
 
 (defn lookup-word [word]  (@*words-store* word))
 (defn make-word [id atts]  (reset! *words-store* (assoc @*words-store* id atts)))
@@ -608,7 +608,7 @@
       ()
       (let [current-word (let [trial (choose-the-highest-rated-word
                                       (remove-them
-                                       (get-word-words (:cadences (if (=  type "?")
+                                       (get-word-words (:cadences (if (= type "?")
                                                                     @*question-cadence-lexicon*
                                                                     @*answer-cadence-lexicon*)))
                                        choices))]
@@ -620,15 +620,13 @@
                            current-words []]
                       (if (or (nil? current-word) (member current-word cadences))
                         current-words
-                        (let [current-word (pick-words current-word)
-                              new-current-words (cons current-word current-words)]
-                          (pushnew current-word *current-words*)
-                          (recur current-word new-current-words)))))]
+                        (let [next-word (pick-words current-word)
+                              new-current-words (cons next-word current-words)]
+                          (pushnew next-word *current-words*)
+                          (recur next-word new-current-words)))))]
           new-sentence)))))
 
 (defn process-no []
-  (println (keys @*sentences-store*))
-
   (println :punishing-> (first (:sentence (lookup-sentence (third (all-sentences)))))
                         (first (:sentence (lookup-sentence (second (all-sentences))))))
 
