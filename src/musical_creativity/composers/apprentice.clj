@@ -91,6 +91,14 @@
 (defn word-seen? [word] (some #{word} (keys @*words-store*)))
 (defn swap-word! [word word-map] (reset! *words-store* (assoc @*words-store* word word-map)))
 
+(defn update-incipient [ref new-value]
+  (reset! ref {:incipients new-value})
+  new-value)
+
+(defn update-cadence [ref new-value]
+  (reset! ref {:cadences new-value})
+  new-value)
+
 (defn explode [thing] (rest (clojure.string/split (str thing) #"")))
 (defn third [col] (nth col 2))
 (defn my-last [thing] (last thing))
@@ -125,7 +133,7 @@
 
 (defn process-run-function [thing])
 (defn make-timings [thing] thing)
-(defn message-dialog [thing] (when (seq thing) (println "> " thing)))
+(defn message-dialog [thing] (when (seq thing) (println "Alice> " (str thing))))
 (defn play-events [events] events)
 
 (defn choose-the-one [stuff]
@@ -141,10 +149,12 @@
    :else (cons (first things)
                (remove-it thing (rest things)))))
 
-(defn remove-them [list things]
+(defn remove-them
   "removes its first arg from its second arg."
-  (if (empty? list) things
-      (remove-them (rest list) (remove-it (first list) things))))
+  [list things]
+  (if (empty? list)
+    things
+    (remove-them (rest list) (remove-it (first list) things))))
 
 (defn round-it [n]
   "simple utility to limit decimal places."
@@ -386,8 +396,6 @@
 (defn make-word-objects [sentence sentence-type name]
   (doall
    (map (fn [word]
-          (println :word word :type sentence-type)
-
           (update-or-create-word word sentence sentence-type name)
           (reset! *predecessor* word)
 
@@ -425,20 +433,16 @@
 
 (defn define-incipients [sentence sentence-type]
   "defines the incipients for the sentence."
-  (if (=  sentence-type "?")
-    (update-sentence @*question-incipient-lexicon* :incipients
-                     (cons (first sentence) (:incipients (lookup-sentence @*question-incipient-lexicon*))))
-    (update-sentence @*answer-incipient-lexicon* :incipients
-                     (cons (first sentence) (:incipients (lookup-sentence @*answer-incipient-lexicon*))))))
+  (if (or (= sentence-type "?") (= sentence-type '?))
+    (update-incipient *question-incipient-lexicon* (cons (first sentence) (:incipients @*question-incipient-lexicon*)))
+    (update-incipient *answer-incipient-lexicon*   (cons (first sentence) (:incipients @*answer-incipient-lexicon*)))))
 
 (defn define-cadences [sentence sentence-type]
   "finds and returns its arg's cadences."
   (when-not (=  sentence-type "*")
     (if (=  sentence-type "?")
-      (update-sentence @*question-cadence-lexicon* :cadences
-            (cons (my-last sentence) (:cadences (lookup-sentence @*question-cadence-lexicon*))))
-      (update-sentence @*answer-cadence-lexicon* :cadences
-            (cons (my-last sentence) (:cadences (lookup-sentence @*answer-cadence-lexicon*)))))))
+      (update-cadence *question-cadence-lexicon* (cons (my-last sentence) (:cadences @*question-cadence-lexicon*)))
+      (update-cadence *answer-cadence-lexicon*  (cons (my-last sentence) (:cadences @*answer-cadence-lexicon*))))))
 
 (defn get-element-from-words
   "this is a test function for getting infer from words. Type can be
@@ -478,7 +482,6 @@
 (defn add-weight
   "increases the weight of each entry in word for all of the words in sentence."
   [word sentence]
-  (println @*words-store*)
   (let [associations (:associations (lookup-word word))]
     (update-word word :associations (reward associations sentence))))
 
@@ -566,7 +569,7 @@
       (choose-the-one
        (get-word-words (map (fn [association] (first association)) (:associations (lookup-word current-word))))))))
 
-(defn choices-thing [type sentence]
+(defn process-events [type sentence]
   (let [choices (compound-associations
                  (apply concat
                         (map (fn [word] (get-music-associations (:associations (lookup-word word)))) sentence)))
@@ -577,28 +580,27 @@
     (reset! *current-words* ())
     (if (or (empty? choices) (empty? incipients))
       ()
-      (let [current-word                                            ;;;here's where we get a current word - the highest rated word in choices
+      (let [current-word
             (let [trial (choose-the-highest-rated-word
                          (remove-them
-                          (get-music-words (:cadences (if (=  type "?")
+                          (get-music-words (:cadences (if (= type "?")
                                                         @*question-cadence-lexicon*
                                                         @*answer-cadence-lexicon*)) )
                           choices))]
-              (if trial trial (get-music-words (choose-one incipients))))            ;;;here is where we resort to incipients if necessary
-            cadences (get-music-words (:cadences (lookup-sentence (other-lexicon-type type))))]  ;;;this variable will indicate when we must stop!
+              (if trial trial (get-music-words (choose-one incipients))))
+            cadences (get-music-words (:cadences (other-lexicon-type type)))]
         (let [new-sentence (cons current-word (current-words-list current-word cadences))]
           new-sentence)))))
 
-(defn default-reply-thing [type sentence]
-  (let [choices (compound-associations                              ;;;this is a pro-rated list of all of the associations of the sentence argument
-                 (apply concat
-                        (map (fn [word] (get-word-associations (:associations (lookup-word word)))) sentence)))
-        incipients (if (=  type "?")     ;;;this is a just in case choices is nil listing of alternatives sentence incipients
-                     (my-remove (list (eval @*no*))
-                                (get-word-words (:incipients @*answer-incipient-lexicon*)))
+(defn process-default [type sentence]
+  (let [choices (compound-associations
+                 (mapcat (fn [word] (get-word-associations (:associations (lookup-word word)))) sentence))
+        incipients (if (or (= type "?") (= type '?))
+                     (my-remove (list (eval @*no*)) (get-word-words (:incipients @*answer-incipient-lexicon*)))
                      (get-word-words (:incipients @*question-incipient-lexicon*)))]
+
     (reset! *current-words* ())
-    (if (or (nil? choices) (nil? incipients))
+    (if (or (empty? choices) (empty? incipients))
       ()
       (let [current-word (let [trial (choose-the-highest-rated-word
                                       (remove-them
@@ -606,8 +608,8 @@
                                                                     @*question-cadence-lexicon*
                                                                     @*answer-cadence-lexicon*)))
                                        choices))]
-                           (if trial trial (choose-one (get-word-words incipients))))
-            cadences (:cadences (lookup-sentence (other-lexicon-type type)))]
+                           (or trial (choose-one (get-word-words incipients))))
+            cadences (:cadences (other-lexicon-type type))]
         (let [new-sentence
               (cons current-word
                     (loop [current-word current-word
@@ -615,7 +617,7 @@
                       (if (or (nil? current-word) (member current-word cadences))
                         current-words
                         (let [current-word (pick-words current-word)
-                              new-current-words (cons current-word  current-words)]
+                              new-current-words (cons current-word current-words)]
                           (pushnew current-word *current-words*)
                           (recur current-word new-current-words)))))]
           new-sentence)))))
@@ -630,8 +632,9 @@
                  (first (:sentence (lookup-sentence (second (keys @*sentences-store*))))))
   (list "$"))
 
-(defn reply [type sentence]
+(defn reply
   "this function creates sentences by using the various associations in each word in the sentence argument."
+  [type sentence]
   (cond
    (recognize-no sentence)
    (process-no)
@@ -640,13 +643,9 @@
    (process-yes)
 
    (:events (lookup-word (first sentence)))
-   (choices-thing type sentence)
+   (process-events type sentence)
 
-   :else (default-reply-thing type sentence)))
-
-(defn display [response]
-  "simple making of list into string."
-  (make-list-into-string response))
+   :else (process-default type sentence)))
 
 (defn put-sentence-into-database [sentence]
   "puts the sentence into the database."
@@ -676,14 +675,16 @@
 
 (defn event-loop []
   (loop []
+    (print "user> ")
+    (flush)
     (let [user-input (read-string (read-line))
           input (if (and (word-seen? (first user-input))
-                           (:events (lookup-word (first user-input))))
+                         (:events (lookup-word (first user-input))))
                   (fix-end-of-music-sentences user-input)
                   user-input)
           response (put-sentence-into-database input)]
       (when-not (empty? response)
-        (let [name (implode (str "sentence-" @*counter*))
+        (let [name (str "sentence-" @*counter*)
               sentence-type (my-last (explode (my-last response)))]
           (make-sentence name {:name 'me
                                :sentence-type sentence-type
@@ -701,7 +702,7 @@
                                 (apply concat
                                        (make-timings
                                         (map (fn [x](:events (lookup-word x))) response)))))
-        (message-dialog (make-list-into-string response)))
+        (message-dialog response))
       (recur))))
 
 (defn apprentice []
@@ -720,7 +721,7 @@
    (or (member (second (first choices)) (:cadences @*answer-cadence-lexicon*))
        (member (second (first choices)) (:cadences @*question-cadence-lexicon*)))
    (remove-cadences (rest choices))
-   :else (cons (first choices)(remove-cadences (rest choices)))))
+   :else (cons (first choices) (remove-cadences (rest choices)))))
 
 (defn pair [list-1 list-2]
   "pairs the two list args."
