@@ -97,7 +97,7 @@
   (reset! ref {:cadences new-value})
   new-value)
 
-(defn explode [thing] (vec thing))
+(defn explode [thing] (vec (str thing)))
 (defn implode [list] (str/join "" list))
 
 (defn sort-by-last [thing]
@@ -272,23 +272,21 @@
 (defn add-word-to-word-weightlists
   "adds new words backchain style to all previous words in the database."
   [word keyword last-word all-words]
-  (doall
-   (map
-    (fn [current-word]
-      (when-not (= current-word word)
-        (let [new-associations
-              (compound-associations
-               (concat (:associations (lookup-word current-word))
-                       (list
-                        (cond
-                         (= word keyword)
-                         (list word (round-it (/ keyword-weight 2)))
-                         (= word last-word)
-                         (list word (round-it (/ last-word-weight 2)))
-                         :else (list word backward-chain-weight)))))]
 
-          (update-word current-word :associations new-associations))))
-    all-words)))
+  (doseq [current-word all-words]
+    (when-not (= current-word word)
+      (let [new-associations
+            (compound-associations
+             (concat (:associations (lookup-word current-word))
+                     (list
+                      (cond
+                       (= word keyword)
+                       (list word (round-it (/ keyword-weight 2)))
+                       (= word last-word)
+                       (list word (round-it (/ last-word-weight 2)))
+                       :else (list word backward-chain-weight)))))]
+
+        (update-word current-word :associations new-associations)))))
 
 (defn build-associations
   ([word word-context all-words] (build-associations word word-context all-words ()))
@@ -387,10 +385,10 @@
            :predecessors (last predecessor)}]
       (update-or-create-word word word-context sentence sentence-type name)
       (if-not (negative? sentence-type)
-        (doseq [item sentence] (map
-                (fn [item] (add-word-to-word-weightlists item
-                                                         (:keyword word-context)
-                                                         (:last-word word-context) @*all-words*))  ))))))
+        (doseq [item sentence]
+          (add-word-to-word-weightlists item
+                                        (:keyword word-context)
+                                        (:last-word word-context) @*all-words*)  )))))
 
 (defn figure-speac
   "this function sets up parsing structure in sentences for future creation of sentences and
@@ -444,9 +442,7 @@
 (defn reduce-weighting
   "sentence 1 here is the initiating sentence."
   [sentence-1 sentence-2]
-  (doall
-   (map (fn [word]
-          (cons word (reduce-weight word sentence-2))) sentence-1)))
+  (doseq [word sentence-1] (cons word (reduce-weight word sentence-2))))
 
 (defn reward
   "rewards the weights with a $ statement from user."
