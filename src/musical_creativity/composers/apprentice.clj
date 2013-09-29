@@ -93,8 +93,7 @@
   new-value)
 
 (defn explode [thing] (map str (vec (str thing))))
-
-(defn implode [list] (string/join "" list))
+(defn implode [list] list)
 
 (defn sort-by-last [thing]
   (sort (fn [x y] (> (last x) (last y))) thing))
@@ -380,7 +379,7 @@
            :successor    (last successor)
            :predecessors (last predecessor)}]
       (update-or-create-word word word-context sentence sentence-type name)
-      (if-not (negative? sentence-type)
+      (when-not (negative? sentence-type)
         (doseq [item sentence]
           (add-word-to-word-weightlists item
                                         (:keyword word-context)
@@ -413,7 +412,7 @@
     (update-incipient *answer-incipient-lexicon*   (cons (first sentence) (:incipients @*answer-incipient-lexicon*)))))
 
 (defn define-cadences [sentence sentence-type]
-  (when-not (= sentence-type "*")
+  (when-not (negative? sentence-type)
     (if (question? sentence-type)
       (update-cadence *question-cadence-lexicon* (cons (last sentence) (:cadences @*question-cadence-lexicon*)))
       (update-cadence *answer-cadence-lexicon*   (cons (last sentence) (:cadences @*answer-cadence-lexicon*))))))
@@ -565,9 +564,6 @@
 (defn build-reply-sentence [current-word cadences]
   (let [new-words (loop [current-word current-word
                          current-words []]
-
-                    (println :word current-word :c_words current-words :cadences cadences)
-
                     (if (or (nil? current-word) (member current-word cadences))
                       current-words
                       (let [next-word (pick-words current-word)]
@@ -673,7 +669,7 @@
                                :origination 'apprentice})
           (swap! *counter* inc))
         (new-text)
-        (if (and (not= (first response) negative-type)
+        (when (and (not= (first response) negative-type)
                  (not= (first response) positive-type)
                  (not (nil? (first response)))
                  (:events (lookup-word (first response))))
@@ -717,45 +713,46 @@
       (let [choice (choose-one list)]
         (cons choice (mix (remove choice list :count 1))))))
 
-(defn get-parse-elements [parse]
+(defn get-parse-elements
   "gets the speac parase elements for the speac sentence."
+  [parse]
   (if (empty? parse)()
       (cons (first parse)
             (get-parse-elements (remove (fn [p] (= p (first parse))) parse)))))
 
-(defn relate-words [words associations]
+(defn relate-words
   "relates the words with their speac symbols to words with weightings alone."
+  [words associations]
   (cond
    (empty? words) ()
    (let [test (assoc (ffirst words) associations)]
      (if test (cons test (relate-words (rest words) associations)))) '(wat)
      :else (relate-words (rest words) associations)))
 
-(defn get-associations [parsed-words]
+(defn get-associations
   "gets the associations for its arg."
+  [parsed-words]
   (let [relevant-words
         (compound-associations
          (apply concat
                 (map (fn [word] (:associations (lookup-word word)))
-                     (first (:sentence (eval (first @*sentences-store*))))
-                      )))]
+                     (first (:sentence (eval (first @*sentences-store*)))))))]
     (relate-words relevant-words parsed-words)))
 
-(defn parse-the-sentence [parse cadence]
-  "the argument here is the parse found in any sentence parse-it slot."
+(defn parse-the-sentence
+  "takes parse found in any sentence parse-it slot."
+  [parse cadence]
   (concat (let [parse-lists (remove-cadences
                              (map (fn [item] (reverse item)) (get-associations (collect-parsings @*sentences-store*))))]
             (map (fn [element] (second (assoc element (mix parse-lists)))) (butlast parse)))
           (list (choose-one cadence))))
 
 (defn any-greater-than? [n list-of-numbers]
-  "determines if any in second arg are greater than its first arg."
   (cond (empty? list-of-numbers)()
         (> (first list-of-numbers) n) true
         :else (any-greater-than? n (rest list-of-numbers))))
 
 (defn set-to-zero
-  "sets the events to begin on zero."
   ([events] (set-to-zero events (ffirst events)))
   ([events subtract]
       (if (empty? events)()
@@ -764,12 +761,12 @@
                 (set-to-zero (rest events) subtract)))))
 
 (defn get-note-timing [event time]
-  "grunt work for get-beat-length"
   (- (+ (first event)(third event)) time))
 
-(defn get-beat-length [events]
-  "this is used in re-time for setting the new time!
-   requires that the first in events be sorted to current time!"
+(defn get-beat-length
+  "Used in re-time for setting the new time.
+   requires that the first in events be sorted to current time"
+  [events]
   (let [time (ffirst events)]
     (first (sort > (map (fn [event] (get-note-timing event time)) events)))))
 
@@ -784,25 +781,30 @@
                                                (get-beat-length
                                                 (first event-lists))))))))
 
-(defn play-sentence [sentence]
+(defn play-sentence
   "plays a sentence of word objects."
-  (play-events (apply concat (re-time (map (fn [word] (:events (lookup-word word))) (remove (fn [word] (when-not (:events (lookup-word word)) true)) sentence))))))
+  [sentence]
+  (play-events (apply concat (re-time (map (fn [word] (:events (lookup-word word)))
+                                           (remove (fn [word] (when-not (:events (lookup-word word)) true)) sentence))))))
 
-(defn reveal-the-hidden-events [events]
+(defn reveal-the-hidden-events
   "reveals the events in words."
+  [events]
   (map (fn [x] (:events (eval x))) events))
 
-(defn tester-for-hidden-events [sentence]
-  "tests to see if arg is a music sentence."
+(defn tester-for-hidden-events
+  "test if sentence is a music sentence."
+  [sentence]
   (and (sentence-seen? (first sentence))
        (:events (lookup-sentence (first sentence)))))
 
-(defn return-only-music-sentences [sentence-objects]
-  "the arg to this should be *sentences-store*."
+(defn return-only-music-sentences
+  "takes a *sentences-store*."
+  [sentence-objects]
   (let [real-sentences (apply concat (map (fn [x] (:sentence (eval x))) sentence-objects))]
     (remove (fn [sentence] (when-not (tester-for-hidden-events sentence) true)) real-sentences)))
 
-(defn create-a-work [sentences]
- "the arg to this should be *sentences-store*"
+(defn create-a-work
+  "takes a *sentences-store*"
+  [sentences]
   (reveal-the-hidden-events (apply concat (reverse (return-only-music-sentences sentences)))))
-
