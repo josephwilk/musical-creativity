@@ -73,6 +73,14 @@ Experiments with models for computers generating music.
 (musician/play (gradus/compose-contemporary) piano)
 ```
 
+### Apprentice
+
+To start apprentice run:
+
+```
+lein midje musical-creativity.integration.t-apprentice
+```
+
 ### Demos
 
 ```clojure
