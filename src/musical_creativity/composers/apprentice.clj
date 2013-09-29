@@ -98,14 +98,6 @@
 (defn sort-by-last [thing]
   (sort (fn [x y] (> (last x) (last y))) thing))
 
-(defn my-remove
-  "removes each element of first arg from second arg."
-  [to-be-removed list-of-things]
-  (if (empty? to-be-removed)
-    list-of-things
-    (my-remove (rest to-be-removed)
-               (remove (fn [item] (= item (first to-be-removed))) list-of-things))))
-
 (defn push-new [item col] (reset! col (concat [item] @col)))
 
 (defn push [item col] (reset! col (concat [item] @col)))
@@ -114,19 +106,27 @@
 
 (defn message [thing] (when (seq thing) (println "Alice> " (str thing))))
 
-(defn remove-it [thing things]
+(defn remove-all
+  "removes each element of first arg from second arg."
+  [to-be-removed list-of-things]
+  (if (empty? to-be-removed)
+    list-of-things
+    (remove-all (rest to-be-removed)
+               (remove (fn [item] (= item (first to-be-removed))) list-of-things))))
+
+(defn remove-by-ffirst [thing things]
   (cond
    (empty? things) ()
    (= thing (ffirst things))
-   (remove-it thing (rest things))
+   (remove-by-ffirst thing (rest things))
    :else (cons (first things)
-               (remove-it thing (rest things)))))
+               (remove-by-ffirst thing (rest things)))))
 
-(defn remove-them
+(defn remove-all-by-ffirst
   [list things]
   (if (empty? list)
     things
-    (remove-them (rest list) (remove-it (first list) things))))
+    (remove-all-by-ffirst (rest list) (remove-by-ffirst (first list) things))))
 
 (defn round-it [n]
   (float (/ (math/round (* n 100)) 100)))
@@ -298,7 +298,7 @@
          (when (and successor (not= word successor))
            (make-weight-list successor successor-weight))
          (map (fn [item]
-                (list item backward-chain-weight)) (my-remove (list word) all-words))
+                (list item backward-chain-weight)) (remove-all (list word) all-words))
          current-associations)))))
 
 (defn update-or-create-word [word word-context sentence sentence-type name]
@@ -518,7 +518,7 @@
                                                             @*question-cadence-lexicon*
                                                             @*answer-cadence-lexicon*)))
                           test (choose-the-highest-rated-word
-                                (remove-them
+                                (remove-all-by-ffirst
                                  (concat @*current-words* musical-words)
                                  (get-music-associations (:associations (lookup-word current-word)))))]
                       (or test
@@ -532,7 +532,7 @@
                                          @*question-cadence-lexicon*
                                          @*answer-cadence-lexicon*)))
         test (choose-the-highest-rated-word
-              (remove-them
+              (remove-all-by-ffirst
                (concat @*current-words* word-words)
                (get-word-associations (:associations (lookup-word current-word)))))]
     (or test
@@ -544,7 +544,7 @@
                  (apply concat
                         (map (fn [word] (get-music-associations (:associations (lookup-word word)))) sentence)))
         incipients (if (question? type)
-                     (my-remove (list @*no*)
+                     (remove-all (list @*no*)
                                 (get-music-words (:incipients @*answer-incipient-lexicon*)))
                      (get-music-words (:incipients @*question-incipient-lexicon*)))]
     (reset! *current-words* ())
@@ -554,7 +554,7 @@
             (let [musical-words (get-music-words (:cadences (if (question? type)
                                                         @*question-cadence-lexicon*
                                                         @*answer-cadence-lexicon*)) )
-                  trial (choose-the-highest-rated-word (remove-them musical-words choices))]
+                  trial (choose-the-highest-rated-word (remove-all-by-ffirst musical-words choices))]
               (or trial (get-music-words (choose-one incipients))))
             cadences (get-music-words (:cadences (other-lexicon-type type)))
 
@@ -574,7 +574,7 @@
 
 (defn pick-start-word [type choices incipients]
   (let [trial (choose-the-highest-rated-word
-               (remove-them
+               (remove-all-by-ffirst
                 (get-word-words (:cadences (if (question? type)
                                              @*question-cadence-lexicon*
                                              @*answer-cadence-lexicon*)))
@@ -585,7 +585,7 @@
   (let [choices (compound-associations
                  (mapcat (fn [word] (get-word-associations (:associations (lookup-word word)))) sentence))
         incipients (if (or (question? type))
-                     (my-remove (list @*no*) (get-word-words (:incipients @*answer-incipient-lexicon*)))
+                     (remove-all (list @*no*) (get-word-words (:incipients @*answer-incipient-lexicon*)))
                      (get-word-words (:incipients @*question-incipient-lexicon*)))]
 
     (reset! *current-words* ())
