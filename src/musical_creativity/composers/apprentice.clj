@@ -298,76 +298,87 @@
     all-words)))
 
 (defn build-associations
-  ([word all-words] (build-associations word all-words ()))
-  ([word all-words current-associations]
-     (compound-associations
-      (concat
-       (when (and @*keyword* (not= word @*keyword*))
-         (make-weight-list @*keyword* keyword-weight))
-       (when (and @*last-word* (not= word @*last-word*))
-         (make-weight-list @*last-word* last-word-weight))
-       (when (and @*successor* (not= word @*successor*))
-         (make-weight-list @*successor* successor-weight))
-       (map (fn [item]
-              (list item backward-chain-weight)) (my-remove (list word) all-words))
-       current-associations))))
+  ([word word-context all-words] (build-associations word word-context all-words ()))
+  ([word word-context all-words current-associations]
+     (let [keyword (:keyword word-context)
+           last-word (:last-word word-context)
+           successor (:successor word-context)]
+       (compound-associations
+        (concat
+         (when (and keyword (not= word keyword))
+           (make-weight-list keyword keyword-weight))
+         (when (and last-word (not= word last-word))
+           (make-weight-list last-word last-word-weight))
+         (when (and successor (not= word successor))
+           (make-weight-list successor successor-weight))
+         (map (fn [item]
+                (list item backward-chain-weight)) (my-remove (list word) all-words))
+         current-associations)))))
 
-(defn update-or-create-word [word sentence sentence-type name]
-  (cond
-   (and (not (member word (keys @*words-store*))) (not (word-seen? word)))
-   (do
-     (make-word word {:name (list name)
-                      :sentence-type (list sentence-type)
-                      :sentence (list sentence)
-                      :length-of-sentence (list (count sentence))
-                      :predecessors (list @*predecessor*)
-                      :successors (list @*successor*)
-                      :keywords (list @*keyword*)
-                      :word-type (list sentence-type)
-                      :positions-in-sentence (list (inc (position word sentence)))
-                      :associations (build-associations word @*all-words*)
-                      :usage 1
-                      :used-before? true})
-     (when-not (= sentence-type "*") (push word *all-words*)))
+(defn update-or-create-word [word word-context sentence sentence-type name]
+  (let [words-store @*words-store*
+        all-words @*all-words*]
+    (cond
+     (and (not (member word (keys words-store))) (not (word-seen? word)))
+     (do
+       (make-word word {:name (list name)
+                        :sentence-type (list sentence-type)
+                        :sentence (list sentence)
+                        :length-of-sentence (list (count sentence))
+                        :predecessors (list (:predecessor word-context))
+                        :successors (list (:successor word-context))
+                        :keywords (list (:keyword word-context))
+                        :word-type (list sentence-type)
+                        :positions-in-sentence (list (inc (position word sentence)))
+                        :associations (build-associations word word-context all-words)
+                        :usage 1
+                        :used-before? true})
+       (when-not (= sentence-type "*") (push word *all-words*)))
 
-   (and (word-seen? word) (not (:used-before? (lookup-word word))))
-   (let [word-data (lookup-word word)]
-     (swap-word! word (->
-                       word-data
-                       (assoc :name (cons name (:name word-data)))
-                       (assoc :sentence-type (list sentence-type))
-                       (assoc :sentence (list sentence))
-                       (assoc :length-of-sentence (list (count sentence)))
-                       (assoc :predecessors (list @*predecessor*))
-                       (assoc :successors (list @*successor*))
-                       (assoc :keywords (list @*keyword*))
-                       (assoc :positions-in-sentence (list (inc (position word sentence))))
-                       (assoc :word-type (list sentence-type))
-                       (assoc :associations (build-associations word @*all-words*))
-                       (assoc :usage 1)
-                       (assoc :used-before? true)))
-     (when-not (= sentence-type "*") (push word *all-words*)))
-   :else (let [word-data (lookup-word word)]
-           (swap-word! word
-                       (->
-                        word-data
-                        (assoc :name  (cons name (:name word-data)))
-                        (assoc :sentence-type (cons sentence-type (:sentence-type word-data)))
-                        (assoc :sentence (cons sentence (:sentence word-data)))
-                        (assoc :length-of-sentence (cons (count sentence) (:length-of-sentence word-data)))
-                        (assoc :predecessors (cons @*predecessor* (:predecessors word-data)))
-                        (assoc :successors (cons @*successor* (:successors word-data)))
-                        (assoc :keywords (cons @*keyword* (:keywords word-data)))
-                        (assoc :positions-in-sentence (cons (inc (position word sentence)) (:positions-in-sentence word-data)))
-                        (assoc :word-type(cons sentence-type (:word-type word-data)))
-                        (assoc :associations (build-associations word @*all-words* (:associations word-data)))
-                        (assoc :usage (inc (:usage word-data)))
-                        (assoc :used-before? true))))))
+     (and (word-seen? word) (not (:used-before? (lookup-word word))))
+     (let [word-data (lookup-word word)]
+       (swap-word! word (->
+                         word-data
+                         (assoc :name (cons name (:name word-data)))
+                         (assoc :sentence-type (list sentence-type))
+                         (assoc :sentence (list sentence))
+                         (assoc :length-of-sentence (list (count sentence)))
+                         (assoc :predecessors (list (:predecessor word-context)))
+                         (assoc :successors (list (:successor word-context)))
+                         (assoc :keywords (list (:keyword word-context)))
+                         (assoc :positions-in-sentence (list (inc (position word sentence))))
+                         (assoc :word-type (list sentence-type))
+                         (assoc :associations (build-associations word word-context all-words))
+                         (assoc :usage 1)
+                         (assoc :used-before? true)))
+       (when-not (= sentence-type "*") (push word *all-words*)))
+     :else (let [word-data (lookup-word word)]
+             (swap-word! word
+                         (->
+                          word-data
+                          (assoc :name  (cons name (:name word-data)))
+                          (assoc :sentence-type (cons sentence-type (:sentence-type word-data)))
+                          (assoc :sentence (cons sentence (:sentence word-data)))
+                          (assoc :length-of-sentence (cons (count sentence) (:length-of-sentence word-data)))
+                          (assoc :predecessors (cons (:predecessor word-context) (:predecessors word-data)))
+                          (assoc :successors (cons (:successor word-context) (:successors word-data)))
+                          (assoc :keywords (cons (:keyword word-context) (:keywords word-data)))
+                          (assoc :positions-in-sentence (cons (inc (position word sentence)) (:positions-in-sentence word-data)))
+                          (assoc :word-type(cons sentence-type (:word-type word-data)))
+                          (assoc :associations (build-associations word word-context all-words (:associations word-data)))
+                          (assoc :usage (inc (:usage word-data)))
+                          (assoc :used-before? true)))))))
 
 (defn make-word-objects [sentence sentence-type name]
   (doall
    (map (fn [word]
-          (update-or-create-word word sentence sentence-type name)
+          (let [word-context
+                {:keyword      @*keyword*
+                 :last-word    @*last-word*
+                 :successor    @*successor*
+                 :predecessors @*predecessor*}]
+            (update-or-create-word word word-context sentence sentence-type name))
+
           (reset! *predecessor* word)
 
           (when (< (+ (position word sentence) 2) (count sentence))
