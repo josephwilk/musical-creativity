@@ -1,7 +1,8 @@
 (ns musical-creativity.composers.apprentice
   (:require
+   [clojure.string :as str]
    [clojure.math.numeric-tower :as math]
-   [musical-creativity.util :refer [position choose-one third]]))
+   [musical-creativity.util :refer [position choose-one third frequency]]))
 
 (def weight-divisor 2)
 (def keyword-weight 0.75)
@@ -69,8 +70,8 @@
 (defn all-sentences []
   (sort
    (fn [x y]
-     (> (Integer/parseInt (last (clojure.string/split (str x) #"-")))
-        (Integer/parseInt (last (clojure.string/split (str y) #"-")))))
+     (> (Integer/parseInt (last (str/split (str x) #"-")))
+        (Integer/parseInt (last (str/split (str y) #"-")))))
    (keys @*sentences-store*)))
 
 (defn lookup-sentence [sentence] (@*sentences-store* sentence))
@@ -96,13 +97,15 @@
   (reset! ref {:cadences new-value})
   new-value)
 
-(defn explode [thing] (rest (clojure.string/split (str thing) #"")))
+(defn explode [thing] (vec thing))
+(defn implode [list] (str/join "" list))
 
 (defn sort-by-last [thing]
   (sort (fn [x y] (> (last x) (last y))) thing))
 
-(defn my-remove [to-be-removed list-of-things]
+(defn my-remove
   "removes each element of first arg from second arg."
+  [to-be-removed list-of-things]
   (if (empty? to-be-removed)
     list-of-things
     (my-remove (rest to-be-removed)
@@ -110,17 +113,9 @@
 
 (defn push-new [item col] (reset! col (concat [item] @col)))
 
-(defn make-list-into-string [list] (str list))
-
-(defn implode [thing] thing)
-
 (defn push [item col] (reset! col (concat [item] @col)))
 
-(defn frequency [item list] (count (filter #(= % item) list)))
-
-(defn make-timings [thing] thing)
-
-(defn play-events [events] (println :play  events))
+(defn play-events [events] (println :play events))
 
 (defn message [thing] (when (seq thing) (println "Alice> " (str thing))))
 
@@ -662,6 +657,8 @@
                          :usage (:usage (eval object))})
     (concat (butlast sentence 2) (list the-name))))
 
+(defn make-timings [thing] thing)
+
 (defn event-loop []
   (loop []
     (print "user> ")
@@ -690,15 +687,12 @@
                  (:events (lookup-word (first response))))
           (play-events (apply concat
                               (make-timings
-                               (map (fn [x] (:events (lookup-word x))) response)))))
+                               (map (fn [w] (:events (lookup-word w))) response)))))
         (message response))
       (recur))))
 
 (defn apprentice []
-  (reset! *all-words* ())
-  (reset! *no* ())
-  (reset! *yes* ())
-
+  (reset-all!)
   (event-loop))
 
 (defn remove-cadences

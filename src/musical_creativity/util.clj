@@ -36,6 +36,8 @@
       (first last-item)
       last-item)))
 
+(defn frequency [item list] (count (filter #(= % item) list)))
+
 (defn fourth [list]
   (nth list 3))
 
