@@ -366,16 +366,16 @@
         (map vector sentence
              (partition 2 1 () sentence)
              (reverse (partition 2 1 () (reverse sentence))))]
-  (map (fn [[word suc pred]]
-         (cond
-          (and (= 1 (count suc)) (= 1 (count pred)))
-          (list word () ())
-          (= 1 (count suc))
-          (list word () pred)
-          (= 1 (count pred))
-          (list word suc ())
-          :else (list word suc pred)))
-       suc-and-pred)))
+    (map (fn [[word suc pred]]
+           (cond
+            (and (= 1 (count suc)) (= 1 (count pred)))
+            (list word () ())
+            (= 1 (count suc))
+            (list word () pred)
+            (= 1 (count pred))
+            (list word suc ())
+            :else (list word suc pred)))
+         suc-and-pred)))
 
 (defn make-word-objects [sentence sentence-type sentence-context name]
   (doseq [[word successor predecessor] (words-with-successor-and-predecessor sentence)]
