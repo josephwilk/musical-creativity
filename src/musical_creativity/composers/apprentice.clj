@@ -21,12 +21,9 @@
 (def ^:dynamic *yes* (atom ()))
 (def ^:dynamic *no*  (atom ()))
 
-(def ^:dynamic *keyword*  (atom ()))
-(def ^:dynamic *keywords* (atom ()))
+(def ^:dynamic *keyword*   (atom nil))
+(def ^:dynamic *last-word* (atom nil))
 
-(def ^:dynamic *last-word*   (atom nil))
-
-(def ^:dynamic *last-words*    (atom ()))
 (def ^:dynamic *all-words*     (atom ()))
 (def ^:dynamic *current-words* (atom ()))
 
@@ -46,9 +43,7 @@
   (reset! *yes* ())
   (reset! *no* ())
   (reset! *keyword* ())
-  (reset! *keywords* ())
   (reset! *last-word* nil)
-  (reset! *last-words* ())
   (reset! *words-store* {})
   (reset! *all-words* ())
   (reset! *current-words* ())
@@ -58,6 +53,16 @@
   (reset! *answer-cadence-lexicon*     (make-candence-lexicon)))
 
 (declare find-no find-yes)
+
+(def question-type "?")
+(def fact-type "!")
+(def negative-type "*")
+(def positive-type "$")
+
+(defn question? [type] (= type question-type))
+(defn fact? [type] (= type fact-type))
+(defn negative? [type] (= type negative-type))
+(defn positive? [type] (= type positive-type))
 
 (defn member [item col] (boolean (some #{item} col)))
 
@@ -139,7 +144,7 @@
 (defn other-lexicon-type
   "returns words from the opposite of its arg sentence type."
   [type]
-  (if (= type "?") @*answer-cadence-lexicon* @*question-cadence-lexicon*))
+  (if (question? type) @*answer-cadence-lexicon* @*question-cadence-lexicon*))
 
 (defn punish
   "Punishes the weights with a * statement from user."
@@ -190,13 +195,13 @@
   "tests the sentence to see if it contains the yes word."
   [sentence]
   (cond
-   (or (member (first sentence) '(! ? $)) (empty? sentence)) ()
-   (or (member "$" (explode (first sentence)))
+   (or (member (first sentence) (list fact-type question-type positive-type)) (empty? sentence)) ()
+   (or (member positive-type (explode (first sentence)))
        (member @*yes* (list (first sentence)))
        (if (empty? (rest sentence))
          (member @*yes* (list (implode (butlast (explode (first sentence))))))))
    (let [test (butlast (explode (first sentence)))]
-     (if (= (last test) "*")
+     (if (= (last test) negative-type)
        (reset! *yes* (butlast (implode test)))
        (reset! *yes* (implode (list (first sentence))))))
    :else (find-yes (rest sentence))))
@@ -205,13 +210,13 @@
   "tests the sentence to see if it contains the no word."
   [sentence]
   (cond
-   (or (member (first sentence) '(! ? $)) (empty? sentence)) ()
-   (or (member "*" (explode (first sentence)))
+   (or (member (first sentence) (list fact-type question-type positive-type)) (empty? sentence)) ()
+   (or (member negative-type (explode (first sentence)))
        (member @*no* (list (first sentence)))
        (if (empty? (rest sentence))
          (member @*no* (list (implode (butlast (explode (first sentence))))))))
    (let [test (butlast (explode (first sentence)))]
-     (if (= (last test) "*")
+     (if (= (last test) negative-type)
        (reset! *no* (butlast (implode test)))
        (reset! *no* (implode (list (first sentence))))))
    :else (find-no (rest sentence))))
@@ -220,12 +225,11 @@
   "establishes all of the principal keywords."
   [sentence]
   (let [no-test  (recognize-no sentence)
-        yes-test (recognize-yes sentence)]
-    (reset! *last-word* (last sentence))
-    (when-not (or yes-test no-test)
-      (reset! *keyword* (get-keyword sentence))
-      (push-new @*keyword* *keywords*)
-      (push-new (last sentence) *last-words*))))
+        yes-test (recognize-yes sentence)
+        sentence-context {:last-word (last sentence)}]
+    (if-not (or yes-test no-test)
+      (merge sentence-context {:keyword (get-keyword sentence)})
+      sentence-context)))
 
 (defn remove-object-twice
   "removes the object and its target twice."
@@ -254,9 +258,9 @@
 
 (defn make-sentence-object
   "associations are of four types:
-  1. keyword found in *keyword*, weight being keyword-weight
-  2. last words found in *last-word*, weight being last-word-weight
-  3. next words found in successor, successor-weight
+  1. keyword found: weight keyword-weight
+  2. last word found: weight last-word-weight
+  3. next word found in successor: successor-weight
   4. all remaining words found in *all-words*, weight being backward-chain-weight
    the only exception being the word for no - this will not be in the vocabulary"
   [sentence sentence-type name]
@@ -327,7 +331,7 @@
                         :associations (build-associations word word-context all-words)
                         :usage 1
                         :used-before? true})
-       (when-not (= sentence-type "*") (push word *all-words*)))
+       (when-not (negative? sentence-type) (push word *all-words*)))
 
      (and (word-seen? word) (not (:used-before? (lookup-word word))))
      (let [word-data (lookup-word word)]
@@ -345,7 +349,7 @@
                          (assoc :associations (build-associations word word-context all-words))
                          (assoc :usage 1)
                          (assoc :used-before? true)))
-       (when-not (= sentence-type "*") (push word *all-words*)))
+       (when-not (negative? sentence-type) (push word *all-words*)))
      :else (let [word-data (lookup-word word)]
              (swap-word! word
                          (->
@@ -379,23 +383,19 @@
           :else (list word suc pred)))
        suc-and-pred)))
 
-(defn make-word-objects [sentence sentence-type name]
-
-  (println :words (words-with-successor-and-predecessor sentence))
-
-  (doall
-   (map (fn [[word successor predecessor]]
-          (let [word word
-                word-context
-                {:keyword      @*keyword*
-                 :last-word    @*last-word*
-                 :successor    (last successor)
-                 :predecessors (last predecessor)}]
-            (update-or-create-word word word-context sentence sentence-type name))
-          (if (not= sentence-type "*")
-            (doall (map
-                    (fn [item] (add-word-to-word-weightlists item @*keyword* @*last-word* @*all-words*)) sentence))))
-        (words-with-successor-and-predecessor sentence))))
+(defn make-word-objects [sentence sentence-type sentence-context name]
+  (doseq [[word successor predecessor] (words-with-successor-and-predecessor sentence)]
+    (let [word-context
+          {:keyword      (:keyword sentence-context)
+           :last-word    (:last-word sentence-context)
+           :successor    (last successor)
+           :predecessors (last predecessor)}]
+      (update-or-create-word word word-context sentence sentence-type name)
+      (if-not (negative? sentence-type)
+        (doseq [item sentence] (map
+                (fn [item] (add-word-to-word-weightlists item
+                                                         (:keyword word-context)
+                                                         (:last-word word-context) @*all-words*))  ))))))
 
 (defn figure-speac
   "this function sets up parsing structure in sentences for future creation of sentences and
@@ -419,13 +419,13 @@
   (update-sentence name :parse-it (map (fn [word] (figure-speac word)) sentence)))
 
 (defn define-incipients [sentence sentence-type]
-  (if (or (= sentence-type "?") (= sentence-type '?))
+  (if (question? sentence-type)
     (update-incipient *question-incipient-lexicon* (cons (first sentence) (:incipients @*question-incipient-lexicon*)))
     (update-incipient *answer-incipient-lexicon*   (cons (first sentence) (:incipients @*answer-incipient-lexicon*)))))
 
 (defn define-cadences [sentence sentence-type]
   (when-not (= sentence-type "*")
-    (if (=  sentence-type "?")
+    (if (question? sentence-type)
       (update-cadence *question-cadence-lexicon* (cons (last sentence) (:cadences @*question-cadence-lexicon*)))
       (update-cadence *answer-cadence-lexicon*   (cons (last sentence) (:cadences @*answer-cadence-lexicon*))))))
 
@@ -528,7 +528,7 @@
         (let [collected-words-col
               (cons collected-words
                     (let [musical-words (get-music-words (:cadences
-                                                          (if (= type "?")
+                                                          (if (question? type)
                                                             @*question-cadence-lexicon*
                                                             @*answer-cadence-lexicon*)))
                           test (choose-the-highest-rated-word
@@ -542,7 +542,7 @@
 
 (defn- pick-words [current-word]
   (let [word-words (get-word-words (:cadences
-                                       (if (= type "?")
+                                       (if (question? type)
                                          @*question-cadence-lexicon*
                                          @*answer-cadence-lexicon*)))
         test (choose-the-highest-rated-word
@@ -557,7 +557,7 @@
   (let [choices (compound-associations
                  (apply concat
                         (map (fn [word] (get-music-associations (:associations (lookup-word word)))) sentence)))
-        incipients (if (= type "?")
+        incipients (if (question? type)
                      (my-remove (list @*no*)
                                 (get-music-words (:incipients @*answer-incipient-lexicon*)))
                      (get-music-words (:incipients @*question-incipient-lexicon*)))]
@@ -565,7 +565,7 @@
     (if (or (empty? choices) (empty? incipients))
       ()
       (let [current-word
-            (let [musical-words (get-music-words (:cadences (if (= type "?")
+            (let [musical-words (get-music-words (:cadences (if (question? type)
                                                         @*question-cadence-lexicon*
                                                         @*answer-cadence-lexicon*)) )
                   trial (choose-the-highest-rated-word (remove-them musical-words choices))]
@@ -592,7 +592,7 @@
 (defn pick-start-word [type choices incipients]
   (let [trial (choose-the-highest-rated-word
                (remove-them
-                (get-word-words (:cadences (if (= type "?")
+                (get-word-words (:cadences (if (question? type)
                                              @*question-cadence-lexicon*
                                              @*answer-cadence-lexicon*)))
                 choices))]
@@ -601,7 +601,7 @@
 (defn build-a-response [type sentence]
   (let [choices (compound-associations
                  (mapcat (fn [word] (get-word-associations (:associations (lookup-word word)))) sentence))
-        incipients (if (or (= type "?"))
+        incipients (if (or (question? type))
                      (my-remove (list @*no*) (get-word-words (:incipients @*answer-incipient-lexicon*)))
                      (get-word-words (:incipients @*question-incipient-lexicon*)))]
 
@@ -615,12 +615,12 @@
 (defn process-no []
   (reduce-weighting (first (:sentence (lookup-sentence (third (all-sentences)))))
                     (first (:sentence (lookup-sentence (second (all-sentences))))))
-  (list "*"))
+  (list negative-type))
 
 (defn process-yes []
   (add-weighting (first (:sentence (lookup-sentence (third (all-sentences)))))
                  (first (:sentence (lookup-sentence (second (all-sentences))))))
-  (list "$"))
+  (list positive-type))
 
 (defn reply
   "this function creates sentences by using the various associations in each word in the sentence argument."
@@ -638,11 +638,11 @@
    :else (build-a-response type sentence)))
 
 (defn put-sentence-into-database [sentence]
-  (establish-keywords sentence)
-  (let [sentence-type (get-sentence-type sentence)
+  (let [sentence-context (establish-keywords sentence)
+        sentence-type (get-sentence-type sentence)
         name (make-new-name)]
     (make-sentence-object sentence sentence-type name)
-    (make-word-objects sentence sentence-type name)
+    (make-word-objects sentence sentence-type sentence-context name)
 
     (parse-sentence sentence name)
     (define-incipients sentence sentence-type)
@@ -684,8 +684,8 @@
                                :origination 'apprentice})
           (swap! *counter* inc))
         (new-text)
-        (if (and (not= (first response) "*")
-                 (not= (first response) "$")
+        (if (and (not= (first response) negative-type)
+                 (not= (first response) positive-type)
                  (not (nil? (first response)))
                  (:events (lookup-word (first response))))
           (play-events (apply concat
