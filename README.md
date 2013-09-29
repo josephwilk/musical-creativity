@@ -73,12 +73,30 @@ Experiments with models for computers generating music.
 (musician/play (gradus/compose-contemporary) piano)
 ```
 
-### Apprentice
+### Association Network (Apprentice)
 
 To start apprentice run:
 
 ```
 lein midje musical-creativity.integration.t-apprentice
+```
+
+Example non musical dialog:
+
+```
+user> hello!
+Alice> your what your is name?
+user> my name is joseph!
+Alice> name?
+user> your name is computer!
+Alice> name?
+user> what is my name?
+Alice> joseph!
+user> what is your name?
+Alice> computer!
+user> no*
+user> what is your name?
+Alice> joseph!
 ```
 
 ### Demos
