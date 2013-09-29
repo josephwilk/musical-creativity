@@ -1,6 +1,6 @@
 (ns musical-creativity.composers.apprentice
   (:require
-   [clojure.string :as str]
+   [clojure.string :as string]
    [clojure.math.numeric-tower :as math]
    [musical-creativity.util :refer [position choose-one third frequency]]))
 
@@ -70,8 +70,8 @@
 (defn all-sentences []
   (sort
    (fn [x y]
-     (> (Integer/parseInt (last (str/split (str x) #"-")))
-        (Integer/parseInt (last (str/split (str y) #"-")))))
+     (> (Integer/parseInt (last (string/split (str x) #"-")))
+        (Integer/parseInt (last (string/split (str y) #"-")))))
    (keys @*sentences-store*)))
 
 (defn lookup-sentence [sentence] (@*sentences-store* sentence))
@@ -97,8 +97,9 @@
   (reset! ref {:cadences new-value})
   new-value)
 
-(defn explode [thing] (vec (str thing)))
-(defn implode [list] (str/join "" list))
+(defn explode [thing] (map str (vec (str thing))))
+
+(defn implode [list] (string/join "" list))
 
 (defn sort-by-last [thing]
   (sort (fn [x y] (> (last x) (last y))) thing))
