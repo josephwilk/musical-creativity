@@ -38,10 +38,10 @@
 
 (fact "default-reply-thing"
   (put-sentence-into-database '(hello!))
-  (process-default "!" '(hello!)) => '(nil)
+  (process-default "!" '(hello!)) => '()
 
   (put-sentence-into-database '(what is your name?))
-  (process-default "?" '(what is your name?)) => '(your what is hello!))
+  (count (process-default "?" '(what is your name?))) => #(> % 1))
 
 (fact "reply"
   (put-sentence-into-database '(hello!))
@@ -51,7 +51,7 @@
   (reply "?" '(what is your name?)) => '(your what is hello!))
 
 (fact "establish-keywords"
-  (establish-keywords '(what is your name?)) => '(name?))
+  (establish-keywords '(what is your name?)) => {:keyword 'name? :last-word 'name?})
 
 (fact "choose-the-highest-rated-word"
   (choose-the-highest-rated-word '((is 1.4) (hello! 0.4) (your 1.4) (what 0.9)))
@@ -92,9 +92,9 @@
 (fact "build-associations"
   (put-sentence-into-database '(what is your name?))
 
-  (build-associations 'what @*all-words*) => '((name? 1.55) (your 0.1) (is 0.1) (name 0.5))
+  (build-associations 'what {:keyword 'name? :last-word 'name? :successor 'is} @*all-words*) => '((name? 1.05) (is 0.6) (your 0.1))
 
-  (build-associations 'what @*all-words* '((name 0.5))) => '([name? 1.55] [your 0.1] [is 0.1] [name 0.5]))
+  (build-associations 'what {:keyword 'name? :last-word 'name? :successor 'is} @*all-words* '((name 0.5))) => '([name? 1.05] [is 0.6] [your 0.1]  [name 0.5]))
 
 (fact "reduce-weight"
   (put-sentence-into-database '(what is your name?))
