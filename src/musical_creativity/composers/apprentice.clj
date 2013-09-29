@@ -22,9 +22,6 @@
 (def ^:dynamic *yes* (atom ()))
 (def ^:dynamic *no*  (atom ()))
 
-(def ^:dynamic *keyword*   (atom nil))
-(def ^:dynamic *last-word* (atom nil))
-
 (def ^:dynamic *all-words*     (atom ()))
 (def ^:dynamic *current-words* (atom ()))
 
@@ -43,8 +40,6 @@
   (reset! *yes-sentences* ())
   (reset! *yes* ())
   (reset! *no* ())
-  (reset! *keyword* ())
-  (reset! *last-word* nil)
   (reset! *words-store* {})
   (reset! *all-words* ())
   (reset! *current-words* ())
