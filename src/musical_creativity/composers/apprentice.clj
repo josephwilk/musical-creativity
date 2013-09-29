@@ -24,8 +24,6 @@
 (def ^:dynamic *keyword*  (atom ()))
 (def ^:dynamic *keywords* (atom ()))
 
-(def ^:dynamic *predecessor* (atom nil))
-(def ^:dynamic *successor*   (atom nil))
 (def ^:dynamic *last-word*   (atom nil))
 
 (def ^:dynamic *last-words*    (atom ()))
@@ -49,8 +47,6 @@
   (reset! *no* ())
   (reset! *keyword* ())
   (reset! *keywords* ())
-  (reset! *predecessor* nil)
-  (reset! *successor* nil)
   (reset! *last-word* nil)
   (reset! *last-words* ())
   (reset! *words-store* {})
@@ -225,8 +221,6 @@
   [sentence]
   (let [no-test  (recognize-no sentence)
         yes-test (recognize-yes sentence)]
-    (reset! *predecessor* ())
-    (reset! *successor* (second sentence))
     (reset! *last-word* (last sentence))
     (when-not (or yes-test no-test)
       (reset! *keyword* (get-keyword sentence))
@@ -262,7 +256,7 @@
   "associations are of four types:
   1. keyword found in *keyword*, weight being keyword-weight
   2. last words found in *last-word*, weight being last-word-weight
-  3. next words found in *successor*, successor-weight
+  3. next words found in successor, successor-weight
   4. all remaining words found in *all-words*, weight being backward-chain-weight
    the only exception being the word for no - this will not be in the vocabulary"
   [sentence sentence-type name]
@@ -369,24 +363,39 @@
                           (assoc :usage (inc (:usage word-data)))
                           (assoc :used-before? true)))))))
 
+(defn- words-with-successor-and-predecessor [sentence]
+  (let [suc-and-pred
+        (map vector sentence
+             (partition 2 1 () sentence)
+             (reverse (partition 2 1 () (reverse sentence))))]
+  (map (fn [[word suc pred]]
+         (cond
+          (and (= 1 (count suc)) (= 1 (count pred)))
+          (list word () ())
+          (= 1 (count suc))
+          (list word () pred)
+          (= 1 (count pred))
+          (list word suc ())
+          :else (list word suc pred)))
+       suc-and-pred)))
+
 (defn make-word-objects [sentence sentence-type name]
+
+  (println :words (words-with-successor-and-predecessor sentence))
+
   (doall
-   (map (fn [word]
-          (let [word-context
+   (map (fn [[word successor predecessor]]
+          (let [word word
+                word-context
                 {:keyword      @*keyword*
                  :last-word    @*last-word*
-                 :successor    @*successor*
-                 :predecessors @*predecessor*}]
+                 :successor    (last successor)
+                 :predecessors (last predecessor)}]
             (update-or-create-word word word-context sentence sentence-type name))
-
-          (reset! *predecessor* word)
-
-          (when (< (+ (position word sentence) 2) (count sentence))
-            (reset! *successor* (nth sentence (+ (position word sentence) 2))))
-
           (if (not= sentence-type "*")
             (doall (map
-                    (fn [item] (add-word-to-word-weightlists item @*keyword* @*last-word* @*all-words*)) sentence)))) sentence)))
+                    (fn [item] (add-word-to-word-weightlists item @*keyword* @*last-word* @*all-words*)) sentence))))
+        (words-with-successor-and-predecessor sentence))))
 
 (defn figure-speac
   "this function sets up parsing structure in sentences for future creation of sentences and
