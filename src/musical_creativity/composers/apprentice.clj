@@ -162,17 +162,15 @@
   "finds the first ocurance of the no word (followed by a *) and
    places it in the *no-sentences* listing."
   [sentence]
-  (if-not (empty? (find-no sentence))
-    (push-new (first (all-sentences)) *no-sentences*)
-    nil))
+  (when-not (empty? (find-no sentence))
+    (push-new (first (all-sentences)) *no-sentences*)))
 
 (defn recognize-yes
   "finds the first ocurance of the yes word (followed by a $) and
    places it in the *yes-sentences* listing."
   [sentence]
-  (if-not (empty? (find-yes sentence))
-    (push-new (first (all-sentences)) *yes-sentences*)
-    nil))
+  (when-not (empty? (find-yes sentence))
+    (push-new (first (all-sentences)) *yes-sentences*)))
 
 (defn find-yes
   "tests the sentence to see if it contains the yes word."
