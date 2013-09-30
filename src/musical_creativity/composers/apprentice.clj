@@ -95,8 +95,6 @@
 
 (defn push [item col] (reset! col (concat [item] @col)))
 
-(defn play-events [events] (println :play events))
-
 (defn message [thing] (when (seq thing) (println "Alice> " (string/join (rest (butlast (str thing)))))))
 
 (defn remove-all
@@ -623,6 +621,7 @@
     (concat (butlast sentence 2) (list the-name))))
 
 (defn make-timings [thing] thing)
+(defn play-events [events] (println :play events))
 
 (defn- user-input []
   (let [raw-input (read-line)
@@ -631,6 +630,12 @@
                        (:events (lookup-word (first user-input))))
                 (fix-end-of-music-sentences user-input)
                 user-input)]))
+
+(defn musical-response? [response]
+  (and (not= (first response) negative-type)
+       (not= (first response) positive-type)
+       (not (nil? (first response)))
+       (:events (lookup-word (first response)))))
 
 (defn event-loop []
   (loop []
@@ -650,10 +655,7 @@
                                :origination 'apprentice})
           (swap! *counter* inc))
         (print-associations)
-        (when (and (not= (first response) negative-type)
-                 (not= (first response) positive-type)
-                 (not (nil? (first response)))
-                 (:events (lookup-word (first response))))
+        (when (musical-response? response)
           (play-events (apply concat
                               (make-timings
                                (map (fn [w] (:events (lookup-word w))) response)))))
@@ -740,7 +742,6 @@
   [events]
   (let [time (ffirst events)]
     (first (sort > (map (fn [event] (get-note-timing event time)) events)))))
-
 
 (defn re-time
   "retimes the events lists to begin one after the other."
