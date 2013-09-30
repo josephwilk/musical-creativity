@@ -86,7 +86,6 @@
   new-value)
 
 (defn explode [thing] (map str (vec (str thing))))
-(defn implode [list] list)
 
 (defn sort-by-last [thing]
   (sort (fn [x y] (> (last x) (last y))) thing))
@@ -182,11 +181,11 @@
    (or (member positive-type (explode (first sentence)))
        (member @*yes* (list (first sentence)))
        (if (empty? (rest sentence))
-         (member @*yes* (list (implode (butlast (explode (first sentence))))))))
+         (member @*yes* (list (butlast (explode (first sentence)))))))
    (let [test (butlast (explode (first sentence)))]
      (if (= (last test) negative-type)
-       (reset! *yes* (butlast (implode test)))
-       (reset! *yes* (implode (list (first sentence))))))
+       (reset! *yes* (butlast test))
+       (reset! *yes* (list (first sentence)))))
    :else (find-yes (rest sentence))))
 
 (defn find-no
@@ -197,11 +196,11 @@
    (or (member negative-type (explode (first sentence)))
        (member @*no* (list (first sentence)))
        (if (empty? (rest sentence))
-         (member @*no* (list (implode (butlast (explode (first sentence))))))))
+         (member @*no* (list (butlast (explode (first sentence)))))))
    (let [test (butlast (explode (first sentence)))]
      (if (= (last test) negative-type)
-       (reset! *no* (butlast (implode test)))
-       (reset! *no* (implode (list (first sentence))))))
+       (reset! *no* (butlast test))
+       (reset! *no* (list (first sentence)))))
    :else (find-no (rest sentence))))
 
 (defn establish-keywords
@@ -630,7 +629,7 @@
   "attaches the punctuation to the end of the music sentence."
   [sentence]
   (let [object (nth sentence (- (count sentence) 2))
-        the-name (implode (drop (- (count sentence) 2) sentence))]
+        the-name (drop (- (count sentence) 2) sentence)]
     (make-word the-name {:name (:name (eval object))
                          :timing (:timing (eval object))
                          :destination (:destination (eval object))
