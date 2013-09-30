@@ -130,7 +130,7 @@
   (if (question? type) @*answer-lexicon* @*question-lexicon*))
 
 (defn punish
-  "Punishes the weights with a * statement from user."
+  "punishes the weights with a * statement from user."
   [associations words]
   (if (empty? words)
     associations
@@ -243,7 +243,7 @@
   2. last word found: weight last-word-weight
   3. next word found in successor: successor-weight
   4. all remaining words found in *all-words*, weight being backward-chain-weight
-   the only exception being the word for no - this will not be in the vocabulary"
+  the only exception being the word for no - this will not be in the vocabulary"
   [sentence sentence-type name]
   (make-sentence name {:name (list name)
                        :sentence-type (list sentence-type)
@@ -583,7 +583,7 @@
   (list positive-type))
 
 (defn reply
-  "this function creates sentences by using the various associations in each word in the sentence argument."
+  "create a sentence by using the various associations of each word in the sentence argument."
   [type sentence]
   (cond
    (recognize-no sentence)
@@ -624,18 +624,22 @@
 
 (defn make-timings [thing] thing)
 
+(defn- user-input []
+  (let [raw-input (read-line)
+        user-input (read-string (str "(" raw-input ")"))
+        input (if (and (word-seen? (first user-input))
+                       (:events (lookup-word (first user-input))))
+                (fix-end-of-music-sentences user-input)
+                user-input)]))
+
 (defn event-loop []
   (loop []
     (print "user> ")
     (flush)
-    (let [raw-input (read-line)
-          user-input (read-string (str "(" raw-input ")"))
-          input (if (and (word-seen? (first user-input))
-                         (:events (lookup-word (first user-input))))
-                  (fix-end-of-music-sentences user-input)
-                  user-input)
+    (let [input (user-input)
+          input-sentence-type (get-sentence-type input)
           _ (put-sentence-into-database input)
-          response (reply (get-sentence-type input) input)]
+          response (reply input-sentence-type input)]
       (when-not (empty? response)
         (let [name (str "sentence-" @*counter*)
               sentence-type (last (explode (last response)))]
