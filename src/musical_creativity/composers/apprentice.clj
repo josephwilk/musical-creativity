@@ -52,7 +52,7 @@
 (defn negative? [type] (= type negative-type))
 (defn positive? [type] (= type positive-type))
 
-(defn member [item col] (boolean (some #{item} col)))
+(defn member? [item col] (boolean (some #{item} col)))
 
 (defn all-sentences []
   (sort
@@ -178,11 +178,11 @@
   "tests the sentence to see if it contains the yes word."
   [sentence]
   (cond
-   (or (member (first sentence) (list fact-type question-type positive-type)) (empty? sentence)) ()
-   (or (member positive-type (explode (first sentence)))
-       (member @*yes* (list (first sentence)))
+   (or (member? (first sentence) (list fact-type question-type positive-type)) (empty? sentence)) ()
+   (or (member? positive-type (explode (first sentence)))
+       (member? @*yes* (list (first sentence)))
        (if (empty? (rest sentence))
-         (member @*yes* (list (butlast (explode (first sentence)))))))
+         (member? @*yes* (list (butlast (explode (first sentence)))))))
    (let [test (butlast (explode (first sentence)))]
      (if (= (last test) negative-type)
        (reset! *yes* (butlast test))
@@ -193,11 +193,11 @@
   "tests the sentence to see if it contains the no word."
   [sentence]
   (cond
-   (or (member (first sentence) (list fact-type question-type positive-type)) (empty? sentence)) ()
-   (or (member negative-type (explode (first sentence)))
-       (member @*no* (list (first sentence)))
+   (or (member? (first sentence) (list fact-type question-type positive-type)) (empty? sentence)) ()
+   (or (member? negative-type (explode (first sentence)))
+       (member? @*no* (list (first sentence)))
        (if (empty? (rest sentence))
-         (member @*no* (list (butlast (explode (first sentence)))))))
+         (member? @*no* (list (butlast (explode (first sentence)))))))
    (let [test (butlast (explode (first sentence)))]
      (if (= (last test) negative-type)
        (reset! *no* (butlast test))
@@ -298,7 +298,7 @@
   (let [words-store @*words-store*
         all-words @*all-words*]
     (cond
-     (and (not (member word (keys words-store))) (not (word-seen? word)))
+     (and (not (member? word (keys words-store))) (not (word-seen? word)))
      (do
        (make-word word {:name (list name)
                         :sentence-type (list sentence-type)
@@ -455,7 +455,7 @@
 
 (defn get-music-associations [associations]
   (cond
-   (empty? associations)()
+   (empty? associations) ()
    (:events (lookup-word (ffirst associations)))
    (cons (first associations)
          (get-music-associations (rest associations)))
@@ -463,7 +463,7 @@
 
 (defn get-music-words [words]
   (cond
-   (empty? words)()
+   (empty? words) ()
    (:events (lookup-word (first words)))
    (cons (first words)
          (get-music-words (rest words)))
@@ -507,7 +507,7 @@
 (defn current-words-list [current-word cadences type]
   (loop [current-word current-word
          collected-words []]
-    (if (or (nil? current-word) (member current-word cadences))
+    (if (or (nil? current-word) (member? current-word cadences))
       collected-words
       (do
         (push-new current-word *current-words*)
@@ -547,7 +547,7 @@
 (defn build-reply-sentence [current-word cadences]
   (let [new-words (loop [current-word current-word
                          current-words []]
-                    (if (or (nil? current-word) (member current-word cadences))
+                    (if (or (nil? current-word) (member? current-word cadences))
                       current-words
                       (let [next-word (pick-words current-word)]
                         (push-new next-word *current-words*)
@@ -669,8 +669,8 @@
   [choices]
   (cond
    (empty? choices)()
-   (or (member (second (first choices)) (:cadences @*answer-lexicon*))
-       (member (second (first choices)) (:cadences @*question-lexicon*)))
+   (or (member? (second (first choices)) (:cadences @*answer-lexicon*))
+       (member? (second (first choices)) (:cadences @*question-lexicon*)))
    (remove-cadences (rest choices))
    :else (cons (first choices) (remove-cadences (rest choices)))))
 
