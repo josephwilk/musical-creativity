@@ -10,7 +10,6 @@
 (def backward-chain-weight 0.1)
 (def last-word-weight 0.2)
 (def predecessors-weight 0.5)
-(def broad-keyword-weight 0.1)
 
 (def ^:dynamic *counter* (atom 0))
 
@@ -687,10 +686,7 @@
 
 (defn pair [list-1 list-2]
   "pairs the two list args."
-  ;; (loop for item in list-1
-  ;;       collect (list item (first list-2))
-  ;;       do (setf list-2 (rest list-2)))
-)
+  (map vector list-1 list-2))
 
 (defn collect-parsings
   "pairs the parsings with the words in the sentences."
@@ -791,7 +787,7 @@
        (:events (lookup-sentence (first sentence)))))
 
 (defn return-only-music-sentences
-  "takes a *sentences-store*."
+  "takes a *sentences-store*"
   [sentence-objects]
   (let [real-sentences (apply concat (map (fn [x] (:sentence (eval x))) sentence-objects))]
     (remove (fn [sentence] (when-not (tester-for-hidden-events sentence) true)) real-sentences)))
