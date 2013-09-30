@@ -67,6 +67,8 @@
   val)
 (defn sentence-seen? [sentence] (some #{sentence} (all-sentences)))
 
+(defn lookup-musical-word [word] (word {}))
+
 (defn lookup-word [word]  (@*words-store* word))
 (defn make-word [id atts]  (reset! *words-store* (assoc @*words-store* id atts)))
 (defn update-word [id field val]
@@ -406,9 +408,8 @@
       (update-cadence *question-lexicon* (last sentence))
       (update-cadence *answer-lexicon*   (last sentence)))))
 
-(defn all-associations
-  [field]
-  (map (fn [word] {word (field (lookup-word word))}) (distinct (keys @*words-store*))))
+(defn all-associations []
+  (map (fn [word] {word (:associations (lookup-word word))}) (distinct (keys @*words-store*))))
 
 (defn print-associations [] (println (reverse (all-associations))))
 
@@ -450,7 +451,7 @@
 (defn get-music-associations [associations]
   (cond
    (empty? associations) ()
-   (:events (lookup-word (ffirst associations)))
+   (:events (lookup-musical-word (ffirst associations)))
    (cons (first associations)
          (get-music-associations (rest associations)))
    :else (get-music-associations (rest associations))))
@@ -458,7 +459,7 @@
 (defn get-music-words [words]
   (cond
    (empty? words) ()
-   (:events (lookup-word (first words)))
+   (:events (lookup-musical-word (first words)))
    (cons (first words)
          (get-music-words (rest words)))
    :else (get-music-words (rest words))))
@@ -590,7 +591,7 @@
    (recognize-yes sentence)
    (process-yes)
 
-   (:events (lookup-word (first sentence)))
+   (:events (lookup-musical-word (first sentence)))
    (build-musical-reply type sentence)
 
    :else (build-a-response type sentence)))
@@ -629,7 +630,8 @@
         input (if (and (word-seen? (first user-input))
                        (:events (lookup-word (first user-input))))
                 (fix-end-of-music-sentences user-input)
-                user-input)]))
+                user-input)]
+    input))
 
 (defn musical-response? [response]
   (and (not= (first response) negative-type)
