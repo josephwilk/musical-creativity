@@ -518,7 +518,7 @@
         (choose-one
          (get-word-words (map (fn [association] (first association)) (:associations (lookup-word current-word))))))))
 
-(defn process-events [type sentence]
+(defn build-musical-reply [type sentence]
   (let [choices (compound-associations
                  (apply concat
                         (map (fn [word] (get-music-associations (:associations (lookup-word word)))) sentence)))
@@ -591,7 +591,7 @@
    (process-yes)
 
    (:events (lookup-word (first sentence)))
-   (process-events type sentence)
+   (build-musical-reply type sentence)
 
    :else (build-a-response type sentence)))
 
