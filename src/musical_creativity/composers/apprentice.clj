@@ -684,13 +684,6 @@
   (pair (apply concat (map (fn [sentence] (first (:sentence (eval sentence)))) sentences))
         (apply concat (map (fn [sentence] (:parse-it (eval sentence))) sentences))))
 
-(defn mix
-  "pseudo-randomly mixes the list arg."
-  [list]
-  (if (empty? list) nil
-      (let [choice (choose-one list)]
-        (cons choice (mix (remove choice list :count 1))))))
-
 (defn get-parse-elements
   "gets the speac parase elements for the speac sentence."
   [parse]
@@ -722,7 +715,7 @@
   [parse cadence]
   (concat (let [parse-lists (remove-cadences
                              (map (fn [item] (reverse item)) (get-associations (collect-parsings @*sentences-store*))))]
-            (map (fn [element] (second (assoc element (mix parse-lists)))) (butlast parse)))
+            (map (fn [element] (second (assoc element (shuffle parse-lists)))) (butlast parse)))
           (list (choose-one cadence))))
 
 (defn any-greater-than? [n list-of-numbers]
