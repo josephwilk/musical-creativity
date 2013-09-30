@@ -408,13 +408,11 @@
       (update-cadence *question-lexicon* (last sentence))
       (update-cadence *answer-lexicon*   (last sentence)))))
 
-(defn get-element-from-words
-  [type]
-  (let [words (distinct (keys @*words-store*))]
-    (map (fn [x] (list x (type (lookup-word x)))) words)))
+(defn all-associations
+  [field]
+  (map (fn [word] {word (field (lookup-word word))}) (distinct (keys @*words-store*))))
 
-(defn new-text []
-  (println (reverse (or (get-element-from-words :associations) nil))))
+(defn print-associations [] (println (reverse (all-associations))))
 
 (defn reduce-weight
   "reduces the weight of each entry in word for all of the words in sentence."
@@ -610,7 +608,7 @@
     (define-incipients sentence sentence-type)
     (define-cadences sentence sentence-type)
 
-    (new-text)))
+    (print-associations)))
 
 (defn fix-end-of-music-sentences
   "attaches the punctuation to the end of the music sentence."
@@ -647,7 +645,7 @@
                                :length-of-sentence (count response)
                                :origination 'apprentice})
           (swap! *counter* inc))
-        (new-text)
+        (print-associations)
         (when (and (not= (first response) negative-type)
                  (not= (first response) positive-type)
                  (not (nil? (first response)))
