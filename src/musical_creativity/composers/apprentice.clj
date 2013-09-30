@@ -43,12 +43,12 @@
 (declare find-no find-yes)
 
 (def question-type "?")
-(def fact-type "!")
+(def fact-type     "!")
 (def negative-type "*")
 (def positive-type "$")
 
 (defn question? [type] (= type question-type))
-(defn fact? [type] (= type fact-type))
+(defn fact?     [type] (= type fact-type))
 (defn negative? [type] (= type negative-type))
 (defn positive? [type] (= type positive-type))
 
@@ -76,18 +76,20 @@
 (defn word-seen? [word] (some #{word} (keys @*words-store*)))
 (defn swap-word! [word word-map] (reset! *words-store* (assoc @*words-store* word word-map)))
 
-(defn update-incipient [ref new-value]
-  (reset! ref (assoc @ref :incipients new-value))
-  new-value)
+(defn update-incipient [ref word]
+  (reset! ref (assoc @ref :incipients (cons word (:incipients @ref))))
+  (:incipients @ref))
 
-(defn update-cadence [ref new-value]
-  (reset! ref (assoc @ref :cadences new-value))
-  new-value)
+(defn cadences-for [type]
+  (:cadences (if (question? type) @*question-lexicon* @*answer-lexicon*)))
+
+(defn update-cadence [ref word]
+  (reset! ref (assoc @ref :cadences (cons word (:cadences @ref))))
+  (:cadences @ref))
 
 (defn explode [thing] (map str (vec (str thing))))
 
-(defn sort-by-last [thing]
-  (sort (fn [x y] (> (last x) (last y))) thing))
+(defn sort-by-last [thing] (sort (fn [x y] (> (last x) (last y))) thing))
 
 (defn push-new [item col] (reset! col (concat [item] @col)))
 
@@ -95,7 +97,7 @@
 
 (defn play-events [events] (println :play events))
 
-(defn message [thing] (when (seq thing) (println "Alice> " (str thing))))
+(defn message [thing] (when (seq thing) (println "Alice> " (string/join (rest (butlast (str thing)))))))
 
 (defn remove-all
   "removes each element of first arg from second arg."
@@ -399,19 +401,16 @@
 
 (defn define-incipients [sentence sentence-type]
   (if (question? sentence-type)
-    (update-incipient *question-lexicon* (cons (first sentence) (:incipients @*question-lexicon*)))
-    (update-incipient *answer-lexicon*   (cons (first sentence) (:incipients @*answer-lexicon*)))))
+    (update-incipient *question-lexicon* (first sentence))
+    (update-incipient *answer-lexicon*   (first sentence))))
 
 (defn define-cadences [sentence sentence-type]
   (when-not (negative? sentence-type)
     (if (question? sentence-type)
-      (update-cadence *question-lexicon* (cons (last sentence) (:cadences @*question-lexicon*)))
-      (update-cadence *answer-lexicon*   (cons (last sentence) (:cadences @*answer-lexicon*))))))
+      (update-cadence *question-lexicon* (last sentence))
+      (update-cadence *answer-lexicon*   (last sentence)))))
 
 (defn get-element-from-words
-  "getting infer from words. Type can be
-   predecessors successors keywords word-type positions-in-sentence associations usage music.
-   weight is stored in associations."
   [type]
   (let [words (distinct (keys @*words-store*))]
     (map (fn [x] (list x (type (lookup-word x)))) words)))
@@ -420,7 +419,7 @@
   (println (reverse (or (get-element-from-words :associations) nil))))
 
 (defn reduce-weight
-  "reduces the weight of each entry  in word for all of the words in sentence."
+  "reduces the weight of each entry in word for all of the words in sentence."
   [word sentence]
   (let [new-associations (punish (:associations (lookup-word word)) sentence)]
     (update-word word :associations new-associations)))
@@ -482,7 +481,7 @@
 
 (defn get-word-associations [associations]
   (cond
-   (empty? associations)()
+   (empty? associations) ()
    (:events (lookup-word (ffirst associations)))
    (get-word-associations (rest associations))
    :else (cons (first associations)
@@ -495,33 +494,28 @@
           rating (second (first rated-words))]
       (remove (fn [word] (when-not (= (second word) rating) true)) rated-words)))))
 
-(defn current-words-list [current-word cadences]
+(defn musical-words [current-word current-words type]
+  (let [words (get-music-words (cadences-for type))
+        test (choose-the-highest-rated-word
+              (remove-all-by-ffirst
+               (concat current-words words)
+               (get-music-associations (:associations (lookup-word current-word)))))]
+    (or test
+        (choose-one
+         (get-music-words (map (fn [association] (first association) ) (:associations (lookup-word current-word))))))))
+
+(defn current-words-list [current-word cadences type]
   (loop [current-word current-word
          collected-words []]
     (if (or (nil? current-word) (member current-word cadences))
       collected-words
       (do
         (push-new current-word *current-words*)
-        (let [collected-words-col
-              (cons collected-words
-                    (let [musical-words (get-music-words (:cadences
-                                                          (if (question? type)
-                                                            @*question-lexicon*
-                                                            @*answer-lexicon*)))
-                          test (choose-the-highest-rated-word
-                                (remove-all-by-ffirst
-                                 (concat @*current-words* musical-words)
-                                 (get-music-associations (:associations (lookup-word current-word)))))]
-                      (or test
-                          (choose-one
-                           (get-music-words (map (fn [association] (first association) ) (:associations (lookup-word current-word))))))))]
+        (let [collected-words-col (cons collected-words (musical-words current-word @*current-words* type))]
           (recur current-word collected-words-col))))))
 
 (defn- pick-words [current-word]
-  (let [word-words (get-word-words (:cadences
-                                       (if (question? type)
-                                         @*question-lexicon*
-                                         @*answer-lexicon*)))
+  (let [word-words (get-word-words (cadences-for type))
         test (choose-the-highest-rated-word
               (remove-all-by-ffirst
                (concat @*current-words* word-words)
@@ -542,14 +536,12 @@
     (if (or (empty? choices) (empty? incipients))
       ()
       (let [current-word
-            (let [musical-words (get-music-words (:cadences (if (question? type)
-                                                        @*question-lexicon*
-                                                        @*answer-lexicon*)) )
+            (let [musical-words (get-music-words (cadences-for type))
                   trial (choose-the-highest-rated-word (remove-all-by-ffirst musical-words choices))]
               (or trial (get-music-words (choose-one incipients))))
             cadences (get-music-words (:cadences (other-lexicon-type type)))
 
-            new-sentence (cons current-word (current-words-list current-word cadences))]
+            new-sentence (cons current-word (current-words-list current-word cadences type))]
         new-sentence))))
 
 (defn build-reply-sentence [current-word cadences]
@@ -566,9 +558,7 @@
 (defn pick-start-word [type choices incipients]
   (let [trial (choose-the-highest-rated-word
                (remove-all-by-ffirst
-                (get-word-words (:cadences (if (question? type)
-                                             @*question-lexicon*
-                                             @*answer-lexicon*)))
+                (get-word-words (cadences-for type))
                 choices))]
   (or trial (choose-one (get-word-words incipients)))))
 
