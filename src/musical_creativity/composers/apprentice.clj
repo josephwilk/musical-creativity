@@ -603,30 +603,33 @@
        (not (nil? (first response)))
        (:events (lookup-word (first response)))))
 
-(defn event-loop []
-  (loop []
-    (print "user> ")
-    (flush)
-    (let [input (user-input)
-          input-sentence-type (get-sentence-type input)
-          _ (put-sentence-into-database input)
-          response (reply input-sentence-type input)]
-      (when-not (empty? response)
-        (let [name (str "sentence-" @*counter*)
-              sentence-type (last (explode (last response)))]
-          (make-sentence name {:name 'me
-                               :sentence-type sentence-type
-                               :sentence (list response)
-                               :length-of-sentence (count response)
-                               :origination 'apprentice})
-          (swap! *counter* inc))
-        (print-associations)
-        (when (musical-response? response)
-          (play-events (apply concat
-                              (make-timings
-                               (map (fn [w] (:events (lookup-word w))) response)))))
-        (message response))
-      (recur))))
+(defn event-loop
+  ([] (event-loop (fn [x] x)))
+  ([player-fn]
+      (loop []
+        (print "user> ")
+        (flush)
+        (let [input (user-input)
+              input-sentence-type (get-sentence-type input)
+              _ (put-sentence-into-database input)
+              response (reply input-sentence-type input)]
+          (when-not (empty? response)
+            (let [name (str "sentence-" @*counter*)
+                  sentence-type (last (explode (last response)))]
+              (make-sentence name {:name 'me
+                                   :sentence-type sentence-type
+                                   :sentence (list response)
+                                   :length-of-sentence (count response)
+                                   :origination 'apprentice})
+              (swap! *counter* inc))
+            (print-associations)
+            (when (musical-response? response)
+              (play-events (apply concat
+                                  (make-timings
+                                   (map (fn [w] (:events (lookup-word w))) response)))))
+            (message response)
+            (player-fn [response]))
+          (recur)))))
 
 (defn apprentice []
   (reset-all!)
