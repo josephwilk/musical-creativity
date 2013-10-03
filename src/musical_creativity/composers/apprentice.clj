@@ -16,8 +16,6 @@
 (def ^:dynamic *sentences-store* (atom {}))
 (def ^:dynamic *words-store*     (atom {}))
 
-(def ^:dynamic *no-sentences*  (atom ()))
-(def ^:dynamic *yes-sentences* (atom ()))
 (def ^:dynamic *yes* (atom ()))
 (def ^:dynamic *no*  (atom ()))
 
@@ -27,8 +25,6 @@
 (defn reset-all! []
   (reset! *counter* 0)
   (reset! *sentences-store* {})
-  (reset! *no-sentences* ())
-  (reset! *yes-sentences* ())
   (reset! *yes* ())
   (reset! *no* ())
   (reset! *words-store* {})
@@ -154,18 +150,14 @@
     (nth sentence (position (first (sort > test)) test))))
 
 (defn recognize-no
-  "finds the first ocurance of the no word (followed by a *) and
-   places it in the *no-sentences* listing."
+  "finds the first ocurance of the no word (followed by a *)"
   [sentence]
-  (when-not (empty? (find-no sentence))
-    (push-new (first (all-sentences)) *no-sentences*)))
+  (when-not (empty? (find-no sentence)) (first (all-sentences))))
 
 (defn recognize-yes
-  "finds the first ocurance of the yes word (followed by a $) and
-   places it in the *yes-sentences* listing."
+  "finds the first ocurance of the yes word (followed by a $)"
   [sentence]
-  (when-not (empty? (find-yes sentence))
-    (push-new (first (all-sentences)) *yes-sentences*)))
+  (when-not (empty? (find-yes sentence)) (first (all-sentences))))
 
 (defn find-yes
   "tests the sentence to see if it contains the yes word."
