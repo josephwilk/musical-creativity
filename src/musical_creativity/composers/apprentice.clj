@@ -585,12 +585,12 @@
 
 (defn- user-input []
   (let [raw-input (read-line)
-        user-input (read-string (str "(" raw-input ")"))
-        input (if (and (word-seen? (first user-input))
-                       (:events (lookup-word (first user-input))))
-                (fix-end-of-music-sentences user-input)
-                user-input)]
-    input))
+        clj-input (read-string (str "(" raw-input ")"))
+        clj-input (if (and (word-seen? (first clj-input))
+                       (:events (lookup-word (first clj-input))))
+                (fix-end-of-music-sentences clj-input)
+                clj-input)]
+    clj-input))
 
 (defn musical-response? [response]
   (and (not= (first response) negative-type)
@@ -709,7 +709,7 @@
   ([event-lists] (re-time event-lists 0))
   ([event-lists current-time ]
       (if (empty? event-lists)()
-          (cons (map (fn [event] (cons (+ (first event) current-time) (rest event)) ) (set-to-zero (first event-lists)))
+          (cons (map (fn [event] (cons (+ (first event) current-time) (rest event))) (set-to-zero (first event-lists)))
                 (re-time (rest event-lists) (+ current-time
                                                (get-beat-length
                                                 (first event-lists))))))))
@@ -741,4 +741,3 @@
   "takes a *sentences-store*"
   [sentences]
   (reveal-the-hidden-events (apply concat (reverse (return-only-music-sentences sentences)))))
-
