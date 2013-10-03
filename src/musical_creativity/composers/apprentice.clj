@@ -620,9 +620,7 @@
       (when (musical-response? response)
         (play-events (apply concat
                             (make-timings
-                             (map (fn [w] (:events (lookup-word w))) response)))))
-      (message response)
-      (player-fn [response]))))
+                             (map (fn [w] (:events (lookup-word w))) response))))))))
 
 (defn event-loop
   ([] (event-loop (fn [x] x)))
@@ -632,12 +630,14 @@
         (flush)
         (let [input (user-input)]
           (cond
-           (= (first input) play-sentences)
+           (= play-sentences (first input))
            (player-fn (flatten
                        (map #(:sentence %)
                             (filter #(= 'apprentice (:origination %))
                                     (vals @*sentences-store*)))))
-           :else (apprentice-reply input)))
+           :else (let [reply (apprentice-reply input)]
+                   (message response)
+                   (player-fn [response]))))
         (recur))))
 
 (defn apprentice []
@@ -740,7 +740,7 @@
 (defn reveal-the-hidden-events
   "reveals the events in words."
   [events]
-  (map (fn [x] (:events (eval x))) events))
+  (map (fn [word] (:events (lookup-word word))) events))
 
 (defn tester-for-hidden-events
   "test if sentence is a music sentence."
@@ -749,12 +749,10 @@
        (:events (lookup-sentence (first sentence)))))
 
 (defn return-only-music-sentences
-  "takes a *sentences-store*"
-  [sentence-objects]
-  (let [real-sentences (apply concat (map (fn [x] (:sentence (eval x))) sentence-objects))]
+  [sentences]
+  (let [real-sentences (apply concat (map (fn [x] (:sentence (eval x))) sentences))]
     (remove (fn [sentence] (when-not (tester-for-hidden-events sentence) true)) real-sentences)))
 
 (defn create-a-work
-  "takes a *sentences-store*"
   [sentences]
   (reveal-the-hidden-events (apply concat (reverse (return-only-music-sentences sentences)))))
