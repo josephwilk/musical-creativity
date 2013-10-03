@@ -21,7 +21,6 @@
 (def ^:dynamic *yes* (atom ()))
 (def ^:dynamic *no*  (atom ()))
 
-(def ^:dynamic *all-words*     (atom ()))
 (def ^:dynamic *current-words* (atom ()))
 
 (def ^:dynamic *question-lexicon* (atom {:incipients () :cadences ()}))
@@ -35,7 +34,6 @@
   (reset! *yes* ())
   (reset! *no* ())
   (reset! *words-store* {})
-  (reset! *all-words* ())
   (reset! *current-words* ())
   (reset! *question-lexicon* {:incipients () :cadences ()})
   (reset! *answer-lexicon*   {:incipients () :cadences ()}))
@@ -68,6 +66,8 @@
 (defn sentence-seen? [sentence] (some #{sentence} (all-sentences)))
 
 (defn lookup-musical-word [word] (word {}))
+
+(defn all-words [] (keys @*words-store*))
 
 (defn lookup-word [word]  (@*words-store* word))
 (defn make-word [id atts]  (reset! *words-store* (assoc @*words-store* id atts)))
@@ -242,8 +242,8 @@
   1. keyword found: weight keyword-weight
   2. last word found: weight last-word-weight
   3. next word found in successor: successor-weight
-  4. all remaining words found in *all-words*, weight being backward-chain-weight
-  the only exception being the word for no - this will not be in the vocabulary"
+  4. all remaining words found in all-words, weight being backward-chain-weight
+   the only exception being the word for no - this will not be in the vocabulary"
   [sentence sentence-type name]
   (make-sentence name {:name (list name)
                        :sentence-type (list sentence-type)
@@ -293,11 +293,10 @@
          current-associations)))))
 
 (defn update-or-create-word [word word-context sentence sentence-type name]
-  (let [words-store @*words-store*
-        all-words @*all-words*]
+  (let [words-store @*words-store*]
     (cond
-     (and (not (member? word (keys words-store))) (not (word-seen? word)))
-     (do
+     (not (word-seen? word))
+     (when-not (negative? sentence-type)
        (make-word word {:name (list name)
                         :sentence-type (list sentence-type)
                         :sentence (list sentence)
@@ -307,28 +306,27 @@
                         :keywords (list (:keyword word-context))
                         :word-type (list sentence-type)
                         :positions-in-sentence (list (inc (position word sentence)))
-                        :associations (build-associations word word-context all-words)
+                        :associations (build-associations word word-context (all-words))
                         :usage 1
-                        :used-before? true})
-       (when-not (negative? sentence-type) (push word *all-words*)))
+                        :used-before? true}))
 
      (and (word-seen? word) (not (:used-before? (lookup-word word))))
-     (let [word-data (lookup-word word)]
-       (swap-word! word (->
-                         word-data
-                         (assoc :name (cons name (:name word-data)))
-                         (assoc :sentence-type (list sentence-type))
-                         (assoc :sentence (list sentence))
-                         (assoc :length-of-sentence (list (count sentence)))
-                         (assoc :predecessors (list (:predecessor word-context)))
-                         (assoc :successors (list (:successor word-context)))
-                         (assoc :keywords (list (:keyword word-context)))
-                         (assoc :positions-in-sentence (list (inc (position word sentence))))
-                         (assoc :word-type (list sentence-type))
-                         (assoc :associations (build-associations word word-context all-words))
-                         (assoc :usage 1)
-                         (assoc :used-before? true)))
-       (when-not (negative? sentence-type) (push word *all-words*)))
+     (when-not (negative? sentence-type)
+       (let [word-data (lookup-word word)]
+         (swap-word! word (->
+                           word-data
+                           (assoc :name (cons name (:name word-data)))
+                           (assoc :sentence-type (list sentence-type))
+                           (assoc :sentence (list sentence))
+                           (assoc :length-of-sentence (list (count sentence)))
+                           (assoc :predecessors (list (:predecessor word-context)))
+                           (assoc :successors (list (:successor word-context)))
+                           (assoc :keywords (list (:keyword word-context)))
+                           (assoc :positions-in-sentence (list (inc (position word sentence))))
+                           (assoc :word-type (list sentence-type))
+                           (assoc :associations (build-associations word word-context (all-words)))
+                           (assoc :usage 1)
+                           (assoc :used-before? true)))))
      :else (let [word-data (lookup-word word)]
              (swap-word! word
                          (->
@@ -342,7 +340,7 @@
                           (assoc :keywords (cons (:keyword word-context) (:keywords word-data)))
                           (assoc :positions-in-sentence (cons (inc (position word sentence)) (:positions-in-sentence word-data)))
                           (assoc :word-type(cons sentence-type (:word-type word-data)))
-                          (assoc :associations (build-associations word word-context all-words (:associations word-data)))
+                          (assoc :associations (build-associations word word-context (all-words) (:associations word-data)))
                           (assoc :usage (inc (:usage word-data)))
                           (assoc :used-before? true)))))))
 
@@ -374,7 +372,7 @@
         (doseq [item sentence]
           (add-word-to-word-weightlists item
                                         (:keyword word-context)
-                                        (:last-word word-context) @*all-words*)  )))))
+                                        (:last-word word-context) (all-words)))))))
 
 (defn figure-speac
   "this function sets up parsing structure in sentences for future creation of sentences and
