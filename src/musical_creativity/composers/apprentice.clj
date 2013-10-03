@@ -92,8 +92,6 @@
 
 (defn push-new [item col] (reset! col (concat [item] @col)))
 
-(defn push [item col] (reset! col (concat [item] @col)))
-
 (defn message [thing] (when (seq thing) (println "Alice> " (string/join (rest (butlast (str thing)))))))
 
 (defn remove-all
