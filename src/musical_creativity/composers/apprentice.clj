@@ -21,8 +21,6 @@
 (def ^:dynamic *yes* (atom ()))
 (def ^:dynamic *no*  (atom ()))
 
-(def ^:dynamic *current-words* (atom ()))
-
 (def ^:dynamic *question-lexicon* (atom {:incipients () :cadences ()}))
 (def ^:dynamic *answer-lexicon*   (atom {:incipients () :cadences ()}))
 
@@ -34,7 +32,6 @@
   (reset! *yes* ())
   (reset! *no* ())
   (reset! *words-store* {})
-  (reset! *current-words* ())
   (reset! *question-lexicon* {:incipients () :cadences ()})
   (reset! *answer-lexicon*   {:incipients () :cadences ()}))
 
@@ -499,19 +496,17 @@
 
 (defn current-words-list [current-word cadences type]
   (loop [current-word current-word
-         collected-words []]
+         current-words []]
     (if (or (nil? current-word) (member? current-word cadences))
-      collected-words
-      (do
-        (push-new current-word *current-words*)
-        (let [collected-words-col (cons collected-words (musical-words current-word @*current-words* type))]
-          (recur current-word collected-words-col))))))
+      current-words
+      (let [musical-words (musical-words current-word current-words type)]
+        (recur current-word (cons collected-words musical-words))))))
 
-(defn- pick-words [current-word]
+(defn- pick-words [current-word current-words]
   (let [word-words (get-word-words (cadences-for type))
         test (choose-the-highest-rated-word
               (remove-all-by-ffirst
-               (concat @*current-words* word-words)
+               (concat current-words word-words)
                (get-word-associations (:associations (lookup-word current-word)))))]
     (or test
         (choose-one
@@ -525,7 +520,6 @@
                      (remove-all (list @*no*)
                                 (get-music-words (:incipients @*answer-lexicon*)))
                      (get-music-words (:incipients @*question-lexicon*)))]
-    (reset! *current-words* ())
     (if (or (empty? choices) (empty? incipients))
       ()
       (let [current-word
@@ -542,8 +536,7 @@
                          current-words []]
                     (if (or (nil? current-word) (member? current-word cadences))
                       current-words
-                      (let [next-word (pick-words current-word)]
-                        (push-new next-word *current-words*)
+                      (let [next-word (pick-words current-word current-words)]
                         (recur next-word (cons next-word current-words)))))
         new-sentence (cons current-word new-words)]
   new-sentence))
@@ -562,7 +555,6 @@
                      (remove-all (list @*no*) (get-word-words (:incipients @*answer-lexicon*)))
                      (get-word-words (:incipients @*question-lexicon*)))]
 
-    (reset! *current-words* ())
     (if (or (empty? choices) (empty? incipients))
       ()
       (let [current-word (pick-start-word type choices incipients)
@@ -780,3 +772,4 @@
   "takes a *sentences-store*"
   [sentences]
   (reveal-the-hidden-events (apply concat (reverse (return-only-music-sentences sentences)))))
+
