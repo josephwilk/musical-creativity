@@ -25,9 +25,9 @@
 (defn reset-all! []
   (reset! *counter* 0)
   (reset! *sentences-store* {})
+  (reset! *words-store* {})
   (reset! *yes* ())
   (reset! *no* ())
-  (reset! *words-store* {})
   (reset! *question-lexicon* {:incipients () :cadences ()})
   (reset! *answer-lexicon*   {:incipients () :cadences ()}))
 
@@ -85,8 +85,6 @@
 (defn explode [thing] (map str (vec (str thing))))
 
 (defn sort-by-last [thing] (sort (fn [x y] (> (last x) (last y))) thing))
-
-(defn push-new [item col] (reset! col (concat [item] @col)))
 
 (defn message [thing] (when (seq thing) (println "Alice> " (string/join (rest (butlast (str thing)))))))
 
@@ -152,42 +150,36 @@
 (defn recognize-no
   "finds the first ocurance of the no word (followed by a *)"
   [sentence]
-  (when-not (empty? (find-no sentence)) (first (all-sentences))))
+  (when (seq (find-no sentence)) (first (all-sentences))))
 
 (defn recognize-yes
   "finds the first ocurance of the yes word (followed by a $)"
   [sentence]
-  (when-not (empty? (find-yes sentence)) (first (all-sentences))))
+  (when (seq (find-yes sentence)) (first (all-sentences))))
 
-(defn find-yes
-  "tests the sentence to see if it contains the yes word."
-  [sentence]
-  (cond
-   (or (member? (first sentence) (list fact-type question-type positive-type)) (empty? sentence)) ()
-   (or (member? positive-type (explode (first sentence)))
-       (member? @*yes* (list (first sentence)))
-       (if (empty? (rest sentence))
-         (member? @*yes* (list (butlast (explode (first sentence)))))))
-   (let [test (butlast (explode (first sentence)))]
-     (if (= (last test) negative-type)
-       (reset! *yes* (butlast test))
-       (reset! *yes* (list (first sentence)))))
-   :else (find-yes (rest sentence))))
+(defn- find-word [sentence word-type previous-word]
+  (when-let [candidate-word (first sentence)]
+    (cond
+     (or (member? candidate-word (list fact-type question-type positive-type)))
+     ()
+     (or (member? word-type (explode candidate-word))
+         (member? previous-word (list candidate-word))
+         (when (empty? (rest sentence))
+           (member? previous-word (list (butlast (explode candidate-word))))))
+     (let [test (butlast (explode candidate-word))
+           new-word (if (= (last test) word-type)
+                      (butlast test)
+                      (list candidate-word))]
+       new-word)
+     :else (find-word (rest sentence) word-type previous-word))))
 
-(defn find-no
-  "tests the sentence to see if it contains the no word."
-  [sentence]
-  (cond
-   (or (member? (first sentence) (list fact-type question-type positive-type)) (empty? sentence)) ()
-   (or (member? negative-type (explode (first sentence)))
-       (member? @*no* (list (first sentence)))
-       (if (empty? (rest sentence))
-         (member? @*no* (list (butlast (explode (first sentence)))))))
-   (let [test (butlast (explode (first sentence)))]
-     (if (= (last test) negative-type)
-       (reset! *no* (butlast test))
-       (reset! *no* (list (first sentence)))))
-   :else (find-no (rest sentence))))
+(defn find-yes [sentence]
+  (when-let [yes-word (find-word sentence positive-type @*yes*)]
+    (reset! *yes* yes-word)))
+
+(defn find-no  [sentence]
+  (when-let [no-word (find-word sentence negative-type @*no*)]
+    (reset! *no* no-word)))
 
 (defn establish-keywords
   "establishes all of the principal keywords."
@@ -490,7 +482,7 @@
     (if (or (nil? current-word) (member? current-word cadences))
       current-words
       (let [musical-words (musical-words current-word current-words type)]
-        (recur current-word (cons collected-words musical-words))))))
+        (recur current-word (cons current-words musical-words))))))
 
 (defn- pick-words [current-word current-words]
   (let [word-words (get-word-words (cadences-for type))
