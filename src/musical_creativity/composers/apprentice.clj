@@ -31,6 +31,8 @@
   (reset! *question-lexicon* {:incipients () :cadences ()})
   (reset! *answer-lexicon*   {:incipients () :cadences ()}))
 
+(def play-sentences "+")
+
 (def question-type "?")
 (def fact-type     "!")
 (def negative-type "*")
@@ -567,15 +569,11 @@
 
     (print-associations)))
 
-
 (defn find-music [key] {})
 
 (defn fix-end-of-music-sentences
   "attaches the punctuation to the end of the music sentence."
   [sentence]
-
-  (println :sentnence sentence)
-
   (let [object (nth sentence (- (count sentence) 2))
         the-name (drop (- (count sentence) 2) sentence)]
     (make-word the-name {:name (:name (find-music object))
@@ -591,10 +589,12 @@
 (defn- user-input []
   (let [raw-input (read-line)
         clj-input (read-string (str "(" raw-input ")"))
-        clj-input (if (and (word-seen? (first clj-input))
-                       (:events (lookup-word (first clj-input))))
-                (fix-end-of-music-sentences clj-input)
-                clj-input)]
+        clj-input (if (:events (find-music (first clj-input)))
+                    (fix-end-of-music-sentences clj-input)
+                    clj-input)]
+
+    (println :music? (find-music (first clj-input)))
+
     clj-input))
 
 (defn musical-response? [response]
@@ -603,33 +603,42 @@
        (not (nil? (first response)))
        (:events (lookup-word (first response)))))
 
+(defn- apprentice-reply [input]
+  (let [input-sentence-type (get-sentence-type input)
+        _ (put-sentence-into-database input)
+        response (reply input-sentence-type input)]
+    (when-not (empty? response)
+      (let [name (str "sentence-" @*counter*)
+            sentence-type (last (explode (last response)))]
+        (make-sentence name {:name 'me
+                             :sentence-type sentence-type
+                             :sentence (list response)
+                             :length-of-sentence (count response)
+                             :origination 'apprentice})
+        (swap! *counter* inc))
+      (print-associations)
+      (when (musical-response? response)
+        (play-events (apply concat
+                            (make-timings
+                             (map (fn [w] (:events (lookup-word w))) response)))))
+      (message response)
+      (player-fn [response]))))
+
 (defn event-loop
   ([] (event-loop (fn [x] x)))
   ([player-fn]
       (loop []
         (print "user> ")
         (flush)
-        (let [input (user-input)
-              input-sentence-type (get-sentence-type input)
-              _ (put-sentence-into-database input)
-              response (reply input-sentence-type input)]
-          (when-not (empty? response)
-            (let [name (str "sentence-" @*counter*)
-                  sentence-type (last (explode (last response)))]
-              (make-sentence name {:name 'me
-                                   :sentence-type sentence-type
-                                   :sentence (list response)
-                                   :length-of-sentence (count response)
-                                   :origination 'apprentice})
-              (swap! *counter* inc))
-            (print-associations)
-            (when (musical-response? response)
-              (play-events (apply concat
-                                  (make-timings
-                                   (map (fn [w] (:events (lookup-word w))) response)))))
-            (message response)
-            (player-fn [response]))
-          (recur)))))
+        (let [input (user-input)]
+          (cond
+           (= (first input) play-sentences)
+           (player-fn (flatten
+                       (map #(:sentence %)
+                            (filter #(= 'apprentice (:origination %))
+                                    (vals @*sentences-store*)))))
+           :else (apprentice-reply input)))
+        (recur))))
 
 (defn apprentice []
   (reset-all!)
