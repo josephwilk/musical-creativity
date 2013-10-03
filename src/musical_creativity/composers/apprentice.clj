@@ -31,8 +31,6 @@
   (reset! *question-lexicon* {:incipients () :cadences ()})
   (reset! *answer-lexicon*   {:incipients () :cadences ()}))
 
-(declare find-no find-yes)
-
 (def question-type "?")
 (def fact-type     "!")
 (def negative-type "*")
@@ -147,16 +145,6 @@
   (let [test (map (fn [word] (count (explode word))) sentence)]
     (nth sentence (position (first (sort > test)) test))))
 
-(defn recognize-no
-  "finds the first ocurance of the no word (followed by a *)"
-  [sentence]
-  (when (seq (find-no sentence)) (first (all-sentences))))
-
-(defn recognize-yes
-  "finds the first ocurance of the yes word (followed by a $)"
-  [sentence]
-  (when (seq (find-yes sentence)) (first (all-sentences))))
-
 (defn- find-word [sentence word-type previous-word]
   (when-let [candidate-word (first sentence)]
     (cond
@@ -180,6 +168,16 @@
 (defn find-no  [sentence]
   (when-let [no-word (find-word sentence negative-type @*no*)]
     (reset! *no* no-word)))
+
+(defn recognize-no
+  "finds the first ocurance of the no word (followed by a *)"
+  [sentence]
+  (when (seq (find-no sentence)) (first (all-sentences))))
+
+(defn recognize-yes
+  "finds the first ocurance of the yes word (followed by a $)"
+  [sentence]
+  (when (seq (find-yes sentence)) (first (all-sentences))))
 
 (defn establish-keywords
   "establishes all of the principal keywords."
