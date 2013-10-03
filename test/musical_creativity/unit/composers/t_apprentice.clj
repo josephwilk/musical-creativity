@@ -38,14 +38,14 @@
 
 (fact "default-reply-thing"
   (put-sentence-into-database '(hello!))
-  (process-default "!" '(hello!)) => '()
+  (build-a-response "!" '(hello!)) => '()
 
   (put-sentence-into-database '(what is your name?))
-  (count (process-default "?" '(what is your name?))) => #(> % 1))
+  (count (build-a-response "?" '(what is your name?))) => #(> % 1))
 
 (fact "reply"
   (put-sentence-into-database '(hello!))
-  (reply "!" '(hello!)) => '(nil)
+  (reply "!" '(hello!)) => ()
 
   (put-sentence-into-database '(what is your name?))
   (reply "?" '(what is your name?)) => '(your what is hello!))
@@ -76,7 +76,7 @@
 (fact "add word to word weightlists"
   (put-sentence-into-database '(what is your name?))
 
-  (add-word-to-word-weightlists 'what 'what 'is @*all-words*) => nil)
+  (add-word-to-word-weightlists 'what 'what 'is (all-words)) => nil)
 
 (fact "get-keyword"
   (get-keyword '(hello!)) =>  'hello!
@@ -92,9 +92,9 @@
 (fact "build-associations"
   (put-sentence-into-database '(what is your name?))
 
-  (build-associations 'what {:keyword 'name? :last-word 'name? :successor 'is} @*all-words*) => '((name? 1.05) (is 0.6) (your 0.1))
+  (build-associations 'what {:keyword 'name? :last-word 'name? :successor 'is} (all-words)) => '((name? 1.05) (is 0.6) (your 0.1))
 
-  (build-associations 'what {:keyword 'name? :last-word 'name? :successor 'is} @*all-words* '((name 0.5))) => '([name? 1.05] [is 0.6] [your 0.1]  [name 0.5]))
+  (build-associations 'what {:keyword 'name? :last-word 'name? :successor 'is} (all-words) '((name 0.5))) => '([name? 1.05] [is 0.6] [your 0.1]  [name 0.5]))
 
 (fact "reduce-weight"
   (put-sentence-into-database '(what is your name?))
@@ -114,9 +114,6 @@
   =>
   '((up? 0.2) (is 1.0) (what 0.2) (david! 2.47) (name 0.9) (hello! 0.1) (yes$ 0.1)))
 
-(fact "compare-words"
-  (compare-words 'a 'a) => true)
-
 (fact "remove-object-twice"
   (remove-object-twice 'name? '((name? 0.75) (name? 0.2) (is 0.5)))
    => '((is 0.5)))
@@ -130,12 +127,12 @@
 (fact "define-cadences"
   (define-cadences '(my name is david!) '!) => '(david!))
 
-(fact "remove them"
-  (remove-them '(name?) '((name? 6.77) (is 1.4) (hello! 0.4) (your 1.4) (what 0.9))) =>
+(fact "remove-all-ffirst"
+  (remove-all-by-ffirst '(name?) '((name? 6.77) (is 1.4) (hello! 0.4) (your 1.4) (what 0.9))) =>
   '((is 1.4) (hello! 0.4) (your 1.4) (what 0.9)))
 
-(fact "remove it"
-  (remove-it 'name? '((name? 6.77) (is 1.4) (hello! 0.4) (your 1.4) (what 0.9))) =>
+(fact "remove-all-by-ffirst"
+  (remove-by-ffirst 'name? '((name? 6.77) (is 1.4) (hello! 0.4) (your 1.4) (what 0.9))) =>
     '((is 1.4) (hello! 0.4) (your 1.4) (what 0.9)))
 
 (fact "round it"
