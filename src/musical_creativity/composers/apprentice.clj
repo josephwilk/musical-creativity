@@ -304,7 +304,7 @@
                         (assoc :successors (cons (:successor word-context) (:successors word-data)))
                         (assoc :keywords (cons (:keyword word-context) (:keywords word-data)))
                         (assoc :positions-in-sentence (cons (inc (position word sentence)) (:positions-in-sentence word-data)))
-                        (assoc :word-type(cons sentence-type (:word-type word-data)))
+                        (assoc :word-type (cons sentence-type (:word-type word-data)))
                         (assoc :associations (build-associations word word-context (all-words) (:associations word-data)))
                         (assoc :usage (inc (:usage word-data)))
                         (assoc :used-before? true))))))
