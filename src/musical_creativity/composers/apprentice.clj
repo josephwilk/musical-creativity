@@ -108,8 +108,7 @@
     things
     (remove-all-by-ffirst (rest list) (remove-by-ffirst (first list) things))))
 
-(defn round-it [n]
-  (float (/ (math/round (* n 100)) 100)))
+(defn round-it [n] (float (/ (math/round (* n 100)) 100)))
 
 (defn other-lexicon-type
   "returns words from the opposite of its arg sentence type."
@@ -568,16 +567,22 @@
 
     (print-associations)))
 
+
+(defn find-music [key] {})
+
 (defn fix-end-of-music-sentences
   "attaches the punctuation to the end of the music sentence."
   [sentence]
+
+  (println :sentnence sentence)
+
   (let [object (nth sentence (- (count sentence) 2))
         the-name (drop (- (count sentence) 2) sentence)]
-    (make-word the-name {:name (:name (eval object))
-                         :timing (:timing (eval object))
-                         :destination (:destination (eval object))
-                         :events (:events (eval object))
-                         :usage (:usage (eval object))})
+    (make-word the-name {:name (:name (find-music object))
+                         :timing (:timing (find-music object))
+                         :destination (:destination (find-music object))
+                         :events (:events (find-music object))
+                         :usage (:usage (find-music object))})
     (concat (butlast sentence 2) (list the-name))))
 
 (defn make-timings [thing] thing)
