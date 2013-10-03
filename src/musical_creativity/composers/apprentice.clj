@@ -161,29 +161,19 @@
        new-word)
      :else (find-word (rest sentence) word-type previous-word))))
 
-(defn find-yes [sentence]
-  (when-let [yes-word (find-word sentence positive-type @*yes*)]
-    (reset! *yes* yes-word)))
-
-(defn find-no  [sentence]
+(defn contains-no? [sentence]
   (when-let [no-word (find-word sentence negative-type @*no*)]
     (reset! *no* no-word)))
 
-(defn recognize-no
-  "finds the first ocurance of the no word (followed by a *)"
-  [sentence]
-  (when (seq (find-no sentence)) (first (all-sentences))))
-
-(defn recognize-yes
-  "finds the first ocurance of the yes word (followed by a $)"
-  [sentence]
-  (when (seq (find-yes sentence)) (first (all-sentences))))
+(defn contains-yes? [sentence]
+  (when-let [yes-word (find-word sentence positive-type @*yes*)]
+    (reset! *yes* yes-word)))
 
 (defn establish-keywords
   "establishes all of the principal keywords."
   [sentence]
-  (let [no-test  (recognize-no sentence)
-        yes-test (recognize-yes sentence)
+  (let [no-test  (contains-no? sentence)
+        yes-test (contains-yes? sentence)
         sentence-context {:last-word (last sentence)}]
     (if-not (or yes-test no-test)
       (merge sentence-context {:keyword (get-keyword sentence)})
@@ -214,7 +204,7 @@
                             associations)))
         associations)))
 
-(defn make-sentence-object
+(defn store-sentence
   "associations are of four types:
   1. keyword found: weight keyword-weight
   2. last word found: weight last-word-weight
@@ -270,56 +260,55 @@
          current-associations)))))
 
 (defn update-or-create-word [word word-context sentence sentence-type name]
-  (let [words-store @*words-store*]
-    (cond
-     (not (word-seen? word))
-     (when-not (negative? sentence-type)
-       (make-word word {:name (list name)
-                        :sentence-type (list sentence-type)
-                        :sentence (list sentence)
-                        :length-of-sentence (list (count sentence))
-                        :predecessors (list (:predecessor word-context))
-                        :successors (list (:successor word-context))
-                        :keywords (list (:keyword word-context))
-                        :word-type (list sentence-type)
-                        :positions-in-sentence (list (inc (position word sentence)))
-                        :associations (build-associations word word-context (all-words))
-                        :usage 1
-                        :used-before? true}))
+  (cond
+   (not (word-seen? word))
+   (when-not (negative? sentence-type)
+     (make-word word {:name (list name)
+                      :sentence-type (list sentence-type)
+                      :sentence (list sentence)
+                      :length-of-sentence (list (count sentence))
+                      :predecessors (list (:predecessor word-context))
+                      :successors (list (:successor word-context))
+                      :keywords (list (:keyword word-context))
+                      :word-type (list sentence-type)
+                      :positions-in-sentence (list (inc (position word sentence)))
+                      :associations (build-associations word word-context (all-words))
+                      :usage 1
+                      :used-before? true}))
 
-     (and (word-seen? word) (not (:used-before? (lookup-word word))))
-     (when-not (negative? sentence-type)
-       (let [word-data (lookup-word word)]
-         (swap-word! word (->
-                           word-data
-                           (assoc :name (cons name (:name word-data)))
-                           (assoc :sentence-type (list sentence-type))
-                           (assoc :sentence (list sentence))
-                           (assoc :length-of-sentence (list (count sentence)))
-                           (assoc :predecessors (list (:predecessor word-context)))
-                           (assoc :successors (list (:successor word-context)))
-                           (assoc :keywords (list (:keyword word-context)))
-                           (assoc :positions-in-sentence (list (inc (position word sentence))))
-                           (assoc :word-type (list sentence-type))
-                           (assoc :associations (build-associations word word-context (all-words)))
-                           (assoc :usage 1)
-                           (assoc :used-before? true)))))
-     :else (let [word-data (lookup-word word)]
-             (swap-word! word
-                         (->
-                          word-data
-                          (assoc :name  (cons name (:name word-data)))
-                          (assoc :sentence-type (cons sentence-type (:sentence-type word-data)))
-                          (assoc :sentence (cons sentence (:sentence word-data)))
-                          (assoc :length-of-sentence (cons (count sentence) (:length-of-sentence word-data)))
-                          (assoc :predecessors (cons (:predecessor word-context) (:predecessors word-data)))
-                          (assoc :successors (cons (:successor word-context) (:successors word-data)))
-                          (assoc :keywords (cons (:keyword word-context) (:keywords word-data)))
-                          (assoc :positions-in-sentence (cons (inc (position word sentence)) (:positions-in-sentence word-data)))
-                          (assoc :word-type(cons sentence-type (:word-type word-data)))
-                          (assoc :associations (build-associations word word-context (all-words) (:associations word-data)))
-                          (assoc :usage (inc (:usage word-data)))
-                          (assoc :used-before? true)))))))
+   (and (word-seen? word) (not (:used-before? (lookup-word word))))
+   (when-not (negative? sentence-type)
+     (let [word-data (lookup-word word)]
+       (swap-word! word (->
+                         word-data
+                         (assoc :name (cons name (:name word-data)))
+                         (assoc :sentence-type (list sentence-type))
+                         (assoc :sentence (list sentence))
+                         (assoc :length-of-sentence (list (count sentence)))
+                         (assoc :predecessors (list (:predecessor word-context)))
+                         (assoc :successors (list (:successor word-context)))
+                         (assoc :keywords (list (:keyword word-context)))
+                         (assoc :positions-in-sentence (list (inc (position word sentence))))
+                         (assoc :word-type (list sentence-type))
+                         (assoc :associations (build-associations word word-context (all-words)))
+                         (assoc :usage 1)
+                         (assoc :used-before? true)))))
+   :else (let [word-data (lookup-word word)]
+           (swap-word! word
+                       (->
+                        word-data
+                        (assoc :name  (cons name (:name word-data)))
+                        (assoc :sentence-type (cons sentence-type (:sentence-type word-data)))
+                        (assoc :sentence (cons sentence (:sentence word-data)))
+                        (assoc :length-of-sentence (cons (count sentence) (:length-of-sentence word-data)))
+                        (assoc :predecessors (cons (:predecessor word-context) (:predecessors word-data)))
+                        (assoc :successors (cons (:successor word-context) (:successors word-data)))
+                        (assoc :keywords (cons (:keyword word-context) (:keywords word-data)))
+                        (assoc :positions-in-sentence (cons (inc (position word sentence)) (:positions-in-sentence word-data)))
+                        (assoc :word-type(cons sentence-type (:word-type word-data)))
+                        (assoc :associations (build-associations word word-context (all-words) (:associations word-data)))
+                        (assoc :usage (inc (:usage word-data)))
+                        (assoc :used-before? true))))))
 
 (defn- words-with-successor-and-predecessor [sentence]
   (let [suc-and-pred
@@ -337,7 +326,7 @@
             :else (list word suc pred)))
          suc-and-pred)))
 
-(defn make-word-objects [sentence sentence-type sentence-context name]
+(defn store-words [sentence sentence-type sentence-context name]
   (doseq [[word successor predecessor] (words-with-successor-and-predecessor sentence)]
     (let [word-context
           {:keyword      (:keyword sentence-context)
@@ -356,8 +345,8 @@
    atn use. important to note that word types are figured contextually based on their current usage
    and thus don't require a separate parse entry in their slots."
   [word]
-  (let [count-for-word (frequency word (keys @*words-store*))
-        total-words (count (keys @*words-store*))]
+  (let [count-for-word (frequency word (all-words))
+        total-words (count (all-words))]
     (cond
      (< count-for-word (/ total-words 10))
      'c
@@ -384,7 +373,7 @@
       (update-cadence *answer-lexicon*   (last sentence)))))
 
 (defn all-associations []
-  (map (fn [word] {word (:associations (lookup-word word))}) (distinct (keys @*words-store*))))
+  (map (fn [word] {word (:associations (lookup-word word))}) (distinct (all-words))))
 
 (defn print-associations [] (println (reverse (all-associations))))
 
@@ -555,10 +544,10 @@
   "create a sentence by using the various associations of each word in the sentence argument."
   [type sentence]
   (cond
-   (recognize-no sentence)
+   (contains-no? sentence)
    (process-no)
 
-   (recognize-yes sentence)
+   (contains-yes? sentence)
    (process-yes)
 
    (:events (lookup-musical-word (first sentence)))
@@ -570,8 +559,8 @@
   (let [sentence-context (establish-keywords sentence)
         sentence-type (get-sentence-type sentence)
         name (make-new-name)]
-    (make-sentence-object sentence sentence-type name)
-    (make-word-objects sentence sentence-type sentence-context name)
+    (store-sentence sentence sentence-type name)
+    (store-words sentence sentence-type sentence-context name)
 
     (parse-sentence sentence name)
     (define-incipients sentence sentence-type)
