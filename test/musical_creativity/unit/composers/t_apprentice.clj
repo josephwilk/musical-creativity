@@ -4,27 +4,26 @@
 
 (namespace-state-changes (before :facts (reset-all!)))
 
-(fact "find-no"
-  (find-no '(what is your name?)) => ()
+(fact "contains no?"
+  (contains-no? '(what is your name?)) => nil
   @*no* => ()
 
-  (find-no '(*what is your name?)) => '(*what)
+  (contains-no? '(*what is your name?)) => '(*what)
   @*no* => '(*what)
 
-  (find-no '(no*)) => '(no*))
+  (contains-no? '(no*)) => '(no*))
 
-(fact "find-yes"
-  (find-yes '(what is your name?)) => ()
-  @*yes* => ()
+(fact "contains yes?"
+  (contains-yes? '(what is your name?)) => nil
 
-  (find-yes '($what is your name?)) => '($what)
+  (contains-yes? '($what is your name?)) => '($what)
   @*yes* => '($what))
 
-(fact "recognize-no"
-  (recognize-no '(what is your name?)) => nil)
+(fact "contains no"
+  (contains-no? '(what is your name?)) => nil)
 
 (fact "recognize-yes"
-  (recognize-yes '(what is your name?)) => nil)
+  (contains-yes? '(what is your name?)) => nil)
 
 (fact "put-sentence-into-database"
   (put-sentence-into-database '(hello!))
@@ -111,8 +110,7 @@
 (fact "reward"
   (reward '((david! 2.47) (name 0.9) (up? 0.1) (is 0.5) (what 0.1) (hello! 0.1) (yes$ 0.1))
           '(what is up?))
-  =>
-  '((up? 0.2) (is 1.0) (what 0.2) (david! 2.47) (name 0.9) (hello! 0.1) (yes$ 0.1)))
+  =>  '((up? 0.2) (is 1.0) (what 0.2) (david! 2.47) (name 0.9) (hello! 0.1) (yes$ 0.1)))
 
 (fact "remove-object-twice"
   (remove-object-twice 'name? '((name? 0.75) (name? 0.2) (is 0.5)))
@@ -137,3 +135,6 @@
 
 (fact "round it"
   (round-it 0.95) => (roughly 0.95))
+
+(fact "fix-end-of-music-sentences"
+  (fix-end-of-music-sentences '(improv[5]-75-66-70 "!")))
