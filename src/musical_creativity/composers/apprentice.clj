@@ -583,7 +583,7 @@
                          :destination (:destination (find-music object))
                          :events (:events (find-music object))
                          :usage (:usage (find-music object))})
-    (concat (butlast sentence 2) (list the-name))))
+    (concat (drop-last 2 sentence) (list the-name))))
 
 (defn make-timings [thing] thing)
 (defn play-events [events] (println :play events))
