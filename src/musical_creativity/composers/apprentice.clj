@@ -540,9 +540,9 @@
                  (first (:sentence (lookup-sentence (second (all-sentences))))))
   (list positive-type))
 
-(defn reply
-  "create a sentence by using the various associations of each word in the sentence argument."
-  [type sentence]
+(defn musical-statement? [sentence] (:events (lookup-musical-word (first sentence))))
+
+(defn reply [type sentence]
   (cond
    (contains-no? sentence)
    (process-no)
@@ -550,7 +550,7 @@
    (contains-yes? sentence)
    (process-yes)
 
-   (:events (lookup-musical-word (first sentence)))
+   (musical-statement? sentence)
    (build-musical-reply type sentence)
 
    :else (build-a-response type sentence)))
@@ -624,7 +624,6 @@
     response))
 
 (defn event-loop
-  ([] (event-loop (fn [x] x)))
   ([player-fn]
       (loop []
         (print "user> ")
@@ -641,9 +640,11 @@
                    (player-fn [reply]))))
         (recur))))
 
-(defn apprentice []
-  (reset-all!)
-  (event-loop))
+(defn apprentice
+  ([] (apprentice (fn [x] x)))
+  ([player-fn]
+     (reset-all!)
+     (event-loop player-fn)))
 
 (defn remove-cadences
   "removes the cadences from the choices."
