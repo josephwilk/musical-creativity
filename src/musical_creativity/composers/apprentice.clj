@@ -619,7 +619,9 @@
       (when (musical-response? response)
         (play-events (apply concat
                             (make-timings
-                             (map (fn [w] (:events (lookup-word w))) response))))))))
+                             (map (fn [w] (:events (lookup-word w))) response))))))
+
+    response))
 
 (defn event-loop
   ([] (event-loop (fn [x] x)))
