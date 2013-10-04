@@ -56,20 +56,19 @@
 (defn make-sentence [id atts]  (reset! *sentences-store* (assoc @*sentences-store* id atts)))
 (defn update-sentence [id field val] (reset! *sentences-store* (assoc-in @*sentences-store* [id field] val))
   val)
-(defn sentence-seen? [sentence] (some #{sentence} (all-sentences)))
+(defn sentence-seen? [sentence] (contains? @*sentences-store* sentence))
 
 (defn lookup-musical-word [word] (word {}))
 
 (defn all-words [] (keys @*words-store*))
-
 (defn lookup-word [word]  (@*words-store* word))
 (defn make-word [id atts]  (reset! *words-store* (assoc @*words-store* id atts)))
+(defn swap-word! [word word-map] (reset! *words-store* (assoc @*words-store* word word-map)))
 (defn update-word [id field val]
   (reset! *words-store* (assoc-in @*words-store* [id field] val))
   val)
 
-(defn word-seen? [word] (some #{word} (keys @*words-store*)))
-(defn swap-word! [word word-map] (reset! *words-store* (assoc @*words-store* word word-map)))
+(defn word-seen? [word] (contains? @*words-store* word))
 
 (defn update-incipient [ref word]
   (reset! ref (assoc @ref :incipients (cons word (:incipients @ref))))
