@@ -2,7 +2,11 @@
   (:require
    [overtone.live :as overtone]
    [overtone.synth.sampled-piano :as piano]
-   [overtone.music.pitch :as pitch]))
+   [overtone.music.pitch :as pitch]
+
+   [musical-creativity.musician :as musician]
+   [musical-creativity.instruments :refer :all]
+   [musical-creativity.composers.sonify-words :as sonify]))
 
 (defn- explode [thing] (map str (vec (str thing))))
 
@@ -19,3 +23,9 @@
         sentence (map (fn [x] (str x "4")) sentence)]
     (doseq [note sentence]
       (piano/sampled-piano {:note (pitch/note note)}) (Thread/sleep 300))))
+
+(defn play-sonified [sentence]
+  (let [sentence (flatten sentence)]
+    (when (seq sentence)
+      (println :sentence sentence)
+      (musician/play (sonify/compose (mapcat (fn [word] (str word)) sentence)) piano))))

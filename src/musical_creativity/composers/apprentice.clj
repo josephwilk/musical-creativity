@@ -630,7 +630,7 @@
         (flush)
         (let [input (user-input)]
           (cond
-           (= play-sentences (first input))
+           (= play-sentences (str (first input)))
            (player-fn (flatten
                        (map #(:sentence %)
                             (filter #(= 'apprentice (:origination %))

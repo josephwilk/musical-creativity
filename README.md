@@ -75,7 +75,14 @@ Experiments with models for computers generating music.
 
 ### Association Network (Apprentice)
 
-To start apprentice run:
+```clojure
+(require '[musical-creativity.composers.apprentice :as apprentice] :reload)
+(require '[musical-creativity.composers.apprentice.player :refer :all] :reload)
+
+(apprentice/apprentice play-all)
+```
+
+Or from the command line:
 
 ```
 lein midje musical-creativity.integration.t-apprentice
