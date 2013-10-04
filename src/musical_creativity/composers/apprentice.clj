@@ -194,15 +194,9 @@
 (defn compound-associations
   "aggregates all of the same word weightings into single entries."
   [associations]
-  (distinct
-   (map (fn [[association-1 weight-1]]
-          (list association-1
-                (reduce (fn [tally ass]
-                          (if (= (first ass) association-1)
-                            (+ tally (second ass))
-                            tally)) 0
-                            associations)))
-        associations)))
+  (map (fn [[k v]]
+         (list k (reduce (fn [sum [_ weight]] (+ sum weight)) 0 v)))
+       (group-by (fn [[name _]] name) associations)))
 
 (defn store-sentence
   "associations are of four types:
