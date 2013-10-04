@@ -332,7 +332,7 @@
           {:keyword      (:keyword sentence-context)
            :last-word    (:last-word sentence-context)
            :successor    (last successor)
-           :predecessors (last predecessor)}]
+           :predecessor (last predecessor)}]
       (update-or-create-word word word-context sentence sentence-type name)
       (when-not (negative? sentence-type)
         (doseq [item sentence]
@@ -635,8 +635,8 @@
                             (filter #(= 'apprentice (:origination %))
                                     (vals @*sentences-store*)))))
            :else (let [reply (apprentice-reply input)]
-                   (message response)
-                   (player-fn [response]))))
+                   (message reply)
+                   (player-fn [reply]))))
         (recur))))
 
 (defn apprentice []
