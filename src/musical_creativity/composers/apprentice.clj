@@ -29,7 +29,8 @@
   (reset! *yes* ())
   (reset! *no* ())
   (reset! *question-lexicon* {:incipients () :cadences ()})
-  (reset! *answer-lexicon*   {:incipients () :cadences ()}))
+  (reset! *answer-lexicon*   {:incipients () :cadences ()})
+  (reset! music-store {}))
 
 (def play-sentences "+")
 
@@ -52,13 +53,14 @@
         (Integer/parseInt (last (string/split (str y) #"-")))))
    (keys @*sentences-store*)))
 
+(def music-store (atom {}))
+(defn find-music [id] (id @music-store))
+
 (defn lookup-sentence [sentence] (@*sentences-store* sentence))
 (defn make-sentence [id atts]  (reset! *sentences-store* (assoc @*sentences-store* id atts)))
 (defn update-sentence [id field val] (reset! *sentences-store* (assoc-in @*sentences-store* [id field] val))
   val)
 (defn sentence-seen? [sentence] (contains? @*sentences-store* sentence))
-
-(defn lookup-musical-word [word] (word {}))
 
 (defn all-words [] (keys @*words-store*))
 (defn lookup-word [word]  (@*words-store* word))
@@ -409,7 +411,7 @@
 (defn get-music-associations [associations]
   (cond
    (empty? associations) ()
-   (:events (lookup-musical-word (ffirst associations)))
+   (:events (lookup-word (ffirst associations)))
    (cons (first associations)
          (get-music-associations (rest associations)))
    :else (get-music-associations (rest associations))))
@@ -417,7 +419,7 @@
 (defn get-music-words [words]
   (cond
    (empty? words) ()
-   (:events (lookup-musical-word (first words)))
+   (:events (lookup-word (first words)))
    (cons (first words)
          (get-music-words (rest words)))
    :else (get-music-words (rest words))))
@@ -533,7 +535,7 @@
                  (first (:sentence (lookup-sentence (second (all-sentences))))))
   (list positive-type))
 
-(defn musical-statement? [sentence] (:events (lookup-musical-word (first sentence))))
+(defn musical-statement? [sentence] (:events (lookup-word (first sentence))))
 
 (defn reply [type sentence]
   (cond
@@ -561,18 +563,20 @@
 
     (print-associations)))
 
-(defn find-music [key] {})
-
 (defn fix-end-of-music-sentences
   "attaches the punctuation to the end of the music sentence."
   [sentence]
   (let [object (nth sentence (- (count sentence) 2))
-        the-name (drop (- (count sentence) 2) sentence)]
+        the-name (symbol (clojure.string/join sentence))]
+    (println :name object)
+    (println :the-name the-name)
+
     (make-word the-name {:name (:name (find-music object))
                          :timing (:timing (find-music object))
                          :destination (:destination (find-music object))
                          :events (:events (find-music object))
-                         :usage (:usage (find-music object))})
+                         :usage (:usage (find-music object))
+                         :used-before? false})
     (concat (drop-last 2 sentence) (list the-name))))
 
 (defn make-timings [thing] thing)
@@ -595,7 +599,7 @@
        (not (nil? (first response)))
        (:events (lookup-word (first response)))))
 
-(defn- apprentice-reply [input]
+(defn apprentice-reply [input]
   (let [input-sentence-type (get-sentence-type input)
         _ (put-sentence-into-database input)
         response (reply input-sentence-type input)]

@@ -1,6 +1,7 @@
 (ns musical-creativity.composers.apprentice.music
   (:require [musical-creativity.composers.apprentice :refer :all]
-            [musical-creativity.util :refer :all]))
+            [musical-creativity.util :refer :all]
+            [musical-creativity.composers.apprentice.bach :refer :all]))
 
 (defn remove-cadences
   "removes the cadences from the choices."
@@ -114,3 +115,14 @@
 (defn create-a-work
   [sentences]
   (reveal-the-hidden-events (apply concat (reverse (return-only-music-sentences sentences)))))
+
+(defn preload! []
+  (reset! music-store {})
+
+  (doseq [item '(bach-1-1 bach-1-2 bach-1-3 bach-1-4 bach-1-5 bach-1-6)]
+    (reset! music-store (assoc @music-store item {:name '(item)
+                                                  :events (var-get (resolve (symbol (str "musical-creativity.composers.apprentice.bach/" item))))
+                                                  :destination ()
+                                                  :usage ()
+                                                  :timing ()})))
+  (fix-end-of-music-sentences '(bach-1-1 !)))
