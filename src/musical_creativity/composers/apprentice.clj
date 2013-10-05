@@ -22,6 +22,8 @@
 (def ^:dynamic *question-lexicon* (atom {:incipients () :cadences ()}))
 (def ^:dynamic *answer-lexicon*   (atom {:incipients () :cadences ()}))
 
+(def  ^:dynamic *music-store* (atom {}))
+
 (defn reset-all! []
   (reset! *counter* 0)
   (reset! *sentences-store* {})
@@ -30,7 +32,7 @@
   (reset! *no* ())
   (reset! *question-lexicon* {:incipients () :cadences ()})
   (reset! *answer-lexicon*   {:incipients () :cadences ()})
-  (reset! music-store {}))
+  (reset! *music-store* {}))
 
 (def play-sentences "+")
 
@@ -53,8 +55,7 @@
         (Integer/parseInt (last (string/split (str y) #"-")))))
    (keys @*sentences-store*)))
 
-(def music-store (atom {}))
-(defn find-music [id] (id @music-store))
+(defn find-music [id] (id @*music-store*))
 
 (defn lookup-sentence [sentence] (@*sentences-store* sentence))
 (defn make-sentence [id atts]  (reset! *sentences-store* (assoc @*sentences-store* id atts)))
