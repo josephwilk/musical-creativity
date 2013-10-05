@@ -107,7 +107,7 @@
   (cond
    (<= (math/abs interval) 12)
    interval
-   (< interval 0)
+   (neg? interval)
    (reduce-interval (+ interval 12))
    :else
    (reduce-interval (- interval 12))))
@@ -285,7 +285,7 @@
   (loop [beats (start-beats db-name)
          counter 1
          start true]
-    (when-not (empty? beats)
+    (when (seq beats)
       (let [name (make-name db-name counter)
             instance (make-beat name beats)]
         (reset! beats-store (assoc @beats-store name instance))
@@ -365,7 +365,7 @@
 (defn triad?
   "Checks to see if the events are a triad."
   [events]
-  (when-not (empty? events)
+  (when (seq events)
     (let [pitches (get-pitches events)
           pitches-class-set (create-pitch-class-set pitches)
           pitch-classes (get-smallest-set pitches-class-set)]
@@ -742,9 +742,8 @@
   "Checks to see if its args match mod-12."
   [one two]
   (match-chord? (sort < one)
-              (apply concat
-                     (map project-octaves two))
-              (math/floor (/ (count one) 4))))
+                (mapcat project-octaves two)
+                (math/floor (/ (count one) 4))))
 
 (defn all-members?
   "Checks to see if its first arg members are present in second arg."
@@ -918,7 +917,7 @@
 (defn- match-tonic?
   "Returns true if the events are tonic."
   [last-beat-events projected-octaves small large]
-  (when-not (empty? last-beat-events)
+  (when (seq last-beat-events)
     (and
      (all-members? (map second last-beat-events) projected-octaves)
      (match-harmony? (sort < (map second last-beat-events)) small )

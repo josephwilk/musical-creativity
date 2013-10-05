@@ -73,16 +73,14 @@
   "Returns fuzzy complement (1 - membership) of a list."
   ([alist] (fz-complement alist 1.0))
   ([alist compvalue]
-     (if (empty? alist)
-       nil
+     (when (seq alist)
        (cons (- 1 (first alist))
              (fz-complement (rest alist) compvalue)))))
 
 (defn fz-intersect
   "Returns fuzzy intersection (minimums) of two lists"
   [lst1 lst2]
-  (if (empty? lst1)
-    nil
+  (when (seq lst1)
     (cons (minumum (first lst1) (first lst2))
           (fz-intersect (rest lst1) (rest lst2)))))
 
@@ -178,7 +176,7 @@
   [last-solution]
   (let [test (first (top-n-positions last-solution 1))]
     (cond
-     (= 0 test) '(0 1 1)
+     (zero? test) '(0 1 1)
      (= 1 test) '(1 1 0)
      :else
      '(1 0 0))))
@@ -198,7 +196,7 @@
 (defn fz-un
   "Returns fuzzy union (maximums) of two lists."
   [list1 list2]
-  (when-not (empty? list1)
+  (when (seq list1)
     (cons (maximum (first list1) (first list2))
           (fz-union (rest list1) (rest list2)))))
 
@@ -216,7 +214,7 @@
 (defn favor-root-for-tonic
   "Gives slight edge to root position for tonic"
   [pitch-class]
-  (if (= 0 pitch-class)
+  (if (zero? pitch-class)
     '(0.1 0 0)
     '(0 0 0)))
 

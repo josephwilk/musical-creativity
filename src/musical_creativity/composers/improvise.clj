@@ -148,8 +148,8 @@
        (cons (map (fn [event]
                     (concat (list current-time)
                             (list (second event))
-                            (list (* (/ (third event) (- (second (first old-timings)) (first (first old-timings))))
-                                     (- (second (first new-timings)) (first (first new-timings)))))
+                            (list (* (/ (third event) (- (second (first old-timings)) (ffirst old-timings)))
+                                     (- (second (first new-timings)) (ffirst new-timings))))
                             (drop  3 event)))
                   (first groupings))
              (set-timings (rest new-timings)
@@ -167,7 +167,7 @@
   "returns all of the events with the same initial ontime at the nead of events."
   ([events] (get-all-simultaneous-attacks events (ffirst events)))
   ([events time]
-      (if (or (empty? events) (not (= time (ffirst events)))) ()
+     (if (or (empty? events) (not= time (ffirst events))) ()
           (cons (first events)
                 (get-all-simultaneous-attacks (rest events) time)))))
 

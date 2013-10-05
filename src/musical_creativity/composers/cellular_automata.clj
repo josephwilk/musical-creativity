@@ -102,7 +102,7 @@
   (let [position (or position 1)]
     (if (empty? old-row) []
         (cons (apply-rule (take 3 old-row) rules position timing)
-              (create-the-row (rest old-row) rules (+ 30 timing) (+ 1 position))))))
+              (create-the-row (rest old-row) rules (+ 30 timing) (inc position))))))
 
 (defn create-rows [number start rules & [up-number]]
   (println start)
@@ -111,7 +111,7 @@
     (when-not (= number up-number)
       (let [row (create-the-row start rules up-number)
             new-row (cons "0" (butlast row))]
-        (create-rows number new-row rules (+ 1 up-number))
+        (create-rows number new-row rules (inc up-number))
         @events))))
 
 (defn compose [& [rules]]

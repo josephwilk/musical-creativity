@@ -6,7 +6,7 @@
 (defn run-cosine-fn [number x]
   (if (zero? number) []
       (cons (/ 1 (Math/cos (math/expt x 2)))
-            (run-cosine-fn (- number 1) (+ 1 x)))))
+            (run-cosine-fn (dec number) (inc x)))))
 
 (defn normalize [low1 high1 number low2 high2]
   (math/round (+ (* (/ (- number low1)(- high1 low1))(- high2 low2)) low2)))

@@ -146,7 +146,7 @@
   (cond
    (nil? interval)
    []
-   (> interval 0)
+   (pos? interval)
    (nth (member current-note scale) interval)
    :else
    (nth (member current-note (reverse scale)) (math/abs interval))))
@@ -346,7 +346,7 @@
   "reduces diatonic intervals to within the octave."
   (cond
    (and (> (math/abs interval) 7)
-        (< interval 0))
+        (neg? interval))
    (reduce-to-within-octave (+ interval 7))
    (> (math/abs interval) 7)
    (- interval 7)
@@ -372,7 +372,7 @@
 (defn choose-from-scale
   "gets the appropriate pitch from the current scale based on the interval class."
   [current-note interval-class scale]
-  (if (> interval-class 0)
+  (if (pos? interval-class)
     (nth (member current-note scale) (get-diatonic-interval interval-class))
     (let [interval (math/abs (get-diatonic-interval interval-class))
           notes (member current-note (reverse scale))]
@@ -575,11 +575,11 @@
    (empty? rules)
    nil
    (and (= (first rule)
-           (first (first rules)))
+           (ffirst rules))
         (match-interval-rule (rest rule) (rest (first rules))))
    true
    (and (= (first rule)
-           (first (first rules)))
+           (ffirst rules))
         (= (count (second rule))
            (count (second (first rules))))
         (match-rule rule (first rules)))
@@ -636,7 +636,7 @@
     (if correct-choices
       (reset! *look-ahead* true)
       (reset! *look-ahead* false))
-    (if (> (count correct-choices) 0)
+    (if (pos? (count correct-choices))
       (look-ahead-for-best-choice cantus-firmus last-notes correct-choices)
       (first correct-choices))))
 

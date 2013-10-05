@@ -178,12 +178,11 @@
          max2 -1000.0]
     (if (>= input-index @number-of-inputs)
       [max1 max2]
-      (do
-        (let [new-max1 (if (< max1 (aget a1 input-index)) (aget a1 input-index) max1)
-              new-max2 (if (< max2 (aget a2 input-index)) (aget a2 input-index) max2)]
-             (recur (inc input-index)
-                    new-max1
-                    new-max2))))))
+      (let [new-max1 (if (< max1 (aget a1 input-index)) (aget a1 input-index) max1)
+            new-max2 (if (< max2 (aget a2 input-index)) (aget a2 input-index) max2)]
+        (recur (inc input-index)
+               new-max1
+               new-max2)))))
 
 (defn update-f1-stm-arrays []
   (doall
