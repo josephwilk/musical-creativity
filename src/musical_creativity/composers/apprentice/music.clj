@@ -103,12 +103,12 @@
 (defn tester-for-hidden-events
   "test if sentence is a music sentence."
   [sentence]
-  (and (sentence-seen? (first sentence))
-       (:events (lookup-sentence (first sentence)))))
+  (and (word-seen? (first sentence))
+       (:events (lookup-word (first sentence)))))
 
 (defn return-only-music-sentences
   [sentences]
-  (let [real-sentences (apply concat (map (fn [x] (:sentence (eval x))) sentences))]
+  (let [real-sentences (mapcat (fn [[k v]] (:sentence v)) sentences)]
     (remove (fn [sentence] (when-not (tester-for-hidden-events sentence) true)) real-sentences)))
 
 (defn create-a-work
