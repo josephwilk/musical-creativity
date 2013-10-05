@@ -353,7 +353,7 @@
      :else 's)))
 
 (defn parse-sentence [sentence name]
-  (update-sentence name :parse-it (map (fn [word] (figure-speac word)) sentence)))
+  (update-sentence name :parse-it (map figure-speac sentence)))
 
 (defn define-incipients [sentence sentence-type]
   (if (question? sentence-type)
@@ -455,7 +455,7 @@
                (get-music-associations (:associations (lookup-word current-word)))))]
     (or test
         (choose-one
-         (get-music-words (map (fn [association] (first association) ) (:associations (lookup-word current-word))))))))
+         (get-music-words (map first (:associations (lookup-word current-word))))))))
 
 (defn current-words-list [current-word cadences type]
   (loop [current-word current-word
@@ -473,12 +473,11 @@
                (get-word-associations (:associations (lookup-word current-word)))))]
     (or test
         (choose-one
-         (get-word-words (map (fn [association] (first association)) (:associations (lookup-word current-word))))))))
+         (get-word-words (map first (:associations (lookup-word current-word))))))))
 
 (defn build-musical-reply [type sentence]
   (let [choices (compound-associations
-                 (apply concat
-                        (map (fn [word] (get-music-associations (:associations (lookup-word word)))) sentence)))
+                 (mapcat (fn [word] (get-music-associations (:associations (lookup-word word)))) sentence))
         incipients (if (question? type)
                      (remove-all (list @*no*)
                                 (get-music-words (:incipients @*answer-lexicon*)))
@@ -600,7 +599,7 @@
   (let [input-sentence-type (get-sentence-type input)
         _ (put-sentence-into-database input)
         response (reply input-sentence-type input)]
-    (when-not (empty? response)
+    (when (seq response)
       (let [name (str "sentence-" @*counter*)
             sentence-type (last (explode (last response)))]
         (make-sentence name {:name 'me
@@ -626,7 +625,7 @@
           (cond
            (= play-sentences (str (first input)))
            (player-fn (flatten
-                       (map #(:sentence %)
+                       (map :sentence
                             (filter #(= 'apprentice (:origination %))
                                     (vals @*sentences-store*)))))
            :else (let [reply (apprentice-reply input)]
