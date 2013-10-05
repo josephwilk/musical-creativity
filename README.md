@@ -82,13 +82,28 @@ Experiments with models for computers generating music.
 (apprentice/apprentice play-all)
 ```
 
-Or from the command line:
+An example musical conversion:
 
 ```
-lein midje musical-creativity.integration.t-apprentice
+user> ceg!
+user> gbd?
+alice> ceg!
+user> ceg fac gbd?
+alice> fac ceg ceg!
+user> ceg fac gbd ceg! 
+alice> gbd?
+user> ceg!
+alice> gbd?
+user> gbd?
+alice> ceg!
 ```
 
-Example non musical dialog:
+Weightings:
+
+![Weightings](http://s7.postimg.org/r1igtc3wr/png8043032250889381797.png)
+
+
+A non musical dialog example:
 
 ```
 user> hello!
