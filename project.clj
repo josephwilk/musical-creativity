@@ -6,7 +6,8 @@
                  [org.clojure/math.numeric-tower "0.0.2"]
                  [cheshire "5.2.0"]
                  [clj-http "0.7.6"]
-                 [quil "1.6.0"]]
+                 [quil "1.6.0"]
+                 [aysylu/loom "0.3.1"]]
   :profiles {:dev {:dependencies [[midje "1.5.1"]]
                    :plugins [[lein-kibit "0.0.8"]
                              [lein-midje "3.0.0"]]}})
