@@ -944,15 +944,13 @@
   (reset! early-exit? (empty? (:destination-notes (find-beat current-beat))))
   (or
    @early-exit?
-   (if (and (> counter 36)
+   (when (and (> counter 36)
             (if (= tonic 'minor)
               (and (> (find-events-duration (:events (find-beat current-beat))) beat-size)
                    (match-tonic-minor? (:events (find-beat current-beat))))
               (and (> (find-events-duration (:events (find-beat current-beat))) beat-size)
                    (match-bach-tonic? (:events (find-beat current-beat))))))
-     (do
-       (reset! end? true)
-       true))))
+     (reset! end? true))))
 
 (defn build-events-for-beat [counter current-beat]
   (loop [events []
