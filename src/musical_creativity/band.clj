@@ -26,21 +26,13 @@
 
 (defn find-instrument [id]
   (case id
-    117 instruments/tb303
-    102 instruments/groan
-    111 instruments/woah
-    99 instruments/shudder
-    90 instruments/bell
-    96 instruments/organ
-
-    ;74 flute-fn
-    88 bass-fn
-    118 tom-fn
-    119 kick-fn
-    instruments/piano))
+    81 instruments/sawtooth
+    90 instruments/sawish
+    nil))
 
 (defn band-fn [event start-time]
-  (let [play-with-instrument (find-instrument (:instrument event))]
+  (when-let [play-with-instrument (find-instrument (:instrument event))]
+    (println :instrument play-with-instrument)
     (play-with-instrument event start-time)))
 
 (defn play [events]
