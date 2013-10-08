@@ -37,6 +37,16 @@
   (bell-by-freq (note->hz (note musical-note))))
 
 (definst sawish-by-freq [freq 440 duration 1500 vibrato 8 depth 1 volume 1.0]
+(definst sawtooth-by-freq [freq 440 duration 1500 volume 1]
+  (let [envelope (env-gen (perc 0.1 (/ duration 1000)) :action FREE)
+        wob (saw freq)
+        wob (* wob 0.5 volume)
+        wob (* wob envelope)]
+    wob))
+
+(defn play-sawtooth [_ musical-note & rgs]
+  (sawtooth-by-freq  (note->hz (note musical-note))))
+
   (let [envelope (env-gen (perc 0.2 (/ duration 1000)) :action FREE)]
     (-> (square freq)
         (* 0.7 volume)
@@ -212,6 +222,9 @@
 
 (defn sawnoff [event start-time]
   (play-event event start-time play-sawnoff))
+
+(defn sawtooth [event start-time]
+  (play-event event start-time play-sawtooth))
 
 (defn groan [event start-time]
   (play-event event start-time play-groan))
