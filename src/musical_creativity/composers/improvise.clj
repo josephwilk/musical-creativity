@@ -3,7 +3,10 @@
    [musical-creativity.util :refer :all]
    [musical-creativity.events :refer :all]
    [clojure.string :as str]
+
    [data.georgiaiam :refer :all]
+   [data.midnight :refer :all]
+   [data.one-summers-day :refer :all]
    [data.forgray :refer :all]
    [data.fourbros :refer :all]))
 
@@ -18,36 +21,6 @@
 
 (def seed 1)
 
-(defn sort-by-first-element [lists]
-  (sort (fn [[x & _] [y & _]] (< x y))  lists))
-
-(defn implode [list]
-  (str/join "" list))
-
-(defn explode [atom]
-  (vec atom))
-
-(defn get-first-pitch [[event & _]]
-  "returns the first pitch in events."
-  (pitch-of event))
-
-(defn within-range [number range]
-  "returns t if the number is within or equal to the boundaries of the range arg."
-  (if (and (>= number (first range))
-           (<= number (third range))) true))
-
-(defn all-equal? [set-1 set-2]
-  (= set-1 set-2))
-
-(defn find-in-lexicon [name]
-  (@*lexicon-store* name))
-
-(defn find-in-grouping [name]
-  (@*groupings-store* name))
-
-(defn resolve-db [db]
-  (var-get (resolve db)))
-
 (def new-lexicon
   {:grouping-names []
    :last-choice []})
@@ -59,23 +32,31 @@
    :events []
    :lexicon []})
 
-(defn interspace-hyphens [col]
-  "places hyphens between the various symbols in its lits arg."
-  (str/join "-" col))
+(defn implode [list] (str/join "" list))
+(defn explode [atom] (vec atom))
+
+(defn get-first-pitch [[event & _]] (pitch-of event))
+
+(defn within-range [number range]
+  (if (and (>= number (first range))
+           (<= number (third range))) true))
+
+(defn exists-in-lexicon? [name] (contains? @*lexicon-store* name))
+(defn find-in-lexicon [name] (@*lexicon-store* name))
+(defn find-in-grouping [name] (@*groupings-store* name))
+
+(defn resolve-db [db] (var-get (resolve db)))
+
+(defn interspace-hyphens [col] (str/join "-" col))
 
 (defn make-new-name-of-object [name pitches]
-  "creates the names of objects that follow other objects."
   (str name "[" (inc seed) "]" "-" (interspace-hyphens pitches)))
 
 (defn make-name-of-object [name pitches]
-  "makes names for objects."
   (str name "[" (inc seed) "]" "-" (interspace-hyphens pitches)))
 
 (defn make-name-of-lexicon [pitches]
   (str "lexicon-" (interspace-hyphens pitches)))
-
-(defn contains-in-lexicon? [name]
-  (contains? @*lexicon-store* name))
 
 (defn store-grouping! [lexicon-name grouping]
   (let [lexicon-record (or (@*lexicon-store* lexicon-name) new-lexicon)
@@ -167,9 +148,10 @@
   "returns all of the events with the same initial ontime at the nead of events."
   ([events] (get-all-simultaneous-attacks events (ffirst events)))
   ([events time]
-     (if (or (empty? events) (not= time (ffirst events))) ()
-          (cons (first events)
-                (get-all-simultaneous-attacks (rest events) time)))))
+     (if (or (empty? events) (not= time (ffirst events)))
+       ()
+       (cons (first events)
+             (get-all-simultaneous-attacks (rest events) time)))))
 
 (defn clip
   "clips the endings off of events which extend beyond the entrance of a new event."
@@ -296,18 +278,18 @@
            true
            (let [name (make-name-of-object source (map second (second (first groupings))))
                  destination-name (if (nil? (second groupings))
-                                        'end
-                                        (make-new-name-of-object source (map second (second (second groupings)))))]
-             (let [new-grouping {:name source
-                                 :timing (first (first groupings))
-                                 :destination destination-name
-                                 :events (second (first groupings))}]
+                                    'end
+                                    (make-new-name-of-object source (map second (second (second groupings)))))
+                 new-grouping {:name source
+                               :timing (first (first groupings))
+                               :destination destination-name
+                               :events (second (first groupings))}]
 
-               (reset! *groupings-store* (assoc @*groupings-store* name new-grouping)))
-
+             (reset! *groupings-store* (assoc @*groupings-store* name new-grouping))
              (reset! *grouping-names* (concat  @*grouping-names* (list name)))
+
              (when beginning
-               (reset! *first-groupings* (concat  @*first-groupings* (list name))))
+               (reset! *first-groupings* (concat @*first-groupings* (list name))))
              (recur (rest groupings) false)))))
      @*grouping-names*))
 
@@ -316,7 +298,7 @@
    (create-database source)
    (doall (map (fn [grouping]
                  (let [lexicon-name (make-name-of-lexicon (map second (:events (find-in-grouping grouping))))]
-                   (if (contains-in-lexicon? lexicon-name)
+                   (if (exists-in-lexicon? lexicon-name)
                      (do
                        (store-grouping! lexicon-name grouping)
                        (store-lexicon! grouping lexicon-name))
@@ -357,9 +339,9 @@
     (reduce-ties events)))
 
 (defn improvise [databases]
-  (when-not (all-equal? databases @*database-names*)
+  (when (not= databases @*database-names*)
     (create-a-complete-database databases))
   (improvise-it))
 
 (defn compose []
-  (map midi-to-event (improvise '(data.forgray/forgray data.fourbros/fourbros))))
+  (map midi-to-event (improvise '(data.one-summers-day/one-summers-day))))
