@@ -225,7 +225,7 @@
 
 (defn choose-beginning-grouping
   "chooses randomly from its list arg but avoids the end and rests."
-  [col]
+  [col last-start]
   (let [test (nth col (rand-int (count col)))]
     (cond
      (empty? (rest col)) (first col)
@@ -233,9 +233,9 @@
       (not= (:destination (find-in-grouping test)) 'end)
       (not (zero? (get-first-pitch (:events (find-in-grouping test)))))
       (not= test (:last-choice (find-in-lexicon (:lexicon (find-in-grouping test)))))
-      (and (> (count col) 1) (not= @*the-last-first-choice* test)))
+      (and (> (count col) 1) (not= last-start test)))
      test
-     :else (choose-beginning-grouping col))))
+     :else (choose-beginning-grouping col last-start))))
 
 (defn check-for-only-ends [groupings]
   "checks to see if the grouping contains only ending objects."
@@ -260,12 +260,11 @@
 
 (defn choose-a-random-start-grouping
   "returns a randomly chosen object for begining a recombination."
-  [lexicons]
+  [lexicons last-start]
   (let [lexicon-without-ends (remove-ends lexicons)
         lexicon-name (choose-one lexicon-without-ends)
         grouping-names (:grouping-names (find-in-lexicon lexicon-name))]
-    (reset! *the-last-first-choice* (choose-beginning-grouping grouping-names)))
-  @*the-last-first-choice*)
+    (choose-beginning-grouping grouping-names last-start)))
 
 (defn create-database
   ([source] (create-database source true))
@@ -296,25 +295,22 @@
 (defn create-database-and-put-into-lexicons [source events]
    (reset! *groupings* (collect-groupings events))
    (create-database source)
-   (doall (map (fn [grouping]
-                 (let [lexicon-name (make-name-of-lexicon (map second (:events (find-in-grouping grouping))))]
-                   (if (exists-in-lexicon? lexicon-name)
-                     (do
-                       (store-grouping! lexicon-name grouping)
-                       (store-lexicon! grouping lexicon-name))
-                     (do
-                       (store-grouping! lexicon-name grouping)
-                       (store-lexicon! grouping lexicon-name)
-                       (store-lexicon-name! lexicon-name)))))
-               @*grouping-names*))
+   (doseq [grouping @*grouping-names*]
+     (let [lexicon-name (make-name-of-lexicon (map second (:events (find-in-grouping grouping))))]
+       (if (exists-in-lexicon? lexicon-name)
+         (do
+           (store-grouping! lexicon-name grouping)
+           (store-lexicon! grouping lexicon-name))
+         (do
+           (store-grouping! lexicon-name grouping)
+           (store-lexicon! grouping lexicon-name)
+           (store-lexicon-name! lexicon-name)))))
    @*lexicons*)
 
 (defn create-a-complete-database [names-of-eventlists]
   (reset! *database-names* (distinct (concat names-of-eventlists @*database-names*)))
-  (doall
-   (map (fn [event-list-name]
-          (create-database-and-put-into-lexicons event-list-name (resolve-db event-list-name)))
-        names-of-eventlists))
+  (doseq [event-list-name names-of-eventlists]
+    (create-database-and-put-into-lexicons event-list-name (resolve-db event-list-name)))
   true)
 
 (defn remove-data! []
@@ -326,8 +322,9 @@
   (reset! *database-names* ()))
 
 (defn choose-grouping []
-  (let [chosen-grouping (choose-a-random-start-grouping @*lexicons*)
+  (let [chosen-grouping (choose-a-random-start-grouping @*lexicons* @*the-last-first-choice*)
         next-choice (:destination (find-in-grouping chosen-grouping))]
+    (reset! *the-last-first-choice* chosen-grouping)
     (if (= next-choice 'end)
       (list chosen-grouping)
       (cons chosen-grouping (sequence-through-groupings next-choice)))))
