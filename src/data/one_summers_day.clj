@@ -5,5 +5,5 @@
                                        (:pitch event)
                                        (:velocity event)
                                        (:channel event)
-                                       (:instrument event)]) (csv->events "one_summers_day.csv")))
+                                       (:instrument event)]) (csv->events "data/one_summers_day.csv")))
 

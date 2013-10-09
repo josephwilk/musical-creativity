@@ -5,4 +5,4 @@
                                 (:pitch event)
                                 (:velocity event)
                                 (:channel event)
-                                (:instrument event)]) (csv->events "midnight.csv")))
+                                (:instrument event)]) (csv->events "data/midnight.csv")))
