@@ -7,6 +7,7 @@
    [data.georgiaiam :refer :all]
    [data.midnight :refer :all]
    [data.one-summers-day :refer :all]
+   [data.monsters :refer :all]
    [data.forgray :refer :all]
    [data.fourbros :refer :all]))
 
@@ -31,6 +32,9 @@
    :destination []
    :events []
    :lexicon []})
+
+(defn sort-by-first-element [lists]
+  (sort (fn [[x & _] [y & _]] (< x y))  lists))
 
 (defn implode [list] (str/join "" list))
 (defn explode [atom] (vec atom))
@@ -341,4 +345,4 @@
   (improvise-it))
 
 (defn compose []
-  (map midi-to-event (improvise '(data.one-summers-day/one-summers-day))))
+  (map midi-to-event (improvise '(data.one-summers-day/one-summers-day data.midnight/midnight data.monsters/events))))

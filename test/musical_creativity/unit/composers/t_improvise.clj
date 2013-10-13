@@ -26,7 +26,7 @@
   '(lexicon-77-36 lexicon-77-36-74 lexicon-74-70-34))
 
 (fact "choose begining grouping"
-  (choose-beginning-grouping '("fourbros [110]-62-65-68-44-41-51")) => "fourbros [110]-62-65-68-44-41-51")
+  (choose-beginning-grouping '("fourbros [110]-62-65-68-44-41-51") ()) => "fourbros [110]-62-65-68-44-41-51")
 
 (fact "reduce ties"
   (reduce-ties '((0 35 133 1 102) (0 55 133 1 105))) => '((0 35 133 1 102) (0 55 133 1 105))

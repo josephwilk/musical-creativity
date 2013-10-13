@@ -43,6 +43,3 @@
 
 (defn third [list]
   (nth list 2))
-
-(defn sort-by-first-element [lists]
-  (sort (fn [[x & _] [y & _]] (< x y))  lists))
