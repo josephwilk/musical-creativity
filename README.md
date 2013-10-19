@@ -35,7 +35,7 @@ Experiments with models for computers generating music.
 (musician/play (markov/compose) piano)
 (musician/play (markov/compose) ping)
 
-(musician/play (markov/compose data.bach/bach1 [57 60 69] 50) piano)
+(musician/play (markov/compose data.bach/bach1 [57 60 69] 1 50) piano)
 
 ;Fuzzy
 (require '[musical-creativity.composers.fuzzy :as fuzzy] :reload)
@@ -90,7 +90,7 @@ user> gbd?
 alice> ceg!
 user> ceg fac gbd?
 alice> fac ceg ceg!
-user> ceg fac gbd ceg! 
+user> ceg fac gbd ceg!
 alice> gbd?
 user> ceg!
 alice> gbd?
@@ -141,5 +141,3 @@ Based on exercises from:
 ![Computer Models of Musical Creativity](http://mitpress.mit.edu/covers/9780262033381.jpg)
 
 Computer Models of Musical Creativity http://mitpress.mit.edu/books/computer-models-musical-creativity
-
-
