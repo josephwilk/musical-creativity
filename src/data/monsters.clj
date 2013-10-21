@@ -7,3 +7,4 @@
                               (:channel event)
                               (:instrument event)]) (csv->events "data/monsters.csv")))
 
+(def monsters-raw (csv->events "data/monsters.csv"))

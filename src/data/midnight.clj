@@ -6,3 +6,5 @@
                                 (:velocity event)
                                 (:channel event)
                                 (:instrument event)]) (csv->events "data/midnight.csv")))
+
+(def midnight-raw (csv->events "data/midnight.csv"))
