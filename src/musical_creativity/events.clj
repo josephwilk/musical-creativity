@@ -49,12 +49,14 @@
                  (random-make (rest pitch-groupings) (+ ontime duration)))))))
 
 (defn make [pitch-groupings & [ontime interval]]
-  (let [ontime (or ontime 0)]
-    (if (empty? pitch-groupings)
-      []
-      (let [duration (or interval 300)]
-        (concat [(make-event ontime (first pitch-groupings))]
-                 (make (rest pitch-groupings) (+ ontime duration) interval))))))
+  (loop [fixontime                  (or ontime 0)
+         duration                   (or interval 300)
+         [head-group & more-groups] pitch-groupings
+         acc                        []]
+    (if (empty? more-groups)
+      acc
+      (recur (+ fixontime duration) duration more-groups
+             (conj acc (make-event fixontime head-group))))))
 
 (defn make-pairs
   ([pitch-groupings] (make-pairs pitch-groupings 0))
