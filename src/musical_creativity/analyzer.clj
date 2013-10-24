@@ -42,3 +42,13 @@ this is only a very random approach to the concept of voice: it chooses a random
                (map #(if (= 1 (count %1)) %1 (disj %1 %2))
                     material
                     picked))))))
+
+
+(defn extract-durations [grouped-events]
+  (let [[start &  timings] (map #(-> % first :time) grouped-events)]
+    (loop [[current & more-times] timings
+           last-time              start
+           acc                    []]
+      (if (nil? current)
+        acc
+        (recur more-times current (conj acc (Math/abs (- current last-time))))))))

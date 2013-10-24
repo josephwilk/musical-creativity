@@ -40,6 +40,15 @@
    :pitch (int (extract-pitch data))
    :channel (or channel 1)})
 
+
+(defn fill-default [ontime data]
+  (merge {:time     ontime
+          :log      nil
+          :pitch    64
+          :duration 200
+          :channel  1}
+         data))
+
 (defn random-make [pitch-groupings & [ontime]]
   (let [ontime (or ontime 0)]
     (if (empty? pitch-groupings)
@@ -57,6 +66,16 @@
       acc
       (recur (+ fixontime duration) duration more-groups
              (conj acc (make-event fixontime head-group))))))
+
+(defn make-from-maps [input-maps ontime]
+  (loop [current               ontime
+         [data & more-data]    input-maps
+         acc                   []]
+    (if (nil? data)
+      acc
+      (recur (+ current (:duration data))
+             more-data
+             (conj acc (fill-default current data))))))
 
 (defn make-pairs
   ([pitch-groupings] (make-pairs pitch-groupings 0))

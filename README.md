@@ -51,6 +51,30 @@ analyzer/group-by-time analyzer/extract-voices-min-distance)) [57] 16
 analyzer/group-by-time analyzer/extract-voices-min-distance)) [57] 16
 (* 16 5)) piano)
 
+;multiple markov models
+(let [lead-voice    1
+      standard-prep #(-> %
+                         analyzer/group-by-time
+                         analyzer/extract-voices-min-distance)
+      dur-prep      #(->> %
+                    analyzer/group-by-time
+                    analyzer/extract-durations
+                    (map (fn [d] {:duration d}))
+                    vector)]
+    (markov/compose-multi-model
+     data.bach/bach1
+     50
+     :pitch     (markov/transition-source standard-prep
+                                          1 8 1 lead-voice)
+     :voices    (markov/transition-source #(-> %
+                                               analyzer/group-by-time
+                                               vector)
+                                          1 4 1 0)
+     :harmonics (markov/harmonic-source standard-prep lead-voice [0 2 3])
+     :duration  (markov/transition-source dur-prep
+                                          1 4 4 :all)
+     :velocity  (markov/constant-source 128)))
+
 ;Fuzzy
 (require '[musical-creativity.composers.fuzzy :as fuzzy] :reload)
 (musician/play (fuzzy/compose) piano)
