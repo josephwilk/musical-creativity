@@ -1,4 +1,4 @@
-(ns musical-creativity.unit.experiments.analogy
+(ns musical-creativity.unit.experiments.t-analogy
   (:require
    [midje.sweet :refer :all]
    [musical-creativity.experiments.analogy :refer :all]))
