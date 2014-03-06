@@ -51,8 +51,8 @@
 (defn all-sentences []
   (sort
    (fn [x y]
-     (> (Integer/parseInt (last (string/split (str x) #"-")))
-        (Integer/parseInt (last (string/split (str y) #"-")))))
+     (> (Integer/parseInt (last (string/split (str x) #"_")))
+        (Integer/parseInt (last (string/split (str y) #"_")))))
    (keys @*sentences-store*)))
 
 (defn find-music [id] (id @*music-store*))
