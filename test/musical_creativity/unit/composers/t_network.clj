@@ -12,7 +12,7 @@
   (learn-the-patterns [[0 0 0 0 1]] 50))
 
 (fact "find largest output"
-  (find-the-largest-output @output-array [false false false false false]) => 0
+  (find-the-largest-output @output [false false false false false]) => 0
   (find-the-largest-output [1 1 0 0 3 2] [false false false false false]) => 4)
 
 (fact "update f1 stm arrays"
@@ -38,7 +38,8 @@
   '(((0.0 0.1 0.2 0.25 0.35) 1) ((0.2 0.1 0.2 0.25 0.45) 1)))
 
 (fact "count highest"
-  (count-highest '(((0.0 0.2 0.1 0.25 0.35) 4)
+  (highest-occuring-pattern
+                '(((0.0 0.2 0.1 0.25 0.35) 4)
                   ((0.0 0.1 0.2 0.25 0.35) 1)
                   ((0.0 0.2 0.25 0.35 0.4) 1)))
   =>  '(((0.0 0.1 0.2 0.25 0.35) 1) ((0.0 0.2 0.25 0.35 0.4) 1)))

@@ -117,11 +117,13 @@
   (mapcat translate-decimals pitch-lists))
 
 (defn total-sum [vector]
-  (reduce (fn [sum x] (+ sum (math/expt 2 x))) 0 vector))
+  (reduce (fn [sum x] (+ sum x)) 0 vector))
+
+(defn total-sum-squared [vector]
+  (reduce (fn [sum x] (+ sum (* x x))) 0 vector))
 
 (defn l2-norm-of-a-vector [vector]
-  (let [total-sum (total-sum vector)]
-    (+ (math/sqrt total-sum) 0.001)))
+  (+ (math/sqrt (total-sum-squared vector)) 0.001))
 
 (defn calculate-ref [_]
   (* 3.0 (l2-norm-of-a-vector @layer-4)))

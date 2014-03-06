@@ -6,4 +6,4 @@
 
 (fact "it composes"
   (create-database-from bach/chorale-140-data)
-  (count (compose)) => 197)
+  (count (compose)) =not=> zero?)

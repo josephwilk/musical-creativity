@@ -18,4 +18,4 @@
 
 (fact "it should generate events"
   (let [events (cellular-automata/compose rules)]
-    (count events) => 151))
+    (count events) => 150))

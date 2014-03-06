@@ -38,7 +38,7 @@ Experiments with models for computers generating music.
 (musician/play (markov/compose data.bach/bach1 [57 60 69] 1 50) piano)
 
 ;with phrase mapping
-(musician/play (markov/compose data.bach/bach1 [57] 16 50) piano)
+(musician/play (markov/compose data.bach/bach1 [57] 16 (* 5 16)) piano)
 
 ;with naive voice extraction and phrase mapping
 (require '[musical-creativity.analyzer :as analyzer] :reload)

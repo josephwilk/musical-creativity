@@ -4,11 +4,9 @@
     [musical-creativity.composers.markov :as markov]))
 
 (fact "it should collect probabilites for pitches"
-  (let [events (markov/compose markov/default-events [60] 50 1)]
-    (count events) => 51))
+  (let [events (markov/compose markov/default-events [60] 1 50)]
+    (count events) => 50))
 
 (fact "it should support different depths"
-  (let [events (markov/compose markov/default-events [71 72] 50 2)]
-    (count events) => 3))
-
-;(play (markov/compose 60 100 events))
+  (let [events (markov/compose markov/default-events [60 62] 2 50)]
+    (count events) => 9))
